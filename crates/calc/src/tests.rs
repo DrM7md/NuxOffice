@@ -986,6 +986,8 @@ fn lookup_of_an_empty_cell_stays_blank() {
         ("D7", "=ISBLANK(HLOOKUP(\"j\",A2:B3,2,0))", Value::Bool(true)),
         // A bare lookup still shows 0, like a reference to an empty cell.
         ("D8", "=VLOOKUP(\"k\",A1:B2,2,0)", Value::Number(0.0)),
+        // Arithmetic still reads the blank as 0.
+        ("D9", "=VLOOKUP(\"k\",A1:B2,2,0)+1", Value::Number(1.0)),
     ] {
         t.set(at, f);
         assert_eq!(t.get(at), want, "{f}");
