@@ -44,8 +44,8 @@ long `.xls` track, so about half parallelizes (≈30–50 wall-clock hours with 
 
 Why alpha: all six core workflows in the [alpha gate](docs/roadmap.md#alpha-gate) pass end to end on macOS with save and reopen, and the core workflow works end to end (open an XLSX, enter formulas and data, format, sort
 and filter, chart, pivot, print to PDF, save XLSX), but users still hit blocking gaps on real
-files: 100 MB workbooks don't open (#175), there's no `.xls` (#121), Arabic and Devanagari text
-isn't shaped (Chinese text still reported in #142), charts lose their type and options on round trip, and
+files: 100 MB workbooks don't open (#175), there's no `.xls` (#121), Arabic text is right to left
+in cells only (Chinese text still reported in #142), charts lose their type and options on round trip, and
 nobody has yet confirmed that Excel opens our output without a repair prompt across a real
 corpus. Beta needs those closed (see [beta gates](docs/roadmap.md#beta-gates)).
 
@@ -106,6 +106,8 @@ Localized German formulas and numbers are in PR #163. Detail: [localization-pari
 | Hindi | hi | none | 0% |
 | Arabic | ar | none (no RTL layout, no shaping) | 0% |
 | French | fr | none | 0% |
+| Arabic | ar | none (cell text shaped and right to left; no RTL UI) | 0% |
+| French | fr | menus only | ~17% |
 | Portuguese | pt-BR | menus only | ~12% |
 | Indonesian | id | none | 0% |
 | Japanese | ja | menus only | ~12% |
@@ -170,6 +172,7 @@ full GTK theme parity is not claimed.
 | 2026-10-12 | Ink strokes save as unfilled DrawingML paths and reopen as editable ink with their points, colour and width; icons in #551 remain a follow-up |
 | 2026-10-12 | The selection outline stays visible when extended to the last row (Ctrl+Shift+Down): its sides are cut to the viewport instead of stroking a 20-million-point rectangle (#687) |
 | 2026-10-12 | File › Print selects a system printer, copies, duplex and grayscale, submits PDF jobs through craft-print on a worker and shows spooler errors; browser printing and PDF export remain available |
+| 2026-10-12 | Arabic and Hebrew cell text reads right to left: numbers keep their digit order and mixed Latin/Arabic lines are ordered correctly (Unicode Bidirectional Algorithm), wrapped cells too |
 | 2026-10-11 | Command-sequence fuzzing: random command sequences checked against undo/redo, XLSX round-trip and full recalculation; fixes for the table, legacy-array, spill, AutoSum, Watch Window and sheet-copy bugs it found |
 | 2026-10-11 | Password-protected workbooks open: GridCraft asks for the password and decrypts Agile and Standard encryption (#11) |
 | 2026-10-11 | Text boxes keep their formatting: run size, bold, italic, typeface, text colour and outline, alignment, vertical anchor and "no outline" (#377) |
@@ -239,6 +242,7 @@ Performance measurements and cache contracts: [large-workbook-performance.md](do
 | 2026-10-12 | minor | Progress log: margins dragged on the Page Layout rulers (#792) |
 | 2026-10-12 | minor | Ink preservation across XLSX save/reopen (ink portion of #551) |
 | 2026-10-12 | minor | Desktop File > Print now discovers printers and submits PDF jobs through pinned craft-print with printer choice, copies, duplex and grayscale; browser printing and PDF export remain available. Remaining print parity includes page ranges and driver-specific tray/options UI; physical printer fidelity needs hardware validation. |
+| 2026-10-12 | minor | Bidirectional cell text; Arabic language row; progress log row |
 | 2026-10-11 | minor | Password-encrypted workbooks open (#11); progress log row |
 | 2026-10-11 | minor | Forecast Sheet (#322); progress log row |
 | 2026-10-11 | minor | Worksheet functions 505 / 523 (ODD* bond functions); progress log row |

@@ -64,6 +64,10 @@ No alpha blockers: every core workflow passes the [alpha gate](roadmap.md#alpha-
 - **Missing:** CJK font fallback, complex shaping (Arabic, Devanagari, Thai), bidi in the UI, non-Latin PDF outside Arabic.
   (Chinese text) awaits confirmation; #54 (symbols as boxes on Fedora); no shaping for Arabic or
   Devanagari in the UI. PDF now shapes Arabic with licensed glyph outlines, preserves cell reading direction, and mirrors RTL sheets.
+- **Missing:** CJK font fallback, bidi outside cells (editor, formula bar, tabs, charts), an Arabic
+  fallback font, non-Latin PDF.
+  (Chinese text) awaits confirmation; #54 (symbols as boxes on Fedora); egui shapes Arabic and cell
+  text is laid out bidirectionally (`ui-egui/src/bidi.rs`); PDF writer uses 14 standard fonts only.
 - **Impact:** blocks most of the world's users even with an English UI.
 - **Estimate:** 12–20 h. [localization-parity.md](localization-parity.md)
 
@@ -192,6 +196,7 @@ whole-workbook XLSX import remain relevant costs.
 | 2026-10-12 | minor | §17: ink geometry survives XLSX saves; the icon portion of #551 remains |
 | 2026-10-12 | minor | §8: values on rows (Σ Values in Rows, `dataOnRows`) laid out, moved and round-tripped |
 | 2026-10-12 | minor | Desktop File > Print now discovers printers and submits PDF jobs through pinned craft-print with printer choice, copies, duplex and grayscale; browser printing and PDF export remain available. Remaining print parity includes page ranges and driver-specific tray/options UI; physical printer fidelity needs hardware validation. |
+| 2026-10-12 | minor | §5: cell text laid out bidirectionally (Arabic, Hebrew); egui already shapes |
 | 2026-10-11 | minor | §6: iterative calculation for circular references landed (Maximum Iterations, Maximum Change) |
 | 2026-10-11 | minor | §15: trim-reference operators (`A1:.E10`, `A1.:E10`, `A1.:.E10`) parse and evaluate |
 | 2026-10-11 | minor | §4: trendlines (six types, forecast, equation and R²) read, written and drawn |

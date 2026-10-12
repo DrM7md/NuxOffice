@@ -48,6 +48,14 @@ Arabic PDF output uses harfrust shaping, Unicode bidi and licensed Noto Arabic g
   arrow keys, editor, popups and floating objects follow; text stays left-to-right inside its box
   (no bidi), and the sheet tabs and horizontal scrollbar are not mirrored yet; PDF export mirrors
   RTL sheets. IME input goes
+  #142 is still open pending confirmation). egui shapes text (harfrust), so Arabic letters join.
+  **Cell text is laid out bidirectionally** (Unicode Bidirectional Algorithm, `ui-egui/src/bidi.rs`):
+  Arabic and Hebrew read right to left, numbers inside them keep their digit order, and mixed
+  Latin/Arabic lines order their runs correctly, also in wrapped cells. The cell editor, formula
+  bar, sheet tabs, charts and PDF still lay text out left to right (no bidi there yet), and there
+  is no dedicated Arabic fallback font (Windows draws it from Tahoma). **Sheet Right-to-Left**
+  arrow keys, editor, popups and floating objects follow; General-aligned text stays left-aligned
+  in its box, and the sheet tabs, horizontal scrollbar and printing/PDF are not mirrored yet. IME input goes
   through egui/winit and is unverified for Chinese, Japanese and Korean.
 - **PDF export** shapes Arabic with embedded Noto Arabic glyph outlines; other non-Latin scripts
   (CJK, Devanagari, Thai) cannot export yet, because the rest uses only the 14 standard PDF fonts.
@@ -68,6 +76,10 @@ separators, number/date formats, machine translation with agent review, and scri
 | Arabic | ar | 0 (0%) | no | grid and editor: **no shaping, no RTL UI**; PDF export: shaped and joined, follows cell direction, mirrors RTL sheets; Sheet Right-to-Left mirrors the grid (#146) | no | none | 25–35 h |
 | French | fr | 0 (0%) | no | Latin: yes | no | none | 6–10 h |
 | Portuguese | pt-BR | 923 (~42%) | dialogs and tooltips (dialogs take effect with #669) | Latin: yes | no | menus, File view, dialogs | 2–4 h |
+| Hindi | hi | 0 (0%) | no | Devanagari: shaped by egui, unverified | no | none | 12–18 h |
+| Arabic | ar | 0 (0%) | no | shaped; bidi in cells (editor, formula bar, PDF not yet); **no RTL UI**; Sheet Right-to-Left mirrors the grid (#146) | no | none | 25–35 h |
+| French | fr | 377 (~17%) | no | Latin: yes | no | menus only | 4–8 h |
+| Portuguese | pt-BR | 266 (~12%) | no | Latin: yes | no | menus only | 4–8 h |
 | Indonesian | id | 0 (0%) | no | Latin: yes | no | none | 5–8 h |
 | Japanese | ja | 268 (~12%) | no | CJK system-font fallback; IME unverified; no furigana display | no | menus only | 8–12 h |
 | German | de | 420 entries | no | Latin: yes | no | menus, Scenario Manager | 4–8 h |
@@ -104,6 +116,8 @@ language (none so far) and of localized function names.
 | 2026-10-18 | minor | Arabic PDF cells, headers and chart labels support joined letters, combining marks, digits, bold/italic, rotation and grapheme wrapping |
 | 2026-10-12 | minor | Format Cells looks up its tabs, labels, options and note through `Language::tr` (Fill tab keyed `Format Cells\|Fill`); dialog titles and OK/Cancel too. Labels already in a table (Number, Currency, Fill…) show translated; the rest fall back to English until the tables add them |
 | 2026-10-12 | minor | Brazilian Portuguese catalog (`i18n/pt.rs`) grows from 377 to 923 entries: every key the other catalogs translate, including the dialog strings #669 starts looking up (~42%) |
+| 2026-10-12 | minor | French (`i18n/fr.rs`, 377 labels): the backstage, print, header/footer and options block (84 labels) had its translations paired with the wrong keys; retranslated, two missing header/footer labels added, spot-check tests |
+| 2026-10-12 | minor | Bidirectional cell text (UAX #9): Arabic/Hebrew right to left with numbers and Latin runs in place, wrapped cells too; egui already shapes (harfrust) |
 | 2026-10-11 | minor | German ribbon catalog (`i18n/de.rs`, 266 labels, ~12%); `de` locale tags (de-DE, de-AT, de-CH…) resolve to German. PR #163 (localized German formulas/numbers) still open |
 | 2026-10-11 | minor | Sheet Right-to-Left mirrors the grid (#146) |
 | 2026-10-11 | minor | Czech (cs) ribbon table: 266 labels (~12%), menus only |
