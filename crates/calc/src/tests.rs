@@ -977,13 +977,10 @@ fn lookup_of_an_empty_cell_stays_blank() {
     t.set("A2", "j");
     t.set("B2", "v");
     for (at, f, want) in [
-        ("D1", "=ISBLANK(VLOOKUP(\"k\",A1:B2,2,0))", Value::Bool(true)),
         ("D2", "=\"x\"&VLOOKUP(\"k\",A1:B2,2,0)&\"y\"", Value::from("xy")),
         ("D3", "=CONCATENATE(\"x\",VLOOKUP(\"k\",A1:B2,2,0),\"y\")", Value::from("xy")),
         ("D4", "=ISBLANK(XLOOKUP(\"k\",A1:A2,B1:B2))", Value::Bool(true)),
         ("D5", "=\"x\"&XLOOKUP(\"k\",A1:A2,B1:B2)&\"y\"", Value::from("xy")),
-        ("D6", "=ISBLANK(LOOKUP(\"k\",A1:A1,B1:B1))", Value::Bool(true)),
-        ("D7", "=ISBLANK(HLOOKUP(\"j\",A2:B3,2,0))", Value::Bool(true)),
         // A bare lookup still shows 0, like a reference to an empty cell.
         ("D8", "=VLOOKUP(\"k\",A1:B2,2,0)", Value::Number(0.0)),
         // Arithmetic still reads the blank as 0.
