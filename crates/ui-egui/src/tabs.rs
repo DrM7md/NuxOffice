@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use egui::{Align2, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use egui::{Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use gridcraft_engine::model::{Sheet, Visibility};
 use serde_json::json;
 
@@ -125,7 +125,10 @@ pub fn sheet_tabs(app: &mut SheetApp, ui: &mut Ui) {
                                 let in_group = grouped.contains(&i);
                                 let renaming = app.grid.renaming_tab == Some(i);
                                 let font = if active { theme::ui_bold(13.0) } else { theme::ui_font(13.0) };
-                                let tw = ui.painter().layout_no_wrap(name.clone(), font.clone(), t.text).size().x;
+                                // Laid out by `bidi`: an Arabic or Hebrew sheet name reads right to left.
+                                let ink = if active { t.accent } else { t.text };
+                                let label = ui.painter().layout_job(crate::bidi::layout_job(&name, font.clone(), ink));
+                                let tw = label.size().x;
                                 // A protected sheet's tab carries a padlock before its name (#1183).
                                 let lock = if protected { LOCK_SIZE + LOCK_GAP } else { 0.0 };
                                 let w = (tw + lock + 32.0).max(72.0);
@@ -195,7 +198,7 @@ pub fn sheet_tabs(app: &mut SheetApp, ui: &mut Ui) {
                                         let icon = Rect::from_center_size(pos2(left + LOCK_SIZE / 2.0, y), vec2(LOCK_SIZE, LOCK_SIZE));
                                         icons::paint(ui.painter(), icon, Icon::Lock, if active { t.accent } else { t.text_dim });
                                     }
-                                    ui.painter().text(pos2(left + lock, y), Align2::LEFT_CENTER, &name, font, fg);
+                                    ui.painter().galley(pos2(left + lock, y - label.size().y / 2.0), label, fg);
                                 }
                                 resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, active || in_group, &name));
                                 if resp.clicked() {

@@ -57,8 +57,14 @@ pub fn show(app: &mut SheetApp, ui: &mut egui::Ui) {
                     // Show the active cell's content; clicking starts editing in the bar.
                     let text = active_input(app);
                     let color = if read_only { t.text_disabled } else { t.text };
-                    let resp = child
-                        .add(egui::Label::new(egui::RichText::new(text).font(theme::ui_font(13.0)).color(color)).truncate().sense(Sense::click()));
+                    // Arabic or Hebrew content reads right to left (`bidi`); editing it still shows
+                    // it left to right, as egui's text editor lays out and moves the caret that way.
+                    let shown: egui::WidgetText = if crate::bidi::has_rtl(&text) {
+                        crate::bidi::layout_job(&text, theme::ui_font(13.0), color).into()
+                    } else {
+                        egui::RichText::new(text).font(theme::ui_font(13.0)).color(color).into()
+                    };
+                    let resp = child.add(egui::Label::new(shown).truncate().sense(Sense::click()));
                     let click = child.interact(field, id.with("click"), Sense::click());
                     if !read_only && (resp.clicked() || click.clicked()) {
                         app.begin_edit(None, true);

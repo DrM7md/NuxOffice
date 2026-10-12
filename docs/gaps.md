@@ -65,6 +65,7 @@ No alpha blockers: every core workflow passes the [alpha gate](roadmap.md#alpha-
   (Chinese text) awaits confirmation; #54 (symbols as boxes on Fedora); no shaping for Arabic or
   Devanagari in the UI. PDF now shapes Arabic with licensed glyph outlines, preserves cell reading direction, and mirrors RTL sheets.
 - **Missing:** CJK font fallback, bidi outside cells (editor, formula bar, tabs, charts), an Arabic
+- **Missing:** CJK font fallback, bidi while editing and in charts, an Arabic
   fallback font, non-Latin PDF.
   (Chinese text) awaits confirmation; #54 (symbols as boxes on Fedora); egui shapes Arabic and cell
   text is laid out bidirectionally (`ui-egui/src/bidi.rs`); PDF writer uses 14 standard fonts only.
