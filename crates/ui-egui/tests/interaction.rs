@@ -192,6 +192,25 @@ fn arrows_escape_and_undo() {
 }
 
 #[test]
+fn shift_arrows_in_point_mode_extend_from_the_pointed_cell() {
+    let mut s = blank();
+    s.execute("selection.set", json!({"cell": "A11"})).unwrap();
+    let mut h = harness(s);
+    text(&mut h, "=SUM(");
+    key(&mut h, Key::ArrowUp, Modifiers::NONE);
+    let edited = |h: &egui_kittest::Harness<'static, SheetApp>| h.state().editor.as_ref().map(|e| e.text.clone());
+    assert_eq!(edited(&h).as_deref(), Some("=SUM(A10"));
+    // Shift is held down, as on a real keyboard: the backend reports it before the arrow keys.
+    h.input_mut().events.push(Event::ModifiersChanged(Modifiers::SHIFT));
+    for expected in ["=SUM(A9:A10", "=SUM(A8:A10", "=SUM(A7:A10"] {
+        key(&mut h, Key::ArrowUp, Modifiers::SHIFT);
+        assert_eq!(edited(&h).as_deref(), Some(expected));
+    }
+    key(&mut h, Key::ArrowDown, Modifiers::SHIFT);
+    assert_eq!(edited(&h).as_deref(), Some("=SUM(A8:A10"), "Shift+Down shrinks back towards the anchor");
+}
+
+#[test]
 fn shortcuts_format_and_extend() {
     let mut s = blank();
     s.execute("range.setValues", json!({"range": "A1", "values": [[1, 2], [3, 4]]})).unwrap();
@@ -221,6 +240,25 @@ fn delete_key_removes_the_selected_chart() {
 
     assert!(h.state().session.active().unwrap().wb.active().unwrap().charts.is_empty());
     assert_eq!(h.state().selected_chart, None);
+    assert_eq!(value(&h, "A1"), Value::Number(1.0));
+}
+
+#[test]
+fn inserted_chart_is_selected_so_delete_removes_it() {
+    // #668, #256: after Insert › Chart the selection stayed on the source cells, so Delete
+    // cleared the data and left the chart behind.
+    let mut session = blank();
+    session.execute("range.setValues", json!({"range": "A1:B2", "values": [[1, 2], [3, 4]]})).unwrap();
+    session.execute("selection.set", json!({"range": "A1:B2"})).unwrap();
+    let mut h = harness(session);
+
+    let id = h.state_mut().run("insert.chart", json!({"type": "column"})).unwrap()["chart"].as_u64().unwrap() as u32;
+    h.run_steps(2);
+    assert_eq!(h.state().selected_chart, Some(id), "the new chart is selected");
+
+    key(&mut h, Key::Delete, Modifiers::NONE);
+
+    assert!(h.state().session.active().unwrap().wb.active().unwrap().charts.is_empty());
     assert_eq!(value(&h, "A1"), Value::Number(1.0));
 }
 
@@ -457,6 +495,33 @@ fn solver_dialog_loads_the_saved_model_and_results_can_restore() {
     key(&mut h, Key::Enter, Modifiers::NONE);
     assert!(h.state().dialog.is_none());
     assert_eq!(value(&h, "A1"), Value::Number(0.0));
+    assert_eq!(value(&h, "B1"), Value::Number(0.0));
+}
+
+#[test]
+fn solver_results_write_the_chosen_reports() {
+    let mut s = blank();
+    for (c, v) in [("A1", "0"), ("A2", "0"), ("B1", "=3*A1+5*A2"), ("B2", "=2*A2"), ("B3", "=3*A1+2*A2")] {
+        s.execute("cell.set", json!({"cell": c, "input": v})).unwrap();
+    }
+    let r = s
+        .execute(
+            "data.solver",
+            json!({"objective": "B1", "variables": "A1:A2", "constraints": ["A1 <= 4", "B2 <= 12", "B3 <= 18"], "method": "simplex"}),
+        )
+        .unwrap();
+    let mut h = harness(s);
+    // Restore Original Values with the Answer and Limits reports: the cells go back, the reports stay.
+    h.state_mut().open_dialog("solverResults", r);
+    for key in ["restore", "answerReport", "limitsReport"] {
+        h.state_mut().dialog.as_mut().unwrap().values.insert(key.into(), json!(true));
+    }
+    h.run_steps(2);
+    key(&mut h, Key::Enter, Modifiers::NONE);
+    assert!(h.state().dialog.is_none());
+    assert!(h.state().message.is_none(), "{:?}", h.state().message);
+    let names: Vec<String> = h.state().session.active().unwrap().wb.sheets.iter().map(|s| s.name.clone()).collect();
+    assert_eq!(names, ["Answer Report 1", "Limits Report 1", "Sheet1"]);
     assert_eq!(value(&h, "B1"), Value::Number(0.0));
 }
 

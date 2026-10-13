@@ -102,6 +102,8 @@ fn open_plain(name: &str, bytes: &[u8]) -> Result<(Workbook, Vec<String>)> {
     let import = match sniffed {
         gridcraft_xlsx::Format::Ods => Some(FileKind::Ods),
         gridcraft_xlsx::Format::Xlsb => Some(FileKind::Xlsb),
+        // An XLSX package is never read as ODS/XLSB just because of its name.
+        gridcraft_xlsx::Format::Xlsx => None,
         _ => kind.filter(|k| matches!(k, FileKind::Ods | FileKind::Xlsb)),
     };
     if let Some(import) = import {
@@ -109,7 +111,8 @@ fn open_plain(name: &str, bytes: &[u8]) -> Result<(Workbook, Vec<String>)> {
         let (wb, report) = read(bytes).map_err(|e| EngineError::Other(format!("We can't import '{name}': {e}")))?;
         return Ok((wb, report.warnings));
     }
-    if sniffed == gridcraft_xlsx::Format::Xlsx || kind == Some(FileKind::Xlsx) {
+    // Text named `.xlsx` is read as text.
+    if sniffed == gridcraft_xlsx::Format::Xlsx || (kind == Some(FileKind::Xlsx) && sniffed != gridcraft_xlsx::Format::Csv) {
         let (wb, report) = gridcraft_xlsx::read_xlsx(bytes).map_err(|e| EngineError::Other(format!("We can't open '{name}': {e}")))?;
         return Ok((wb, report.warnings));
     }
@@ -153,8 +156,19 @@ fn rename_first_sheet(wb: &mut Workbook, path: &str) {
 
 /// Encodes a workbook in the format chosen by `path`'s extension.
 pub fn save_bytes(wb: &Workbook, path: &str) -> Result<Vec<u8>> {
+    // An unknown or missing extension is refused rather than written as an XLSX under that name:
+    // a typo like `.cvs` would otherwise produce a file no other app recognises.
+    let Some(kind) = FileKind::from_path(path) else {
+        let name = std::path::Path::new(path).file_name().and_then(|n| n.to_str()).unwrap_or(path);
+        return Err(EngineError::Other(format!("{name}: unknown file format. Save as .xlsx, .csv, .tsv, .json or .html.")));
+    };
+    save_bytes_as(wb, path, kind)
+}
+
+/// Encodes a workbook as `kind`, whatever `path`'s extension says.
+pub fn save_bytes_as(wb: &Workbook, path: &str, kind: FileKind) -> Result<Vec<u8>> {
     let sheet = wb.active_sheet;
-    match FileKind::from_path(path).unwrap_or(FileKind::Xlsx) {
+    match kind {
         // The extension picks the package kind; only the macro-enabled kinds (.xlsm, .xltm) carry
         // the VBA project, so any other name saves without it, as Excel does.
         FileKind::Xlsx => gridcraft_xlsx::write_xlsx_as(wb, gridcraft_xlsx::XlsxKind::from_path(path)).map_err(|e| EngineError::Other(e.to_string())),
@@ -167,7 +181,7 @@ pub fn save_bytes(wb: &Workbook, path: &str) -> Result<Vec<u8>> {
         FileKind::Csv => Ok(wb.sheet(sheet).map(|sh| csv(wb, sh, wb.csv_delimiter.unwrap_or(b','))).unwrap_or_default()),
         FileKind::Tsv => Ok(wb.sheet(sheet).map(|sh| csv(wb, sh, b'\t')).unwrap_or_default()),
         FileKind::Json => serde_json::to_vec_pretty(wb).map_err(|e| EngineError::Other(e.to_string())),
-        FileKind::Html => Ok(to_html(wb, sheet).into_bytes()),
+        FileKind::Html => to_html(wb, sheet).map(String::into_bytes),
     }
 }
 
@@ -296,9 +310,12 @@ impl std::fmt::Write for ClipboardHtml {
     }
 }
 
+/// Most rows Save as Web Page writes. A sheet whose used range is taller fails instead of losing cells.
+const HTML_EXPORT_MAX_ROWS: u32 = 100_001;
+
 /// A sheet as a standalone HTML table (Save as Web Page).
-pub fn to_html(wb: &Workbook, sheet: usize) -> String {
-    let Some(sh) = wb.sheet(sheet) else { return String::new() };
+pub fn to_html(wb: &Workbook, sheet: usize) -> Result<String> {
+    let Some(sh) = wb.sheet(sheet) else { return Ok(String::new()) };
     let mut out = String::new();
     let _ = write!(
         out,
@@ -306,7 +323,13 @@ pub fn to_html(wb: &Workbook, sheet: usize) -> String {
         esc(&sh.name)
     );
     if let Some(r) = sh.used_range() {
-        for row in r.start.row..=r.end.row.min(r.start.row + 100_000) {
+        if r.height() > HTML_EXPORT_MAX_ROWS {
+            return Err(EngineError::Other(format!(
+                "the sheet is too tall for a web page ({} rows, at most {HTML_EXPORT_MAX_ROWS}). Save as .xlsx or CSV instead.",
+                r.height()
+            )));
+        }
+        for row in r.start.row..=r.end.row {
             if sh.is_row_hidden(row) {
                 continue;
             }
@@ -329,7 +352,7 @@ pub fn to_html(wb: &Workbook, sheet: usize) -> String {
         }
     }
     out.push_str("</table></body></html>");
-    out
+    Ok(out)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -350,8 +373,12 @@ pub fn read_file(path: &str) -> Result<Vec<u8>> {
 pub fn write_file(path: &str, bytes: &[u8]) -> Result<()> {
     // Write to a temporary file, then rename: a crash never leaves a half-written workbook.
     let tmp = format!("{path}.sctmp");
-    std::fs::write(&tmp, bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-    std::fs::rename(&tmp, path).map_err(|e| EngineError::Other(format!("{path}: {e}")))
+    std::fs::write(&tmp, bytes).and_then(|()| std::fs::rename(&tmp, path)).map_err(|e| {
+        // A write or rename that fails (full disk, the workbook locked by another app) leaves
+        // no temporary file beside the user's workbook.
+        let _ = std::fs::remove_file(&tmp);
+        EngineError::Other(format!("{path}: {e}"))
+    })
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -430,6 +457,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn html_export_fails_instead_of_dropping_cells_past_the_row_limit() {
+        let mut wb = Workbook::new();
+        let sh = wb.sheet_mut(0).unwrap();
+        sh.set_value(CellRef::new(0, 0), gridcraft_core::Value::text("near"));
+        sh.set_value(CellRef::new(149_999, 0), gridcraft_core::Value::text("far"));
+        assert!(save_bytes(&wb, "book.html").is_err());
+        let sh = wb.sheet_mut(0).unwrap();
+        sh.remove_cell(CellRef::new(149_999, 0));
+        sh.set_value(CellRef::new(100_000, 0), gridcraft_core::Value::text("far"));
+        let html = String::from_utf8(save_bytes(&wb, "book.html").unwrap()).unwrap();
+        assert!(html.contains(">near</td>") && html.contains(">far</td>"));
+    }
+
+    #[test]
     fn macros_are_saved_only_into_xlsm() {
         let mut wb = Workbook::new();
         wb.vba_project = Some(b"vba".to_vec());
@@ -443,6 +484,26 @@ mod tests {
         assert!(has_macros("book.xltm"), "a macro-enabled template keeps the VBA project");
         assert!(!has_macros("book.xltx"), "a macro-free template never carries a VBA project");
         assert!(wb.vba_project.is_some(), "the open workbook keeps its macros");
+    }
+
+    /// A save that can't be put in place (here a folder already has the workbook's name, as
+    /// with a file another app holds locked) fails without leaving `<name>.sctmp` behind.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn failed_save_leaves_no_temporary_file() {
+        let dir = std::env::temp_dir().join(format!("gridcraft-write-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let blocked = dir.join("Book1.xlsx");
+        std::fs::create_dir(&blocked).unwrap();
+        assert!(write_file(blocked.to_str().unwrap(), b"workbook").is_err());
+        assert!(!dir.join("Book1.xlsx.sctmp").exists(), "the temporary file is removed");
+        // An ordinary save still works and leaves only the workbook.
+        let ok = dir.join("Book2.xlsx");
+        write_file(ok.to_str().unwrap(), b"workbook").unwrap();
+        assert_eq!(std::fs::read(&ok).unwrap(), b"workbook");
+        assert!(!dir.join("Book2.xlsx.sctmp").exists());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     /// A minimal compound (CFB/OLE2) file — FAT in sector 0, directory in sector 1 — holding a
@@ -607,5 +668,20 @@ mod tests {
             ),
             "{types}"
         );
+    }
+
+    #[test]
+    fn content_wins_over_a_mismatched_extension() {
+        let mut wb = Workbook::new();
+        wb.sheet_mut(0).unwrap().set_value(CellRef::new(0, 0), gridcraft_core::Value::Number(7.0));
+        let package = save_bytes(&wb, "book.xlsx").unwrap();
+        for name in ["book.xlsx", "book.ods", "book.xlsb", "book.csv"] {
+            let (opened, _) = open_bytes(name, &package).unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert_eq!(opened.sheet(0).unwrap().value(CellRef::new(0, 0)), gridcraft_core::Value::Number(7.0), "{name}");
+        }
+        for name in ["data.xlsx", "data.csv"] {
+            let (opened, _) = open_bytes(name, b"a,b\n1,2\n").unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert_eq!(opened.sheet(0).unwrap().value(CellRef::new(0, 1)), gridcraft_core::Value::text("b"), "{name}");
+        }
     }
 }

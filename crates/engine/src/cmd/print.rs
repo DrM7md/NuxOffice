@@ -391,7 +391,7 @@ pub struct HfContext {
 
 /// Today's date and the current time as headers and footers show them (`&D`, `&T`).
 pub fn hf_date_time(wb: &Workbook) -> (String, String) {
-    let now = gridcraft_calc::now_serial();
+    let now = gridcraft_core::date::serial_in_system(wb.date_system, gridcraft_calc::now_serial());
     let date = crate::display::format(&Value::Number(now.floor()), "m/d/yyyy", wb).text;
     let time = crate::display::format(&Value::Number(now), "h:mm AM/PM", wb).text;
     (date, time)
@@ -1766,6 +1766,14 @@ mod tests {
     }
 
     #[test]
+    fn header_footer_date_follows_the_workbook_date_system() {
+        let mut wb = Workbook::new();
+        let date_1900 = hf_date_time(&wb).0;
+        wb.date_system = gridcraft_core::DateSystem::D1904;
+        assert_eq!(hf_date_time(&wb).0, date_1900);
+    }
+
+    #[test]
     fn header_footer_section_edits_are_undoable_and_views_are_per_sheet() {
         let mut s = s();
         s.execute("pageLayout.headerFooter", json!({"header": "&LLeft&RRight"})).unwrap();
@@ -2044,6 +2052,23 @@ mod tests {
         s.execute("pageLayout.pageSetup", json!({"fitToPage": false, "scale": 10, "printArea": "A1:B3", "titleRows": "", "titleCols": ""})).unwrap();
         s.execute("home.fontSize", json!({"range": "A1", "size": 409})).unwrap_or_default();
         assert!(s.execute("file.exportPdf", json!({})).is_ok());
+    }
+
+    #[test]
+    fn export_pdf_without_a_path_returns_bytes_and_never_opens_a_dialog() {
+        let mut s = s();
+        for params in [json!({}), json!({"path": ""}), json!({"path": null})] {
+            let r = s.execute("file.exportPdf", params).unwrap();
+            assert!(r.get("path").is_none(), "no file is written without a path");
+            let bytes = crate::io::base64_decode(r["base64"].as_str().unwrap()).unwrap();
+            assert!(bytes.starts_with(b"%PDF-"));
+        }
+        assert!(s.take_ui_requests().is_empty(), "a programmatic call never queues a dialog");
+        // Headless callers (CLI, MCP) get the same bytes, not an error.
+        assert!(s.execute_headless("file.exportPdf", json!({})).is_ok());
+        // With no workbook open it is a clear error, not a panic.
+        let mut none = Session::new();
+        assert!(none.execute("file.exportPdf", json!({})).is_err());
     }
 
     #[test]

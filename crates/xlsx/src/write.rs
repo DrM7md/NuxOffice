@@ -161,6 +161,30 @@ pub fn abs_range(r: &RangeRef) -> String {
     format!("${}${}:${}${}", c(r.start.col), r.start.row + 1, c(r.end.col), r.end.row + 1)
 }
 
+/// Refuses sheet names XLSX cannot hold. The reader repairs such names (cuts, strips, renames
+/// duplicates) but formulas keep the old spelling, so the saved file would turn into `#REF!`.
+fn check_sheet_names(wb: &Workbook) -> Result<(), IoError> {
+    let mut seen = std::collections::HashSet::new();
+    for sheet in &wb.sheets {
+        let name = &sheet.name;
+        let bad = if name.is_empty() {
+            Some("is blank")
+        } else if name.chars().count() > 31 {
+            Some("is longer than 31 characters")
+        } else if name.chars().any(|c| matches!(c, ':' | '\\' | '/' | '?' | '*' | '[' | ']')) {
+            Some("contains one of : \\ / ? * [ ]")
+        } else if !seen.insert(name.to_ascii_lowercase()) {
+            Some("is used by another sheet")
+        } else {
+            None
+        };
+        if let Some(why) = bad {
+            return Err(IoError::Format(format!("sheet name \"{name}\" {why}; rename the sheet before saving as XLSX")));
+        }
+    }
+    Ok(())
+}
+
 pub fn write_xlsx(wb: &Workbook, kind: XlsxKind) -> Result<Vec<u8>, IoError> {
     if wb.sheets.is_empty() {
         return Err(IoError::Format("a workbook needs at least one sheet".into()));
@@ -168,6 +192,7 @@ pub fn write_xlsx(wb: &Workbook, kind: XlsxKind) -> Result<Vec<u8>, IoError> {
     if wb.sheets.iter().any(|sheet| sheet.cell_pictures.keys().any(|c| sheet.cell(*c).is_some_and(|cell| cell.formula.is_some()))) {
         return Err(IoError::Format("a static cell picture cannot also contain a formula".into()));
     }
+    check_sheet_names(wb)?;
     let mut out = Out {
         parts: vec![],
         overrides: vec![],
@@ -270,6 +295,7 @@ pub fn write_xlsx(wb: &Workbook, kind: XlsxKind) -> Result<Vec<u8>, IoError> {
     }
 
     let mut w = format!("{XML_DECL}<workbook xmlns=\"{NS_MAIN}\" xmlns:r=\"{NS_REL}\">");
+    w.push_str(&crate::passthrough::workbook_elements(wb, "fileVersion"));
     w.push_str(if wb.date_system == gridcraft_core::DateSystem::D1904 { "<workbookPr date1904=\"1\"/>" } else { "<workbookPr/>" });
     if wb.protected_structure {
         let pw = wb.structure_password.as_ref().map(|h| crate::sheet_write::password_attrs(h, "workbook")).unwrap_or_default();
@@ -306,6 +332,10 @@ pub fn write_xlsx(wb: &Workbook, kind: XlsxKind) -> Result<Vec<u8>, IoError> {
     }
     w.push_str("/>");
     w.push_str(&pivots.workbook_xml(&mut wb_rels));
+    let exts = crate::passthrough::workbook_elements(wb, "ext");
+    if !exts.is_empty() {
+        let _ = write!(w, "<extLst>{exts}</extLst>");
+    }
     w.push_str("</workbook>");
 
     // Workbook-level parts.
