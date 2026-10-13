@@ -594,8 +594,12 @@ pub const MERGE_DISCARD_ERROR: &str = "Merging cells keeps only the first value 
 fn merge(s: &mut Session, p: &Json, how: &str) -> Result<Json> {
     let sheet = target_sheet(s, p)?;
     let ranges = target_ranges(s, p)?;
-    let how =
-        if how == "center" && s.doc()?.wb.sheet(sheet).is_some_and(|sh| ranges.iter().all(|r| sh.merges.contains(r))) { "unmerge" } else { how };
+    // Merge & Center toggles as in Excel: a selection touching any merged area unmerges it.
+    let how = if how == "center" && s.doc()?.wb.sheet(sheet).is_some_and(|sh| sh.merges.iter().any(|m| ranges.iter().any(|r| m.intersects(r)))) {
+        "unmerge"
+    } else {
+        how
+    };
     let areas = |r: &RangeRef| -> Vec<RangeRef> {
         match how {
             "unmerge" => vec![],
@@ -1214,6 +1218,28 @@ mod tests {
         s.execute("range.setValues", json!({"range": "B2", "values": [["vB2"]]})).unwrap();
         let e = s.execute("home.mergeAcross", json!({"range": "A1:B2"})).unwrap_err().to_string();
         assert!(e.contains(MERGE_DISCARD_ERROR), "{e}");
+    }
+
+    #[test]
+    fn merge_center_unmerges_a_selection_containing_merged_cells() {
+        let mut s = crate::Session::new();
+        s.new_workbook();
+        let merges = |s: &crate::Session| s.doc().unwrap().wb.active().unwrap().merges.clone();
+        s.execute("home.mergeCells", json!({"range": "B2:C2"})).unwrap();
+        s.execute("home.mergeCenter", json!({"range": "A1:D4"})).unwrap();
+        assert!(merges(&s).is_empty(), "{:?}", merges(&s));
+
+        s.execute("home.mergeCells", json!({"range": "B2:C2"})).unwrap();
+        s.execute("cell.set", json!({"cell": "E5", "input": "vE5"})).unwrap();
+        s.execute("home.mergeCells", json!({"range": "E5:F5"})).unwrap();
+        s.execute("home.mergeCells", json!({"range": "H8:I8"})).unwrap();
+        let outside = RangeRef::parse("H8:I8").unwrap();
+        s.execute("home.mergeCenter", json!({"range": "A1:F6"})).unwrap();
+        assert_eq!(merges(&s), vec![outside]);
+        assert_eq!(s.execute("cell.get", json!({"cell": "E5"})).unwrap()["value"], json!("vE5"));
+
+        s.execute("home.mergeCenter", json!({"range": "A1:F6"})).unwrap();
+        assert_eq!(merges(&s), vec![outside, RangeRef::parse("A1:F6").unwrap()]);
     }
 
     #[test]
