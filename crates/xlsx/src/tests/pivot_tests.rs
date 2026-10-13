@@ -63,7 +63,17 @@ fn workbook() -> Workbook {
         range: rr("A1:F9"),
         header_row: true,
         totals_row: false,
-        columns: headers.iter().map(|h| TableColumn { name: (*h).into(), totals: TotalsFn::None, totals_label: None, formula: None }).collect(),
+        columns: headers
+            .iter()
+            .map(|h| TableColumn {
+                name: (*h).into(),
+                totals: TotalsFn::None,
+                totals_label: None,
+                formula: None,
+                data_style: None,
+                data_cell_style: None,
+            })
+            .collect(),
         style: "TableStyleMedium2".into(),
         banded_rows: true,
         banded_cols: false,

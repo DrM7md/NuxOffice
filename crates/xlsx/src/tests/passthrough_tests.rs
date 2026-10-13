@@ -483,3 +483,56 @@ fn kept_vml_drawings_are_charged_to_the_kept_total() {
     let (wb, _) = read_xlsx(&rich_package_with(CONTENT_TYPES, true)).unwrap();
     assert!(wb.sheets.iter().all(|s| s.preserved.as_ref().is_some_and(|p| p.vml.is_some())));
 }
+
+/// #865: the sensitivity label (`docMetadata/LabelInfo.xml`, a package-root part) and a sheet's
+/// custom properties (`<customProperties>` with their binary parts) survive a save.
+#[test]
+fn sensitivity_label_and_sheet_custom_properties_survive_save() {
+    const LABEL: &str = r#"<?xml version="1.0"?><clbl:labelList xmlns:clbl="http://schemas.microsoft.com/office/2020/mipLabelMetadata"><clbl:label id="{11111111-2222-3333-4444-555555555555}" enabled="1" method="Standard" siteId="{66666666-7777-8888-9999-000000000000}" removed="0"/></clbl:labelList>"#;
+    const PROP: &[u8] = b"E\x00P\x00M\x00 key";
+    let ct = r#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="bin" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.customProperty"/><Override PartName="/docMetadata/LabelInfo.xml" ContentType="application/vnd.ms-office.classificationlabels+xml"/></Types>"#;
+    let root_rels = rels(&[
+        ("rId1", "officeDocument", "xl/workbook.xml"),
+        ("rId2", "http://schemas.microsoft.com/office/2020/02/relationships/classificationlabels", "docMetadata/LabelInfo.xml"),
+    ]);
+    let workbook = format!(
+        r#"<?xml version="1.0"?><workbook xmlns="{NS_MAIN}" xmlns:r="{NS_R}"><sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets></workbook>"#
+    );
+    let wb_rels = rels(&[("rId1", "worksheet", "worksheets/sheet1.xml")]);
+    let sheet = format!(
+        r#"<?xml version="1.0"?><worksheet xmlns="{NS_MAIN}" xmlns:r="{NS_R}"><sheetData><row r="1"><c r="A1"><v>1</v></c></row></sheetData><pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/><rowBreaks count="1"><brk id="10" max="16383" man="1"/></rowBreaks><customProperties><customPr name="EPMWorkbook" r:id="rId1"/></customProperties></worksheet>"#
+    );
+    let sheet_rels = rels(&[("rId1", "customProperty", "../customProperty1.bin"), ("rId2", "comments", "../comments1.xml")]);
+    let pkg = make_zip(&[
+        ("[Content_Types].xml", ct.as_bytes()),
+        ("_rels/.rels", root_rels.as_bytes()),
+        ("docMetadata/LabelInfo.xml", LABEL.as_bytes()),
+        ("xl/workbook.xml", workbook.as_bytes()),
+        ("xl/_rels/workbook.xml.rels", wb_rels.as_bytes()),
+        ("xl/worksheets/sheet1.xml", sheet.as_bytes()),
+        ("xl/worksheets/_rels/sheet1.xml.rels", sheet_rels.as_bytes()),
+        ("xl/customProperty1.bin", PROP),
+        ("xl/comments1.xml", COMMENTS.as_bytes()),
+    ]);
+    let (wb, rep) = read_xlsx(&pkg).unwrap();
+    assert!(!rep.warnings.iter().any(|w| w.contains("dropped")), "{:?}", rep.warnings);
+    let out = write_xlsx(&wb).unwrap();
+    let u = Unpacked::new(&out);
+    u.assert_valid();
+    let label = u.rels("").into_iter().find(|r| r.1.ends_with("/classificationlabels")).expect("label relationship");
+    assert_eq!(u.parts.get(&label.2).unwrap(), LABEL.as_bytes());
+    let sheet = sheet_part(&u, "Data");
+    let sx = u.text(&sheet);
+    assert!(sx.contains("name=\"EPMWorkbook\""), "{sx}");
+    let (ty, target) = u.target(&sheet, &attr_of(&sx, "customPr", "r:id"));
+    assert!(ty.ends_with("/customProperty"));
+    assert_eq!(u.parts.get(&target).unwrap(), PROP);
+    // Schema order: rowBreaks < customProperties < legacyDrawing (the note GridCraft writes).
+    let pos = |t: &str| sx.find(t).unwrap_or_else(|| panic!("no {t} in {sx}"));
+    assert!(pos("<rowBreaks") < pos("<customProperties") && pos("<customProperties") < pos("<legacyDrawing"), "{sx}");
+
+    // Reading the output keeps both again.
+    let (_, rep2) = read_xlsx(&out).unwrap();
+    assert!(!rep2.warnings.iter().any(|w| w.contains("dropped")), "{:?}", rep2.warnings);
+    assert_eq!(u.find(LABEL.as_bytes()).len(), 1);
+}

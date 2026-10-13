@@ -310,7 +310,10 @@ fn insert_table(s: &mut Session, p: &Json) -> Result<Json> {
             range: r,
             header_row: true,
             totals_row: false,
-            columns: names.into_iter().map(|n| TableColumn { name: n, totals: TotalsFn::None, totals_label: None, formula: None }).collect(),
+            columns: names
+                .into_iter()
+                .map(|n| TableColumn { name: n, totals: TotalsFn::None, totals_label: None, formula: None, data_style: None, data_cell_style: None })
+                .collect(),
             style,
             banded_rows: true,
             banded_cols: false,

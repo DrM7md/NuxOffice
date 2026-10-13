@@ -290,9 +290,23 @@ fn sample() -> Workbook {
         header_row: true,
         totals_row: true,
         columns: vec![
-            TableColumn { name: "Region".into(), totals: TotalsFn::None, totals_label: Some("Total".into()), formula: None },
-            TableColumn { name: "Amount".into(), totals: TotalsFn::Sum, totals_label: None, formula: None },
-            TableColumn { name: "Tax".into(), totals: TotalsFn::Custom, totals_label: Some("SUM(R2:R4)".into()), formula: Some("Q2*0.1".into()) },
+            TableColumn {
+                name: "Region".into(),
+                totals: TotalsFn::None,
+                totals_label: Some("Total".into()),
+                formula: None,
+                data_style: None,
+                data_cell_style: None,
+            },
+            TableColumn { name: "Amount".into(), totals: TotalsFn::Sum, totals_label: None, formula: None, data_style: None, data_cell_style: None },
+            TableColumn {
+                name: "Tax".into(),
+                totals: TotalsFn::Custom,
+                totals_label: Some("SUM(R2:R4)".into()),
+                formula: Some("Q2*0.1".into()),
+                data_style: None,
+                data_cell_style: None,
+            },
         ],
         style: "TableStyleLight9".into(),
         banded_rows: true,
@@ -691,8 +705,8 @@ fn writing_repairs_invalid_models() {
         header_row: true,
         totals_row: false,
         columns: vec![
-            TableColumn { name: "X".into(), totals: TotalsFn::None, totals_label: None, formula: None },
-            TableColumn { name: "x".into(), totals: TotalsFn::None, totals_label: None, formula: None },
+            TableColumn { name: "X".into(), totals: TotalsFn::None, totals_label: None, formula: None, data_style: None, data_cell_style: None },
+            TableColumn { name: "x".into(), totals: TotalsFn::None, totals_label: None, formula: None, data_style: None, data_cell_style: None },
         ],
         style: String::new(),
         banded_rows: true,
@@ -962,7 +976,8 @@ fn table_newline_column_and_backslash_name_survive() {
     s.set_value(at("A1"), Value::text("Handle\nBars"));
     s.set_value(at("B1"), Value::text("Name"));
     s.set_value(at("B2"), Value::text("x"));
-    let col = |n: &str| TableColumn { name: n.into(), totals: TotalsFn::None, totals_label: None, formula: None };
+    let col =
+        |n: &str| TableColumn { name: n.into(), totals: TotalsFn::None, totals_label: None, formula: None, data_style: None, data_cell_style: None };
     s.tables.push(Table {
         id: 1,
         name: "\\_Prime.1".into(),
