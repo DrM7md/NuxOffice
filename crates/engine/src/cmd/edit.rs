@@ -332,6 +332,14 @@ fn range_set_values(s: &mut Session, p: &Json) -> Result<Json> {
     Ok(json!({"cells": count}))
 }
 
+/// The rows of `range` that an applied filter hides (sheet AutoFilter or table filter). When
+/// Excel repeats one cell or one row down a selection (Ctrl+Enter, pasting a single cell or row,
+/// Fill Down), it leaves these rows alone and writes only the rows that are showing. Rows hidden
+/// by hand are written like any other (#1101).
+fn filtered_rows(sh: &gridcraft_model::Sheet, range: RangeRef) -> std::collections::BTreeSet<u32> {
+    sh.rows.range(range.start.row..=range.end.row).filter(|(r, info)| info.hidden && sh.is_row_filtered(**r)).map(|(r, _)| *r).collect()
+}
+
 fn range_fill(s: &mut Session, p: &Json) -> Result<Json> {
     let sheet = target_sheet(s, p)?;
     let ranges = target_ranges(s, p)?;
@@ -343,7 +351,11 @@ fn range_fill(s: &mut Session, p: &Json) -> Result<Json> {
             if r.count() > 2_000_000 {
                 return Err(bad("range.fill", "range too large"));
             }
+            let skip = cx.wb.sheet(sheet).map(|sh| filtered_rows(sh, *r)).unwrap_or_default();
             for at in r.iter() {
+                if skip.contains(&at.row) {
+                    continue;
+                }
                 let mut cell = base.clone().unwrap_or_default();
                 if let Some(f) = &cell.formula
                     && let Some(e) = f.expr()
@@ -931,6 +943,12 @@ fn paste_special(s: &mut Session, p: &Json) -> Result<Json> {
         && !sel.is_full_rows()
         && sel.count() <= 4_000_000;
     let (tiles_r, tiles_c) = if tile { (sel.height() / h, sel.width() / w) } else { (1, 1) };
+    // A single cell or row repeated down a filtered selection skips the rows the filter hides; a
+    // taller block is pasted straight down, hidden rows included, as in Excel.
+    let skip_rows = match s.doc()?.wb.sheet(dest_sheet) {
+        Some(sh) if tile && h == 1 => filtered_rows(sh, sel),
+        _ => Default::default(),
+    };
     let same_doc = s.doc()?.uid == clip.doc_uid;
     let cut_move = clip.cut && same_doc && what == What::All;
     let src_wb = clip.wb.clone();
@@ -964,6 +982,9 @@ fn paste_special(s: &mut Session, p: &Json) -> Result<Json> {
                         let sc = CellRef::new(src.start.row + r, src.start.col + c);
                         let (dr, dc) = if transpose { (c, r) } else { (r, c) };
                         let Some(dest) = at.offset((tr * h + dr) as i64, (tc * w + dc) as i64) else { continue };
+                        if skip_rows.contains(&dest.row) {
+                            continue;
+                        }
                         let src_cell = if cut_move {
                             moved_formulas.iter().find(|(k, _)| *k == sc).map(|(_, v)| v.clone())
                         } else {
@@ -1325,8 +1346,9 @@ fn fill_dir(s: &mut Session, p: &Json, dr: i64, dc: i64) -> Result<Json> {
     } else {
         RangeRef::new(CellRef::new(r.start.row, r.end.col), r.end)
     };
+    let skip = s.doc()?.wb.sheet(sheet).map(|sh| filtered_rows(sh, r)).unwrap_or_default();
     edit(s, |cx| {
-        crate::fill::fill(cx, sheet, src, r, crate::fill::FillMode::Copy)?;
+        crate::fill::fill_except(cx, sheet, src, r, crate::fill::FillMode::Copy, &skip)?;
         Ok(Json::Null)
     })
 }

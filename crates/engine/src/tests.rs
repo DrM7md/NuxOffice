@@ -3282,3 +3282,84 @@ fn paste_special_validation_moves_relative_references() {
     assert!(!ok(&mut s, "C3", "5"), "the pasted rule checks C3, not A1");
     assert!(ok(&mut s, "C3", "20"));
 }
+
+/// #1101: repeating one cell or row down a filtered selection (paste, Ctrl+Enter, Fill Down) skips
+/// the rows the filter hides, as in Excel. A taller pasted block goes straight down, and rows
+/// hidden by hand are written, also as in Excel (each case measured in Excel for Microsoft 365).
+#[test]
+fn fills_and_single_row_pastes_skip_filtered_rows() {
+    let fresh = s;
+    let filtered = || {
+        let mut s = fresh();
+        let mut rows = vec![json!(["Val", "Tag"])];
+        for i in 2..=11 {
+            rows.push(json!([format!("v{i}"), if [3, 5, 7, 9].contains(&i) { "hide" } else { "keep" }]));
+        }
+        s.execute("range.setValues", json!({"range": "A1", "values": rows})).unwrap();
+        s.execute("range.setValues", json!({"range": "E1", "values": [["X", "W"], ["Y", ""]]})).unwrap();
+        s.execute("selection.set", json!({"range": "A1:B1"})).unwrap();
+        s.execute("data.filter", json!({})).unwrap();
+        assert_eq!(s.execute("data.filterBy", json!({"column": "B", "values": ["keep"]})).unwrap()["hiddenRows"], 4);
+        s
+    };
+    let col = |s: &Session, c: &str| -> Vec<Value> { (2..=11).map(|r| v(s, &format!("{c}{r}"))).collect() };
+    let skipped =
+        |x: &str| -> Vec<Value> { (2..=11).map(|r| Value::from(if [3, 5, 7, 9].contains(&r) { format!("v{r}") } else { x.to_string() })).collect() };
+
+    // One cell pasted over the filtered rows.
+    let mut s = filtered();
+    s.execute("edit.copy", json!({"range": "E1"})).unwrap();
+    s.execute("selection.set", json!({"range": "A2:A11"})).unwrap();
+    s.execute("edit.paste", json!({})).unwrap();
+    assert_eq!(col(&s, "A"), skipped("X"));
+
+    // One row (two cells) pasted over the filtered rows.
+    let mut s = filtered();
+    s.execute("edit.copy", json!({"range": "E1:F1"})).unwrap();
+    s.execute("selection.set", json!({"range": "A2:B11"})).unwrap();
+    s.execute("edit.paste", json!({})).unwrap();
+    assert_eq!(col(&s, "A"), skipped("X"));
+    assert_eq!(v(&s, "B3"), Value::from("hide"));
+    assert_eq!(v(&s, "B4"), Value::from("W"));
+
+    // A two-row block is pasted straight down, hidden rows included.
+    let mut s = filtered();
+    s.execute("edit.copy", json!({"range": "E1:E2"})).unwrap();
+    s.execute("selection.set", json!({"range": "A2:A11"})).unwrap();
+    s.execute("edit.paste", json!({})).unwrap();
+    assert_eq!(col(&s, "A"), ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y"].map(Value::from));
+
+    // Ctrl+Enter.
+    let mut s = filtered();
+    s.execute("selection.set", json!({"range": "A2:A11"})).unwrap();
+    s.execute("range.fill", json!({"input": "Z"})).unwrap();
+    assert_eq!(col(&s, "A"), skipped("Z"));
+
+    // Fill Down, and a formula filled down still adjusts to the row it lands in.
+    let mut s = filtered();
+    s.execute("edit.fillDown", json!({"range": "A2:A11"})).unwrap();
+    assert_eq!(col(&s, "A"), skipped("v2"));
+    s.execute("cell.set", json!({"cell": "C2", "input": "=ROW()"})).unwrap();
+    s.execute("edit.fillDown", json!({"range": "C2:C11"})).unwrap();
+    assert_eq!(v(&s, "C4"), Value::Number(4.0));
+    assert!(v(&s, "C3").is_empty());
+
+    // Fill Up and Fill Right skip them too.
+    let mut s = filtered();
+    s.execute("edit.fillUp", json!({"range": "A2:A11"})).unwrap();
+    assert_eq!(col(&s, "A"), skipped("v11"));
+    let mut s = filtered();
+    s.execute("range.setValues", json!({"range": "C2", "values": [["c2"], ["c3"], ["c4"]]})).unwrap();
+    s.execute("edit.fillRight", json!({"range": "A2:C4"})).unwrap();
+    assert_eq!([v(&s, "C2"), v(&s, "C3"), v(&s, "C4")], [Value::from("v2"), Value::from("c3"), Value::from("v4")]);
+    s.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(v(&s, "C4"), Value::from("c4"));
+
+    // Rows hidden by hand (no filter) are written, as in Excel.
+    let mut s = fresh();
+    s.execute("range.setValues", json!({"range": "A1", "values": [["a"], ["b"], ["c"]]})).unwrap();
+    s.execute("home.hideRows", json!({"rows": "2:2"})).unwrap();
+    s.execute("selection.set", json!({"range": "A1:A3"})).unwrap();
+    s.execute("range.fill", json!({"input": "Z"})).unwrap();
+    assert_eq!(v(&s, "A2"), Value::from("Z"));
+}
