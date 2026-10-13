@@ -414,6 +414,41 @@ mod tests {
         assert!(unix_font_dirs(None, None).contains(&PathBuf::from("/run/host/fonts")));
     }
 
+    #[cfg(not(any(target_arch = "wasm32", target_os = "macos", windows)))]
+    #[test]
+    fn system_font_dirs_lists_the_flatpak_host_folders() {
+        // The scan asks `system_font_dirs`: a folder that is only in `unix_font_dirs` is never read.
+        let dirs = system_font_dirs();
+        for wanted in ["/run/host/fonts", "/run/host/local-fonts", "/run/host/user-fonts"] {
+            assert!(dirs.contains(&PathBuf::from(wanted)), "{wanted} is scanned: {dirs:?}");
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn system_font_dirs_reads_xdg_data_home() {
+        // The environment can't be changed in-process (no unsafe code), so the test runs itself
+        // again as a child with XDG_DATA_HOME set. The value names the parent's process id: that
+        // is how the child knows it is the child, whatever else the environment holds.
+        const CHECKED: &str = "the child checked $XDG_DATA_HOME/fonts";
+        let as_child = format!("/gridcraft-test-data/{}", std::os::unix::process::parent_id());
+        if std::env::var_os("XDG_DATA_HOME").is_some_and(|d| d == as_child.as_str()) {
+            let dirs = system_font_dirs();
+            assert!(dirs.contains(&PathBuf::from(&as_child).join("fonts")), "$XDG_DATA_HOME/fonts is scanned: {dirs:?}");
+            println!("{CHECKED}");
+            return;
+        }
+        let out = std::process::Command::new(std::env::current_exe().expect("test binary"))
+            .args(["--exact", "fonts::tests::system_font_dirs_reads_xdg_data_home", "--nocapture"])
+            .env("XDG_DATA_HOME", format!("/gridcraft-test-data/{}", std::process::id()))
+            .output()
+            .expect("run the test binary");
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        // The child's own line, not only exit 0: asked for a test name that no longer exists, the
+        // child would run nothing and still succeed.
+        assert!(out.status.success() && stdout.contains(CHECKED), "child run: {stdout}");
+    }
+
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn the_scan_catalogs_fonts_and_reads_each_folder_once() {
