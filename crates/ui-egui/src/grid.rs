@@ -1681,9 +1681,12 @@ pub(crate) fn paint_selection(
         // A multi-area copy marks each area as selected.
         let areas = if clip.areas.is_empty() { std::slice::from_ref(&clip.range) } else { clip.areas.as_slice() };
         for area in areas {
-            let rr = geo.range_rect(sh, *area).expand(0.5);
+            // Keep the moving dashes outside the solid selection outline when the copied cells
+            // are still selected. A light backing stroke also makes the gaps visible on gridlines.
+            let rr = geo.range_rect(sh, *area).expand(3.0);
             let phase = app.grid.marching_phase;
             let pts = [rr.left_top(), rr.right_top(), rr.right_bottom(), rr.left_bottom(), rr.left_top()];
+            p.rect_stroke(rr, 0.0, Stroke::new(2.0, t.grid_bg), StrokeKind::Middle);
             p.extend(egui::Shape::dashed_line_with_offset(&pts, Stroke::new(2.0, t.sel_border), &[4.0], &[4.0], phase));
         }
     }
