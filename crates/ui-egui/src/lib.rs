@@ -320,6 +320,10 @@ impl SheetApp {
 
     /// Sets up fonts and visuals for a specific persisted interface language.
     pub fn setup_context_for_language(ctx: &egui::Context, dark: bool, language: i18n::Language) {
+        // The desktop and web apps call this directly rather than `setup_context`, so the font scan
+        // starts here too (once; later calls are no-ops). Without it the installed fonts were never
+        // cataloged: the font lists showed only the standard names and cells couldn't use them.
+        fonts::start_scan();
         ctx.set_fonts(theme::font_definitions_for_language(language));
         theme::apply(ctx, dark);
     }
