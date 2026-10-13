@@ -3355,6 +3355,33 @@ fn fills_and_single_row_pastes_skip_filtered_rows() {
     s.execute("edit.undo", json!({})).unwrap();
     assert_eq!(v(&s, "C4"), Value::from("c4"));
 
+    // Copying the filtered range takes only the rows showing, formulas as their values; a cut
+    // still moves every row.
+    let mut s = filtered();
+    s.execute("cell.set", json!({"cell": "C2", "input": "=ROW()"})).unwrap();
+    s.execute("edit.fillDown", json!({"range": "C2:C11"})).unwrap();
+    let r = s.execute("edit.copy", json!({"range": "A1:C11"})).unwrap();
+    assert_eq!(
+        r["text"],
+        "Val	Tag	
+v2	keep	2
+v4	keep	4
+v6	keep	6
+v8	keep	8
+v10	keep	10
+v11	keep	11
+"
+    );
+    s.execute("edit.paste", json!({"at": "H20"})).unwrap();
+    let pasted: Vec<Value> = (20..=27).map(|r| v(&s, &format!("H{r}"))).collect();
+    assert_eq!(pasted, ["Val", "v2", "v4", "v6", "v8", "v10", "v11"].map(Value::from).into_iter().chain([Value::Empty]).collect::<Vec<_>>());
+    assert_eq!(v(&s, "J22"), Value::Number(4.0));
+    assert!(s.doc().unwrap().wb.active().unwrap().cell(CellRef::parse("J22").unwrap()).unwrap().formula.is_none());
+    let mut s = filtered();
+    s.execute("edit.cut", json!({"range": "A1:B11"})).unwrap();
+    s.execute("edit.paste", json!({"at": "H20"})).unwrap();
+    assert_eq!(v(&s, "H22"), Value::from("v3"));
+
     // Rows hidden by hand (no filter) are written, as in Excel.
     let mut s = fresh();
     s.execute("range.setValues", json!({"range": "A1", "values": [["a"], ["b"], ["c"]]})).unwrap();
