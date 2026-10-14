@@ -28,9 +28,10 @@ fn harness() -> Harness {
     // Row 4: a standard row, top and bottom aligned.
     set(&mut s, "B4", "StdTop");
     set(&mut s, "C4", "StdBot");
-    // Row 6: a tall row of wrapped text, top and bottom aligned.
-    set(&mut s, "B6", "WrapTop WrapTop WrapTop");
-    set(&mut s, "C6", "WrapBot WrapBot WrapBot");
+    // Row 6: a tall row of wrapped text, top and bottom aligned. Short words, so it wraps to two
+    // lines that fit the row with any fallback font (long words break mid-word and overflow).
+    set(&mut s, "B6", "Top1 Top2");
+    set(&mut s, "C6", "Bot1 Bot2");
     for (cmd, range) in [
         ("home.alignTop", "B2"),
         ("home.alignMiddle", "C2"),
@@ -114,8 +115,8 @@ fn wrapped_text_uses_the_same_insets_as_a_single_line() {
     let h = harness();
     let (_, top, _) = baselines(&h, "Top");
     let (_, bot, _) = baselines(&h, "Bot");
-    let (_, wrap_top, _) = baselines(&h, "WrapTop WrapTop WrapTop");
-    let (_, _, wrap_bot) = baselines(&h, "WrapBot WrapBot WrapBot");
+    let (_, wrap_top, _) = baselines(&h, "Top1 Top2");
+    let (_, _, wrap_bot) = baselines(&h, "Bot1 Bot2");
     let (row, wrap_row) = (cell(&h, "B2"), cell(&h, "B6"));
     assert!(
         ((wrap_top - wrap_row.top()) - (top - row.top())).abs() <= 1.5,
