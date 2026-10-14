@@ -72,6 +72,8 @@ fn workbook() -> Workbook {
                 formula: None,
                 data_style: None,
                 data_cell_style: None,
+                unique_name: None,
+                xml: None,
             })
             .collect(),
         style: "TableStyleMedium2".into(),
@@ -81,6 +83,8 @@ fn workbook() -> Workbook {
         last_col: false,
         filter_button: true,
         filter: vec![],
+        table_type: None,
+        connection_id: None,
     });
     wb.names.push(DefinedName { name: "SalesData".into(), scope: None, formula: "Data!$A$1:$F$9".into(), comment: String::new(), hidden: false });
 

@@ -174,7 +174,16 @@ fn calculated_table_column_keeps_formula_and_cell_value() {
         header_row: true,
         totals_row: false,
         columns: vec![
-            TableColumn { name: "Input".into(), totals: TotalsFn::None, totals_label: None, formula: None, data_style: None, data_cell_style: None },
+            TableColumn {
+                name: "Input".into(),
+                totals: TotalsFn::None,
+                totals_label: None,
+                formula: None,
+                data_style: None,
+                data_cell_style: None,
+                unique_name: None,
+                xml: None,
+            },
             TableColumn {
                 name: "Output".into(),
                 totals: TotalsFn::None,
@@ -182,6 +191,8 @@ fn calculated_table_column_keeps_formula_and_cell_value() {
                 formula: Some("A2*2".into()),
                 data_style: None,
                 data_cell_style: None,
+                unique_name: None,
+                xml: None,
             },
         ],
         style: "TableStyleLight1".into(),
@@ -191,6 +202,8 @@ fn calculated_table_column_keeps_formula_and_cell_value() {
         last_col: false,
         filter_button: true,
         filter: vec![],
+        table_type: None,
+        connection_id: None,
     });
     let bytes = write_xlsx(&wb).unwrap();
     let mut pkg = Package::open(&bytes).unwrap();
@@ -220,7 +233,16 @@ fn this_row_references_are_written_in_long_form() {
         header_row: true,
         totals_row: false,
         columns: vec![
-            TableColumn { name: "Input".into(), totals: TotalsFn::None, totals_label: None, formula: None, data_style: None, data_cell_style: None },
+            TableColumn {
+                name: "Input".into(),
+                totals: TotalsFn::None,
+                totals_label: None,
+                formula: None,
+                data_style: None,
+                data_cell_style: None,
+                unique_name: None,
+                xml: None,
+            },
             TableColumn {
                 name: "Output".into(),
                 totals: TotalsFn::None,
@@ -228,6 +250,8 @@ fn this_row_references_are_written_in_long_form() {
                 formula: Some("[@Input]*2".into()),
                 data_style: None,
                 data_cell_style: None,
+                unique_name: None,
+                xml: None,
             },
         ],
         style: "TableStyleLight1".into(),
@@ -237,6 +261,8 @@ fn this_row_references_are_written_in_long_form() {
         last_col: false,
         filter_button: true,
         filter: vec![],
+        table_type: None,
+        connection_id: None,
     });
     let bytes = write_xlsx(&wb).unwrap();
     let mut pkg = Package::open(&bytes).unwrap();
@@ -373,7 +399,16 @@ fn implicit_intersection_metadata_distinguishes_table_rows_and_columns() {
         header_row: true,
         totals_row: false,
         columns: vec![
-            TableColumn { name: "Input".into(), totals: TotalsFn::None, totals_label: None, formula: None, data_style: None, data_cell_style: None },
+            TableColumn {
+                name: "Input".into(),
+                totals: TotalsFn::None,
+                totals_label: None,
+                formula: None,
+                data_style: None,
+                data_cell_style: None,
+                unique_name: None,
+                xml: None,
+            },
             TableColumn {
                 name: "Output".into(),
                 totals: TotalsFn::None,
@@ -381,6 +416,8 @@ fn implicit_intersection_metadata_distinguishes_table_rows_and_columns() {
                 formula: Some("[@Input]*2".into()),
                 data_style: None,
                 data_cell_style: None,
+                unique_name: None,
+                xml: None,
             },
         ],
         style: "TableStyleLight1".into(),
@@ -390,6 +427,8 @@ fn implicit_intersection_metadata_distinguishes_table_rows_and_columns() {
         last_col: false,
         filter_button: true,
         filter: vec![],
+        table_type: None,
+        connection_id: None,
     });
     sh.cells.set(at("A2"), Cell::value(Value::Number(3.0)));
     sh.cells.set(at("B2"), formula("[@Input]*2", 6.0));

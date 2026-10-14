@@ -845,6 +845,8 @@ fn table_resize(s: &mut Session, p: &Json) -> Result<Json> {
                 formula: None,
                 data_style: None,
                 data_cell_style: None,
+                unique_name: None,
+                xml: None,
             }));
         }
         t.columns = cols;
