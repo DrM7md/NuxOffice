@@ -54,6 +54,16 @@ pub struct TableColumn {
     /// Named cell style of the column's data cells.
     #[serde(default)]
     pub data_cell_style: Option<String>,
+    /// Differential format of the column's header cell.
+    #[serde(default)]
+    pub header_style: Option<Style>,
+    /// Differential format of the column's totals cell.
+    #[serde(default)]
+    pub totals_style: Option<Style>,
+    #[serde(default)]
+    pub header_cell_style: Option<String>,
+    #[serde(default)]
+    pub totals_cell_style: Option<String>,
     /// `uniqueName`: the name XML maps know the column by.
     #[serde(default)]
     pub unique_name: Option<String>,

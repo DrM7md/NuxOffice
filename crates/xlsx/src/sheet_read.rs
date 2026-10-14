@@ -834,6 +834,10 @@ pub fn read_table(cx: &mut Ctx<'_>, x: &El) -> Option<Table> {
                         formula: c.child("calculatedColumnFormula").map(|f| from_file(f.text.trim())),
                         data_style: c.attr_u32("dataDxfId").and_then(|i| cx.dxfs.get(i as usize)).cloned(),
                         data_cell_style: c.attr("dataCellStyle").map(str::to_string),
+                        header_style: c.attr_u32("headerRowDxfId").and_then(|i| cx.dxfs.get(i as usize)).cloned(),
+                        totals_style: c.attr_u32("totalsRowDxfId").and_then(|i| cx.dxfs.get(i as usize)).cloned(),
+                        header_cell_style: c.attr("headerRowCellStyle").map(str::to_string),
+                        totals_cell_style: c.attr("totalsRowCellStyle").map(str::to_string),
                         unique_name: c.attr("uniqueName").map(str::to_string),
                         xml: c.child("xmlColumnPr").and_then(|x| {
                             Some(XmlColumnPr {

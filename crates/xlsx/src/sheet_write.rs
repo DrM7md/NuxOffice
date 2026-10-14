@@ -1094,11 +1094,19 @@ fn table_xml(t: &Table, cols: &[String], name: &str, id: u32, named: &[(String, 
                 let _ = write!(s, " totalsRowLabel=\"{}\"", esc_attr(l));
             }
         }
-        if let Some(st) = col.and_then(|c| c.data_style.as_ref()) {
-            let _ = write!(s, " dataDxfId=\"{}\"", dxf_id(&mut out.dxfs, st));
-        }
-        if let Some(cs) = col.and_then(|c| c.data_cell_style.as_deref()).filter(|n| *n == "Normal" || named.iter().any(|(x, _)| x == n)) {
-            let _ = write!(s, " dataCellStyle=\"{}\"", esc_attr(cs));
+        if let Some(c) = col {
+            for (attr, st) in [("headerRowDxfId", &c.header_style), ("dataDxfId", &c.data_style), ("totalsRowDxfId", &c.totals_style)] {
+                if let Some(st) = st {
+                    let _ = write!(s, " {attr}=\"{}\"", dxf_id(&mut out.dxfs, st));
+                }
+            }
+            for (attr, cs) in
+                [("headerRowCellStyle", &c.header_cell_style), ("dataCellStyle", &c.data_cell_style), ("totalsRowCellStyle", &c.totals_cell_style)]
+            {
+                if let Some(cs) = cs.as_deref().filter(|n| *n == "Normal" || named.iter().any(|(x, _)| x == n)) {
+                    let _ = write!(s, " {attr}=\"{}\"", esc_attr(cs));
+                }
+            }
         }
         let calc = col.and_then(|c| c.formula.as_ref()).filter(|f| !f.is_empty());
         let custom = if t.totals_row && totals == TotalsFn::Custom { col.and_then(|c| c.totals_label.as_ref()) } else { None };
