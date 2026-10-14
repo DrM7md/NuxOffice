@@ -287,11 +287,11 @@ fn scientific_parts(x: f64, int_count: usize, frac_count: usize) -> (i32, String
 }
 
 /// The number a number section shows for a non-negative `v`, as a value: what "Set precision as
-/// displayed" stores. `None` when the section shows no digits (`"x"`), has a condition, or the
-/// result isn't finite. It uses the display's own rounding, so 1.005 with `0.00` gives 1.01, and
-/// 0.123456 with `0.00%` gives 0.1235 (the nearest double to the decimal shown).
+/// displayed" stores. `None` when the section shows no digits (`"x"`) or the result isn't finite.
+/// It uses the display's own rounding, so 1.005 with `0.00` gives 1.01, and 0.123456 with
+/// `0.00%` gives 0.1235 (the nearest double to the decimal shown).
 pub(crate) fn shown_value(sec: &Section, v: f64) -> Option<f64> {
-    if !sec.has_digits || sec.cond.is_some() || !v.is_finite() {
+    if !sec.has_digits || !v.is_finite() {
         return None;
     }
     let x = scaled(sec, v.abs());

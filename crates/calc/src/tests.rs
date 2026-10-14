@@ -1290,6 +1290,14 @@ fn precision_as_displayed_rounds_results_by_cell_format() {
     t.set("G4", "=SUM(F1:F3)");
     t.set("H1", "=TRUE");
     t.set("H2", "=\"1.5\"");
+    // A conditional format rounds by the sign's section, not the one displayed: `[<1]0.00;0`
+    // shows 2+1/3 as `2` but stores 2.33, and stores -10/3 as -3.
+    t.set("J1", "=2+1/3");
+    t.set("J2", "=-10/3");
+    t.set("K1", "=J1*3");
+    t.set("K2", "=J2*3");
+    fmt(&mut t, "J1", "[<1]0.00;0");
+    fmt(&mut t, "J2", "[<1]0.00;0");
     fmt(&mut t, "A1", "0");
     fmt(&mut t, "A3", "0.0000");
     fmt(&mut t, "E2", "0");
@@ -1311,6 +1319,7 @@ fn precision_as_displayed_rounds_results_by_cell_format() {
         (Value::Number(0.1), Value::Number(0.2), Value::Number(0.123 + 0.111 * 2.0))
     );
     assert_eq!(t.num("G4"), 0.1 + 0.2 + (0.123 + 0.111 * 2.0));
+    assert_eq!((t.num("J1"), t.num("J2"), t.num("K1"), t.num("K2")), (2.33, -3.0, 2.33 * 3.0, -9.0));
     // Booleans and text are left alone.
     assert_eq!((t.get("H1"), t.get("H2")), (Value::Bool(true), Value::from("1.5")));
     // An edit recalculates through the rounded values too.
