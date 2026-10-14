@@ -8,8 +8,8 @@ use gridcraft_core::{CellError, CellRef, DateSystem, MAX_COLS, MAX_ROWS, RangeRe
 use gridcraft_formula::Expr;
 use gridcraft_model::{
     AutoFilter, Cell, CfOperator, CfRule, CfValueKind, Comment, CondFormat, EditRange, ErrorStyle, FilterCriterion, Formula, Hyperlink, LineInfo,
-    Orientation, PasswordHash, Sheet, SheetProtection, Sparkline, SparklineKind, Table, TableColumn, TotalsFn, Validation, ValidationKind,
-    XmlColumnPr,
+    Orientation, PasswordHash, Sheet, SheetProtection, Sparkline, SparklineKind, Table, TableColumn, TableFormats, TotalsFn, Validation,
+    ValidationKind, XmlColumnPr,
 };
 
 use crate::IoError;
@@ -852,6 +852,18 @@ pub fn read_table(cx: &mut Ctx<'_>, x: &El) -> Option<Table> {
     // Only XML tables are kept as such: a query table's definition hangs off the table part, which
     // is rewritten, so it would lose it.
     let xml_table = x.attr("tableType") == Some("xml");
+    let dxf = |attr: &str| x.attr_u32(attr).and_then(|i| cx.dxfs.get(i as usize)).cloned();
+    let formats = TableFormats {
+        header: dxf("headerRowDxfId"),
+        data: dxf("dataDxfId"),
+        totals: dxf("totalsRowDxfId"),
+        header_border: dxf("headerRowBorderDxfId"),
+        border: dxf("tableBorderDxfId"),
+        totals_border: dxf("totalsRowBorderDxfId"),
+        header_cell_style: x.attr("headerRowCellStyle").map(str::to_string),
+        data_cell_style: x.attr("dataCellStyle").map(str::to_string),
+        totals_cell_style: x.attr("totalsRowCellStyle").map(str::to_string),
+    };
     Some(Table {
         id: x.attr_u32("id").unwrap_or(0),
         name,
@@ -868,6 +880,7 @@ pub fn read_table(cx: &mut Ctx<'_>, x: &El) -> Option<Table> {
         filter: x.child("autoFilter").and_then(|e| read_autofilter(cx, e)).map(|af| af.criteria).unwrap_or_default(),
         table_type: xml_table.then(|| "xml".to_string()),
         connection_id: x.attr_u32("connectionId").filter(|_| xml_table),
+        formats,
     })
 }
 

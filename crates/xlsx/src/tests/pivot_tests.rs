@@ -85,6 +85,7 @@ fn workbook() -> Workbook {
         filter: vec![],
         table_type: None,
         connection_id: None,
+        formats: Default::default(),
     });
     wb.names.push(DefinedName { name: "SalesData".into(), scope: None, formula: "Data!$A$1:$F$9".into(), comment: String::new(), hidden: false });
 

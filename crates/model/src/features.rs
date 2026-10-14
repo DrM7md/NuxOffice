@@ -99,6 +99,25 @@ pub struct Table {
     /// The connection (`xl/connections.xml`) an XML table is bound through.
     #[serde(default)]
     pub connection_id: Option<u32>,
+    /// Formats the table applies to its parts as a whole, under its columns' own.
+    #[serde(default)]
+    pub formats: TableFormats,
+}
+
+/// Differential formats and named cell styles set on a table as a whole (on `<table>`): Excel
+/// applies them to the header row, the body, the totals row and the borders, new rows included.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct TableFormats {
+    pub header: Option<Style>,
+    pub data: Option<Style>,
+    pub totals: Option<Style>,
+    pub header_border: Option<Style>,
+    /// The border around the whole table.
+    pub border: Option<Style>,
+    pub totals_border: Option<Style>,
+    pub header_cell_style: Option<String>,
+    pub data_cell_style: Option<String>,
+    pub totals_cell_style: Option<String>,
 }
 
 impl Table {

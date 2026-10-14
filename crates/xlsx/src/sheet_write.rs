@@ -1022,7 +1022,7 @@ fn autofilter_xml(range: RangeRef, criteria: &[(u32, FilterCriterion)], out: &mu
     s
 }
 
-/// `named`: the workbook's named cell styles; a column's cell style is written only when it exists.
+/// `named`: the workbook's named cell styles; a table's or column's cell style is written only when it exists.
 fn table_xml(t: &Table, cols: &[String], name: &str, id: u32, named: &[(String, Style)], out: &mut Out) -> String {
     let mut s =
         format!("{XML_DECL}<table xmlns=\"{NS_MAIN}\" id=\"{id}\" name=\"{0}\" displayName=\"{0}\" ref=\"{1}\"", esc_attr(name), t.range.a1());
@@ -1036,6 +1036,26 @@ fn table_xml(t: &Table, cols: &[String], name: &str, id: u32, named: &[(String, 
     }
     if let Some(ty) = &t.table_type {
         let _ = write!(s, " tableType=\"{}\"", esc_attr(ty));
+    }
+    let f = &t.formats;
+    for (attr, st) in [
+        ("headerRowDxfId", &f.header),
+        ("dataDxfId", &f.data),
+        ("totalsRowDxfId", &f.totals),
+        ("headerRowBorderDxfId", &f.header_border),
+        ("tableBorderDxfId", &f.border),
+        ("totalsRowBorderDxfId", &f.totals_border),
+    ] {
+        if let Some(st) = st {
+            let _ = write!(s, " {attr}=\"{}\"", dxf_id(&mut out.dxfs, st));
+        }
+    }
+    for (attr, cs) in
+        [("headerRowCellStyle", &f.header_cell_style), ("dataCellStyle", &f.data_cell_style), ("totalsRowCellStyle", &f.totals_cell_style)]
+    {
+        if let Some(cs) = cs.as_deref().filter(|n| *n == "Normal" || named.iter().any(|(x, _)| x == n)) {
+            let _ = write!(s, " {attr}=\"{}\"", esc_attr(cs));
+        }
     }
     if let Some(c) = t.connection_id {
         let _ = write!(s, " connectionId=\"{c}\"");

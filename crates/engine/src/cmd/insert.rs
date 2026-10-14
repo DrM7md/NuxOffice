@@ -341,6 +341,7 @@ fn insert_table(s: &mut Session, p: &Json) -> Result<Json> {
             filter: vec![],
             table_type: None,
             connection_id: None,
+            formats: Default::default(),
         });
         cx.structural = true;
         Ok(json!({"table": name, "range": r.a1()}))
