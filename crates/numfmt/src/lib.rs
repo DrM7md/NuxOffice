@@ -293,6 +293,31 @@ impl NumberFormat {
         (Formatted { text: out.text, color: sec.color, fill: out.fill, numeric: true }, false)
     }
 
+    /// The number `n` as this format displays it: what Excel stores when "Set precision as
+    /// displayed" is on. Fixed decimals, percent, thousands scaling (`0.0,,`), scientific and
+    /// fraction sections round to what they show; the section is picked as for display, so
+    /// `0.00;(0.0)` keeps one decimal for negatives. Observed in Excel (COM,
+    /// `Workbook.PrecisionAsDisplayed`), these keep the full value: General, date and time
+    /// formats (`mm:ss.0` included), text formats, sections without digits (`"x"`, `;;;`) and
+    /// any format with a condition (`[<1]0.00;0`). Never returns `-0`.
+    pub fn round_as_displayed(&self, n: f64) -> f64 {
+        if self.is_general() || !n.is_finite() || self.num_sections().iter().any(|s| s.cond.is_some()) {
+            return n;
+        }
+        let Some((sec, _)) = self.select(n) else { return n };
+        if sec.kind != SecKind::Number {
+            return n;
+        }
+        let Some(m) = render::shown_value(sec, n) else { return n };
+        if m == 0.0 {
+            0.0
+        } else if n < 0.0 {
+            -m
+        } else {
+            m
+        }
+    }
+
     fn format_text(&self, t: &str) -> Formatted {
         match self.inner.text_section.and_then(|i| self.inner.sections.get(i)) {
             Some(sec) => {
