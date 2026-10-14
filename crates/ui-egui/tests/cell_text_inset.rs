@@ -117,6 +117,16 @@ fn wrapped_text_uses_the_same_insets_as_a_single_line() {
     let (_, wrap_top, _) = baselines(&h, "WrapTop WrapTop WrapTop");
     let (_, _, wrap_bot) = baselines(&h, "WrapBot WrapBot WrapBot");
     let (row, wrap_row) = (cell(&h, "B2"), cell(&h, "B6"));
-    assert!(((wrap_top - wrap_row.top()) - (top - row.top())).abs() <= 1.5, "first wrapped line sits like single-line top text");
-    assert!(((wrap_row.bottom() - wrap_bot) - (row.bottom() - bot)).abs() <= 1.5, "last wrapped line sits like single-line bottom text");
+    assert!(
+        ((wrap_top - wrap_row.top()) - (top - row.top())).abs() <= 1.5,
+        "first wrapped line sits like single-line top text: wrapped {} vs single {}",
+        wrap_top - wrap_row.top(),
+        top - row.top()
+    );
+    assert!(
+        ((wrap_row.bottom() - wrap_bot) - (row.bottom() - bot)).abs() <= 1.5,
+        "last wrapped line sits like single-line bottom text: wrapped {} vs single {}",
+        wrap_row.bottom() - wrap_bot,
+        row.bottom() - bot
+    );
 }
