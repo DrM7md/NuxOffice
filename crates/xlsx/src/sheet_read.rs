@@ -254,7 +254,7 @@ fn read_scenarios(e: &El, sheet: &mut Sheet) {
             inputs,
             comment: xml::decode_xstring(item.attr("comment").unwrap_or("")),
             user: xml::decode_xstring(item.attr("user").unwrap_or("")),
-            locked: item.flag("locked", true),
+            locked: item.flag("locked", false),
             hidden: item.flag("hidden", false),
         });
     }

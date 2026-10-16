@@ -355,16 +355,30 @@ pub(crate) struct Scenario {
     pub comment: String,
 }
 
+/// Scenario input text uses spreadsheet values, not JSON string/object syntax.
+/// Whole floating-point numbers are written without a decimal suffix.
+pub fn scenario_value_input(value: &Json) -> String {
+    match value {
+        Json::Number(n) if n.is_f64() => n.as_f64().map(|n| n.to_string()).unwrap_or_else(|| n.to_string()),
+        _ => super::edit::json_to_input(value),
+    }
+}
+
+fn scenario_input_value(input: &str) -> Json {
+    if input.eq_ignore_ascii_case("true") {
+        Json::Bool(true)
+    } else if input.eq_ignore_ascii_case("false") {
+        Json::Bool(false)
+    } else {
+        serde_json::from_str::<serde_json::Number>(input).map(Json::Number).unwrap_or_else(|_| json!(input))
+    }
+}
+
 pub(crate) fn load_scenarios(wb: &Workbook) -> Vec<Scenario> {
     let mut list = Vec::new();
     for sheet in &wb.sheets {
         for item in &sheet.scenarios.items {
-            let values = item
-                .inputs
-                .iter()
-                .filter(|input| !input.deleted)
-                .map(|input| serde_json::from_str::<Json>(&input.value).unwrap_or_else(|_| json!(input.value)))
-                .collect();
+            let values = item.inputs.iter().filter(|input| !input.deleted).map(|input| scenario_input_value(&input.value)).collect();
             list.push(Scenario {
                 name: item.name.clone(),
                 sheet: sheet.name.clone(),
@@ -432,7 +446,7 @@ fn store_scenarios(wb: &mut Workbook, list: &[Scenario]) {
                     let num_fmt_id = previous
                         .and_then(|item| item.inputs.iter().find(|input| input.cell == cell && !input.deleted))
                         .and_then(|input| input.num_fmt_id);
-                    ScenarioInput { cell, value: super::edit::json_to_input(value), num_fmt_id, deleted: false }
+                    ScenarioInput { cell, value: scenario_value_input(value), num_fmt_id, deleted: false }
                 })
                 .collect();
             let previous = old.iter().find(|item| item.name.eq_ignore_ascii_case(&sc.name));
@@ -1354,6 +1368,28 @@ mod tests {
         assert!(!sc.items[0].locked && sc.items[0].hidden);
         assert_eq!(sc.items[0].inputs[0].num_fmt_id, Some(37));
         assert!(sc.items[0].inputs[1].deleted);
+    }
+
+    #[test]
+    fn scenario_values_keep_text_and_write_whole_numbers_without_decimal_suffixes() {
+        let mut s = s();
+        s.execute("range.setValues", json!({"range":"B2", "values":[[10.0],[20.0],[0.125]]})).unwrap();
+        s.execute("data.scenarioAdd", json!({"name":"Numbers","changing":"B2:B4"})).unwrap();
+        let values: Vec<_> = s.doc().unwrap().wb.sheet(0).unwrap().scenarios.items[0].inputs.iter().map(|i| i.value.clone()).collect();
+        assert_eq!(values, ["10", "20", "0.125"]);
+        let text_values = ["null", "\"q\"", "[1]", "{\"a\":1}"];
+        s.execute("data.scenarioAdd", json!({"name":"Text","changing":"C2:C5","values":text_values})).unwrap();
+        // A save/open cycle must not reinterpret OOXML input text as JSON syntax.
+        let bytes = gridcraft_xlsx::write_xlsx(&s.doc().unwrap().wb).unwrap();
+        let (book, _) = gridcraft_xlsx::read_xlsx(&bytes).unwrap();
+        s.doc_mut().unwrap().wb = std::sync::Arc::new(book);
+        s.execute("data.scenarioShow", json!({"name":"Text"})).unwrap();
+        for (i, text) in text_values.iter().enumerate() {
+            assert_eq!(v(&s, &format!("C{}", i + 2)), Value::from(*text));
+        }
+        s.execute("data.scenarioAdd", json!({"name":"Extra","changing":"D1","values":[1]})).unwrap();
+        let text = &s.doc().unwrap().wb.sheet(0).unwrap().scenarios.items[1];
+        assert_eq!(text.inputs.iter().map(|i| i.value.as_str()).collect::<Vec<_>>(), text_values);
     }
 
     #[test]

@@ -44,6 +44,21 @@ fn scenarios_from_worksheet_xml_survive_round_trip() {
 }
 
 #[test]
+fn scenario_locked_defaults_to_false_and_survives_saving() {
+    let file = super::minimal(
+        r#"<sheetData/><scenarios><scenario name="Default"><inputCells r="A1" val="10"/></scenario><scenario name="Locked" locked="1"><inputCells r="A1" val="20"/></scenario></scenarios>"#,
+        &[],
+        "",
+        "",
+    );
+    let (book, _) = read_xlsx(&file).unwrap();
+    assert!(!book.sheet(0).unwrap().scenarios.items[0].locked);
+    assert!(book.sheet(0).unwrap().scenarios.items[1].locked);
+    let (back, _) = read_xlsx(&write_xlsx(&book).unwrap()).unwrap();
+    assert_eq!(back.sheet(0).unwrap().scenarios, book.sheet(0).unwrap().scenarios);
+}
+
+#[test]
 fn malformed_and_oversized_scenario_inputs_are_ignored() {
     let too_many = (0..33).map(|i| format!(r#"<inputCells r="A{}" val="1"/>"#, i + 1)).collect::<String>();
     let file = super::minimal(
