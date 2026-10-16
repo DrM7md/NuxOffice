@@ -1,114 +1,74 @@
 # NuxOffice
 
-**A Linux-first, open-source, high-performance office suite.**
+**A Linux-first, open-source office suite with real VBA compatibility.**
 
-The first and flagship application is **Cellnux**, a spreadsheet editor built for real-world `.xlsx` files, progressive VBA compatibility and a modern, sandboxed scripting platform. Writenux (documents), Presentnux (presentations) and Datanux (data tools) will follow on the same foundations.
+The flagship application is **Cellnux**, a spreadsheet for real-world `.xlsx` and `.xlsm` files. NuxOffice is a fork of [GridCraft](https://github.com/storytold/gridcraft), a clean-room Rust spreadsheet, and adds what GridCraft has ruled out of scope or not yet built:
 
-> **Status: Phase 0 — research and proof of concept.**
-> There is no runnable application yet. The repository holds the product blueprint, the engineering skeleton (Rust workspace, CI, contribution process), the core data-model crate and the first slice of the formula engine. Contributions that move Phase 0 forward are very welcome.
+- **VBA macros**: a sandboxed VBA interpreter with an Excel-compatible object model, so legacy macro workbooks keep working. Macros never run without explicit consent.
+- **Arabic and right-to-left**: shaped Arabic text, right-to-left sheets and UI, bidirectional cell text, Arabic-Indic digits and Hijri dates.
+- **Linux-first delivery**: Flatpak and distribution packages for Fedora, Ubuntu and Debian.
+
+> **Status: early development.** The spreadsheet engine and desktop application come from GridCraft and work today. NuxOffice's own work (VBA, Arabic, packaging, rebranding) has just started. Nothing here is released yet.
 
 <p align="center">
-  <img src="design/brand/suite-icons-reference.png" alt="NuxOffice suite icons: Cellnux, Writenux, Presentnux, Datanux" width="640">
+  <img src="design/brand/suite-icons-reference.png" alt="NuxOffice suite icon concepts: Cellnux, Writenux, Presentnux, Datanux" width="640">
 </p>
 
-## The suite
+## What you get today
 
-| App | Purpose | Color | Status |
-|---|---|---|---|
-| **Cellnux** | Spreadsheets | Emerald green | Flagship, Phase 0 |
-| **Writenux** | Documents | Blue | Planned (Phase 5) |
-| **Presentnux** | Presentations | Orange | Planned (Phase 5) |
-| **Datanux** | Databases and data tools | Purple | Planned (Phase 5) |
+Inherited from GridCraft and covered by its test suite (see [docs/upstream/GRIDCRAFT_README.md](docs/upstream/GRIDCRAFT_README.md) and the parity documents in [docs/](docs/)):
 
-## Why another office suite?
+- XLSX as the native format with styles, formulas, tables, conditional formats, charts and PivotTables; CSV/TSV; data import from `.xls`, `.xlsb` and `.ods`.
+- 500+ worksheet functions, dynamic arrays, LET and LAMBDA, incremental recalculation.
+- A familiar ribbon UI, keyboard shortcuts, sort and filter, charts, printing and PDF export.
+- An MCP server, a JSON control channel and a CLI that reach every command.
+- `.xlsm` files keep their VBA project byte-for-byte, but macros do not run yet. Running them is NuxOffice's first goal.
 
-- **Linux-first.** Fedora, Ubuntu, Debian and other major distributions are the primary targets. Windows and macOS come later on portable foundations.
-- **Fast.** Fast startup, low memory and responsive navigation on very large sheets. Measured with reproducible benchmarks, never claimed.
-- **Compatible.** High fidelity with Microsoft Office file formats, implemented independently from public specifications. User data is never silently destroyed.
-- **Automatable.** Incremental VBA compatibility for legacy `.xlsm` workbooks, plus a safer and more capable JavaScript/TypeScript automation API.
-- **Open.** Developed in public with reproducible builds, tests, benchmarks and architecture decision records.
+## Quick start
 
-## Architecture at a glance
-
-| Layer | Preferred technology | State |
-|---|---|---|
-| Spreadsheet core | Rust workspace (`crates/`) | `cellnux-core` and `cellnux-formulas` started |
-| Desktop UI | Qt 6 + QML with a virtualized grid (`apps/cellnux-desktop`) | Spike pending |
-| Core/UI boundary | Stable versioned C ABI or tested bindings | ADR pending |
-| File formats | OOXML (`.xlsx`, `.xlsm`) and CSV first; ODS and legacy `.xls` later | Library review pending |
-| Modern scripting | Embedded JavaScript/TypeScript runtime with capability-based sandbox | Phase 3 |
-| VBA | Separate parser and runtime with an Excel-like object model | Phase 4 |
-
-These are proposals to validate with spikes, not final decisions. See [docs/architecture](docs/architecture/README.md) and the [ADR log](docs/adr/README.md).
-
-## Repository layout
-
-```text
-NuxOffice/
-├── apps/cellnux-desktop/   Qt 6 / QML desktop application (spike pending)
-├── crates/                 Rust workspace: cellnux-core, then formulas, formats, api, vba, scripting
-├── docs/                   Blueprint, architecture, ADRs, compatibility, benchmarks, roadmap
-├── design/                 Brand reference and original vector icons
-├── fixtures/               Reproducible sample files for format and formula tests
-├── benchmarks/             Benchmark harness and methodology
-├── tests/                  Cross-crate integration tests
-├── scripts/                Developer tooling
-└── .github/                CI workflows, issue and PR templates
-```
-
-Each directory has its own `README.md` describing its purpose and current state.
-
-## Getting started (developers)
-
-Requirements: a stable Rust toolchain (`rustup` installs the pinned version from `rust-toolchain.toml`).
+Requirements: a stable Rust toolchain (`rustup` installs it).
 
 ```bash
 git clone https://github.com/DrM7md/NuxOffice.git
 cd NuxOffice
-cargo build --workspace
-cargo test --workspace
-cargo clippy --workspace --all-targets -- -D warnings
-cargo fmt --all --check
+cargo run --release -p gridcraft                      # desktop application
+cargo run --release -p gridcraft -- --sample sales    # open a sample workbook
+cargo xtask ci                                        # fmt, clippy, tests, assets, layering, wasm
 ```
 
-The Qt desktop application does not build yet. Follow [apps/cellnux-desktop](apps/cellnux-desktop/README.md) for the spike plan.
+The application still shows the upstream name until the Cellnux rebrand lands (tracked in [ADR 0007](docs/adr/0007-fork-gridcraft.md)).
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `crates/` | Upstream engine and UI crates (`core`, `formula`, `functions`, `calc`, `model`, `xlsx`, `engine`, `ui-egui`, ...) and NuxOffice crates prefixed `cellnux-` |
+| `crates/vba` | `cellnux-vba`: the VBA language and runtime (NuxOffice) |
+| `apps/` | Desktop, CLI and web applications |
+| `docs/` | Blueprint, ADRs, architecture, compatibility, roadmap, upstream parity documents |
+| `docs/upstream/` | GridCraft's own README and agent rules, kept for reference, and the list of our upstream edits |
+| `design/` | Cellnux and suite brand reference |
+| `assets/`, `packaging/`, `xtask/` | Icons, packaging scripts and build tooling |
 
 ## Roadmap
 
-1. **Phase 0 — Research and proof of concept.** License decision, library and license review, Rust/Qt interop spike, virtualized grid spike, baseline benchmarks, first ADRs. See the [Phase 0 checklist](docs/roadmap/phase-0-checklist.md).
-2. **Phase 1 — Usable spreadsheet alpha.** Multi-sheet workbook, formula bar, basic styles, undo/redo, `.xlsx` and `.csv` round-trip, 20+ documented functions.
-3. **Phase 2 — Productivity beta.** Rich formatting, sort and filter, freeze panes, charts, large-file optimizations, Hijri dates and Arabic-Indic digits, differential testing against LibreOffice, Flatpak packaging.
-4. **Phase 3 — Spreadsheet API, modern scripting and plugins.** Versioned Spreadsheet API, TypeScript SDK, sandboxed JS runtime, permissions, debugger, SQLite and HTTP adapters.
-5. **Phase 4 — VBA compatibility alpha.** `.xlsm` preservation, VBA language subset, core object model on top of the Spreadsheet API, consent-gated execution.
-6. **Phase 5 — Suite expansion.** Writenux, Presentnux and Datanux.
+1. **Fork foundation** (done): GridCraft history merged, licensing and governance in place.
+2. **VBA alpha**: lexer, parser and interpreter for the core language; `Range`, `Cells`, `Worksheets`, `Workbook` and `Application`; run macros from `.xlsm` files with explicit consent; a VBA editor in the UI.
+3. **Arabic and RTL**: text shaping, right-to-left sheets and UI, Arabic translation, Hijri dates.
+4. **Cellnux identity and Linux packaging**: rename the application, new icons, Flatpak, Fedora and Debian packages.
+5. **Modern scripting**: a sandboxed JavaScript/TypeScript API alongside VBA.
+6. **Suite expansion**: Writenux, Presentnux and Datanux.
 
-## Read the blueprint
-
-Vision, architecture, file-format strategy, security model, benchmark plan and acceptance criteria live in one document:
-
-**[docs/Cellnux_Project_Blueprint.md](docs/Cellnux_Project_Blueprint.md)**
-
-New contributors should read it before writing code. AI coding agents must also read [AGENTS.md](AGENTS.md).
+Details: [blueprint](docs/Cellnux_Project_Blueprint.md) and [docs/roadmap](docs/roadmap/).
 
 ## Contributing
 
-Help is needed across Rust, Qt/QML, OOXML, VBA, JavaScript runtimes, design, localization, documentation and benchmarking. Start with [CONTRIBUTING.md](CONTRIBUTING.md), then open or pick an issue.
-
-Good first steps for Phase 0:
-
-- Compare open-source spreadsheet engines and OOXML libraries (license, maintenance, format coverage) and write an ADR.
-- Build a Rust/Qt interoperability spike and report what works.
-- Build a Qt virtualized grid spike that scrolls a million rows smoothly.
-- Add the dependency graph and incremental recalculation to `cellnux-formulas` (ADR 0002).
-- Implement more functions with fixtures: `SUMIF`, `COUNTIF`, `VLOOKUP`, `INDEX`, `MATCH`.
-- Add property-based tests and a fuzz target for the formula parser.
-- Design reproducible benchmark fixtures.
-- Recreate the approved icon reference as original vector SVG artwork.
+Read [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md) first. Help is especially welcome on VBA semantics, Arabic text shaping in egui, Linux packaging, and real-world `.xlsm` test files you are allowed to share.
 
 ## License
 
-NuxOffice is licensed under the **Mozilla Public License 2.0** ([LICENSE](LICENSE)). The reasoning is recorded in [ADR 0005](docs/adr/0005-project-license.md). Contributions are accepted under the Developer Certificate of Origin: sign off every commit (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+Code inherited from GridCraft is MIT OR Apache-2.0. New NuxOffice code is MPL-2.0. [LICENSING.md](LICENSING.md) explains which applies where. Commits require a Developer Certificate of Origin sign-off.
 
-## Trademarks and originality
+## Credits
 
-NuxOffice, Cellnux, Writenux, Presentnux and Datanux are original product names. This project contains no proprietary Microsoft code, fonts, logos or copied UI assets, and claims no Excel or VBA compatibility beyond what automated tests verify. Microsoft, Excel and Office are trademarks of Microsoft Corporation.
+NuxOffice stands on the work of the GridCraft contributors, listed in [contributors/](contributors/). GridCraft and ArtCraft are trademarks of the ArtCraft Team; NuxOffice is not affiliated with or endorsed by them. Microsoft, Excel and Office are trademarks of Microsoft Corporation.

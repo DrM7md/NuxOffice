@@ -1,51 +1,57 @@
-# Instructions for AI coding agents
+# Instructions for AI coding agents and contributors
 
-This file is read by AI coding agents (and humans) before they change anything in this repository. It condenses the working rules from [docs/Cellnux_Project_Blueprint.md](docs/Cellnux_Project_Blueprint.md), section 13. When the two disagree, the blueprint wins.
+NuxOffice is a **fork of GridCraft** ([ADR 0007](docs/adr/0007-fork-gridcraft.md)). The flagship application is **Cellnux**, a spreadsheet. NuxOffice adds VBA compatibility, Arabic and right-to-left support, and Linux-first packaging on top of the GridCraft engine and UI.
 
-## What you are building
+Read before you change anything:
 
-**NuxOffice** is a Linux-first, open-source office suite. The current focus is **Cellnux**, a spreadsheet application with a Rust core, a Qt 6 / QML desktop UI, high-fidelity OOXML support, progressive VBA compatibility and a sandboxed JavaScript/TypeScript automation platform.
+1. This file.
+2. [docs/upstream/GRIDCRAFT_AGENTS.md](docs/upstream/GRIDCRAFT_AGENTS.md): the upstream engineering rules. They apply in full to every crate, ours included.
+3. [docs/Cellnux_Project_Blueprint.md](docs/Cellnux_Project_Blueprint.md): product direction and security model.
+4. The `README.md` of the crate you touch.
 
-The project is in **Phase 0** (research and proof of concept). Do not generate the whole suite, or even the whole spreadsheet, in one pass.
+## Rules inherited from GridCraft (non-negotiable)
 
-## Non-negotiable rules
+- **Never crash.** No `unwrap`, `expect`, `panic!`, `unreachable!`, `todo!` or `unimplemented!` in non-test code; no `unsafe`. Input-derived numbers are hostile: bound loops, recursion and allocations.
+- **Clean-room.** Behavior comes from public documentation and black-box observation. Never copy code from GPL, AGPL or LGPL projects (LibreOffice, Gnumeric, ...) or anything from Microsoft products.
+- **No vendor assets.** Every image, icon, font or sample workbook has a row in `ATTRIBUTION.md` (`cargo xtask assets` enforces it).
+- **Everything is a command.** User-visible behavior is a command in the engine, reachable from UI, CLI, MCP and the control channel.
+- **Layering** is enforced by `cargo xtask layers`. Nothing below the UI layer depends on egui.
+- **Never break wasm** (`cargo xtask wasm`).
 
-1. **Begin with Phase 0.** Work in vertical slices: workbook model, formula evaluator, virtualized Qt grid, basic XLSX round-trip. See [docs/roadmap/phase-0-checklist.md](docs/roadmap/phase-0-checklist.md).
-2. **Inspect before you write.** Read the relevant directory `README.md`, existing crates and ADRs first.
-3. **Record major decisions as ADRs** in `docs/adr/` (Qt/Rust bridge, formula representation, file-format library, scripting runtime, license). Use the template there.
-4. **Never invent results.** No fabricated benchmark numbers, compatibility percentages or claims of working VBA. Report only what tests actually show.
-5. **No proprietary material.** No Microsoft source code, fonts, logos, icons or copied UI. Implement from public specifications and original design.
-6. **Check every dependency** for license, maintenance and portability before adding it. `deny.toml` enforces an allow-list in CI. Explain new dependencies in the PR description.
-7. **Macro execution stays disabled by default.** Treat workbooks, scripts and external files as untrusted input.
-8. **Preserve user data.** Correctness and preservation before feature breadth. Never silently drop OOXML parts, macros, charts or formatting.
-9. **Separate MVP, planned and unsupported features** clearly in documentation and UI.
-10. **Ask before irreversible decisions** about architecture or licensing. Propose, do not decide, when the blueprint marks something as pending.
-11. **Follow the phase order.** The Spreadsheet API and modern scripting platform (Phase 3) come before VBA compatibility (Phase 4). Do not start VBA work on an API that does not exist yet.
-12. **Implement from the named specifications** in blueprint section 4.1 (ECMA-376, MS-OVBA, OpenFormula, UAX #9, CLDR), and document every deliberate divergence in `docs/compatibility/`.
+## NuxOffice rules
 
-## Engineering conventions
+1. **Our code goes in `cellnux-*` crates.** Edit upstream crates only when no extension point exists, keep the change minimal, and record it in [docs/upstream/CHANGES.md](docs/upstream/CHANGES.md). Edits inside upstream files stay MIT OR Apache-2.0 so they can be offered upstream.
+2. **Never rename upstream crates or modules.** It turns every upstream sync into a conflict.
+3. **Licensing.** New files in `cellnux-*` crates start with the MPL-2.0 SPDX header (see CONTRIBUTING.md); the crate declares `license = "MPL-2.0"`. See [LICENSING.md](LICENSING.md).
+4. **Branding.** Never use the GridCraft or ArtCraft names, wordmarks or logos in new user-visible text or artwork. The product names are NuxOffice and Cellnux.
+5. **Macros are untrusted code.** Opening a file never runs a macro. Execution requires explicit user consent, runs with bounded steps, memory and recursion, and has no file, network, process, registry or COM access unless a capability is granted. Unsupported VBA features fail with a clear error, never silently.
+6. **Never invent results.** No fabricated compatibility percentages, benchmark numbers or claims that a macro works. VBA support is claimed only for features with passing tests, listed in [docs/compatibility/README.md](docs/compatibility/README.md).
+7. **Record decisions** as ADRs in `docs/adr/`. Ask the project owner before irreversible architectural or licensing decisions.
+8. **Language.** Code, comments, commit messages and documentation are in English. User-facing text is localized; Arabic and English are first-class.
 
-- **Language:** Rust for the core (`crates/`), C++/QML for the desktop app (`apps/`). Source code, comments, commit messages and developer docs are in English. User-facing strings are localized (Arabic and English from day one).
-- **Rust:** edition 2024, `#![forbid(unsafe_code)]` unless an ADR justifies an exception, typed errors (no `unwrap` in library code), documented public items, unit tests next to the code and integration tests in `tests/`.
-- **Testing layers (blueprint 6.1):** unit tests, property-based tests for invariants, fixture corpus, golden files for formats, differential testing against LibreOffice headless, fuzz targets for every parser of untrusted input. A parser without a fuzz target is not done.
-- **Commits:** English, imperative subject, body explaining why, and a DCO `Signed-off-by:` trailer (`git commit -s`).
-- **Quality gates (CI):** `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo deny check`.
-- **Crate map:** `cellnux-core` (data model), then `cellnux-formulas`, `cellnux-formats`, `cellnux-api`, `cellnux-scripting`, `cellnux-vba`. Do not create a crate before its responsibilities are documented in [docs/architecture/README.md](docs/architecture/README.md).
-- **Fixtures:** every format or formula behavior gets a reproducible fixture under `fixtures/`. Fixtures must be original or clearly licensed.
-- **Benchmarks:** follow [docs/benchmarks/README.md](docs/benchmarks/README.md). Record hardware, versions and variance.
+## Quality gate
 
-## How to report your work
+```bash
+cargo xtask ci        # fmt, clippy -D warnings, tests, assets, layers, wasm, parity, keytips
+cargo deny check      # licenses and advisories
+```
 
-After each increment, state:
+If a step cannot run locally (for example the wasm target is missing), say so in the PR.
 
-1. Files changed.
-2. Commands and tests run, with their actual outcome.
-3. Known limitations.
-4. The suggested next step.
+## Upstream sync
 
-## Things you must not do
+`upstream` is `https://github.com/storytold/gridcraft` (fetch only). Sync in a dedicated branch and PR:
 
-- Do not change the license (MPL-2.0, ADR 0005) or licensing text. Every new source file starts with the SPDX header shown in CONTRIBUTING.md.
-- Do not rename the products or alter the approved visual direction.
-- Do not pull in Qt bindings, OOXML libraries or JavaScript runtimes without an ADR and a license check.
-- Do not commit generated build output, large binaries or real customer workbooks.
+```bash
+git fetch upstream
+git switch -c sync/upstream-YYYY-MM-DD
+git merge upstream/main
+cargo xtask ci
+```
+
+Resolve conflicts in favor of upstream unless the NuxOffice change is recorded in `docs/upstream/CHANGES.md`.
+
+## Commits and reporting
+
+- Commits: English, imperative subject, a body explaining why, and a DCO sign-off (`git commit -s`).
+- After each increment report: files changed, commands run with their real outcome, known limitations, next step.

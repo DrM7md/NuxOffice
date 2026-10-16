@@ -1,0 +1,38 @@
+name: NuxOffice checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    name: DCO sign-off
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Every commit in the PR carries a Signed-off-by trailer
+        run: |
+          missing=0
+          for sha in $(git rev-list --no-merges ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}); do
+            if ! git show -s --format=%B "$sha" | grep -qE '^Signed-off-by: .+ <.+@.+>$'; then
+              echo "::error::commit $sha is missing a Signed-off-by trailer (use git commit -s)"
+              missing=1
+            fi
+          done
+          exit $missing
+
+  deny:
+    name: Dependency and license audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check

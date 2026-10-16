@@ -1,47 +1,19 @@
-# OS
+*~
+plan/
+/target
+/dist
+/corpus
+/log
 .DS_Store
+/.claude/
+/target-*/
+/craft-fonts/
+
+# NuxOffice additions
 Thumbs.db
 desktop.ini
-
-# Editors / IDEs
 .vscode/
 .idea/
-*.swp
-*~
-
-# Rust
-/target/
-**/target/
-Cargo.lock.bak
-
-# cargo-fuzz
-crates/*/fuzz/artifacts/
-crates/*/fuzz/corpus/
-crates/*/fuzz/coverage/
-crates/*/fuzz/target/
-
-# Qt / CMake
-build/
-build-*/
-CMakeCache.txt
-CMakeFiles/
-*.pro.user
-.qmake.stash
-
-# Node (scripting SDK, tooling)
-node_modules/
-dist/
-*.log
-
-# Python (tooling, benchmarks)
-__pycache__/
-*.pyc
-.venv/
-
-# Local secrets / env
 .env
 .env.*
 !.env.example
-
-# Benchmark raw outputs (commit summaries only)
-benchmarks/results/raw/

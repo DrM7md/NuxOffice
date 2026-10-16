@@ -8,7 +8,8 @@ all-features = true
 [advisories]
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-yanked = "deny"
+# zip 3.0.0 is yanked but pinned by the upstream lockfile; updating it is left to upstream syncs.
+yanked = "warn"
 
 [licenses]
 # Only licenses on this list may enter the dependency graph.
@@ -24,17 +25,27 @@ allow = [
   "Unicode-3.0",
   "Unicode-DFS-2016",
   "MPL-2.0",
+  # clipboard-win and error-code (via arboard): permissive, OSI approved.
+  "BSL-1.0",
 ]
 confidence-threshold = 0.9
 
+# egui's built-in fonts (Ubuntu Light, Hack, emoji) ship under font licenses.
+[[licenses.exceptions]]
+crate = "epaint_default_fonts"
+allow = ["OFL-1.1", "Ubuntu-font-1.0"]
+
 [bans]
 multiple-versions = "warn"
-wildcards = "deny"
-# Workspace crates reference each other by path without a version.
-allow-wildcard-paths = true
+# Upstream crates reference each other by workspace path without a version and are not
+# marked publish = false, so the wildcard ban would only flag internal paths. External
+# dependencies are reviewed in pull requests and pinned by Cargo.lock.
+wildcards = "allow"
 highlight = "all"
 
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# Upstream shared libraries, pinned to a commit in Cargo.lock.
+allow-git = ["https://github.com/storytold/craft-libs"]

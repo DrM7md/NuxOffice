@@ -1,66 +1,39 @@
-# Phase 0 checklist: research and proof of concept
+# Roadmap checklists
 
-Exit criteria (blueprint section 10): license in place; stable cross-language calls demonstrated; a scrollable virtual grid; measurable calculation behavior; ADRs and baseline measurements published.
+The original Phase 0 (research and a from-scratch engine) was replaced on 2026-10-16 by forking GridCraft ([ADR 0007](../adr/0007-fork-gridcraft.md)). Earlier engine work remains in git history.
 
-## Blocking decisions
+## Fork foundation (done)
 
-- [x] ADR 0005: project license chosen (MPL-2.0) and `LICENSE` added.
-- [x] Developer Certificate of Origin sign-off enforced in CI.
-- [ ] Trademark and name availability search documented.
+- [x] License decided (MPL-2.0 for NuxOffice code, ADR 0005) with DCO sign-off.
+- [x] GridCraft history merged; `upstream` remote configured for syncs.
+- [x] ArtCraft brand files, store listing and upstream release workflows removed.
+- [x] `LICENSING.md`, `NOTICE`, `AGENTS.md`, `README.md` and the upstream change log in place.
+- [x] Upstream test suite passes after the merge.
+- [ ] Trademark and name availability search for NuxOffice and Cellnux documented.
 
-## Repository foundation
+## VBA alpha
 
-- [x] Blueprint committed and linked from the README (version 0.2).
-- [x] Rust workspace with lints, formatting and toolchain pinning.
-- [x] CI: format, clippy, tests, docs, dependency and license audit.
-- [x] Contribution process: CONTRIBUTING, code of conduct, security policy, issue and PR templates, ADR template.
-- [ ] Reference hardware and environment for benchmarks defined in `docs/benchmarks/`.
+- [x] Lexer and parser for standard modules.
+- [x] Interpreter: variables, types, arrays, control flow, procedures, error handling.
+- [x] Object model core: `Range`, `Cells`, `Worksheets`, `Worksheet`, `Application`, `WorksheetFunction`.
+- [x] Sandbox: denied system functions, step, depth, memory and cell limits.
+- [x] Blueprint fixture `CalculateTotal` runs against the engine (A3 = 300).
+- [ ] Read modules from `vbaProject.bin` (MS-CFB, MS-OVBA).
+- [ ] `macro.run` command, consent prompt and macro list in the UI.
+- [ ] Object model: `Rows`, `Columns`, `End`, `UsedRange`, `Selection`, `ActiveCell`, `Worksheets.Add`, formatting properties.
+- [ ] Dates, `Format`, class modules, `Resume`.
+- [ ] A corpus of real, shareable `.xlsm` files with expected results.
 
-## Core data model (`cellnux-core`)
+## Arabic and RTL
 
-- [x] A1 addressing with parsing, formatting and sheet-limit validation.
-- [x] Typed cell values and error values.
-- [x] Sparse worksheet storage and workbook with stable sheet identifiers.
-- [x] Property-based tests for addressing round-trips and sparse-storage invariants.
-- [ ] Date/time serial representation (1900 system with the leap-year compatibility quirk; 1904 opt-in).
-- [ ] Styles, merges and named ranges stored separately from values.
-- [ ] Undo/redo transactions.
+- [ ] ADR 0008: shaping and bidi approach for egui.
+- [ ] Shaped Arabic in cells, formula bar and dialogs.
+- [ ] Right-to-left sheets (column A on the right) and mirrored UI.
+- [ ] Arabic UI translation.
+- [ ] Hijri date formats and Arabic-Indic digits.
 
-## Formula engine slice (`cellnux-formulas`)
+## Cellnux identity and Linux packaging
 
-- [x] Tokenizer and parser for `=A1+B1` and `=SUM(A1:A10)` with typed, positioned errors.
-- [x] Evaluator with Excel/OpenFormula coercion and error propagation, proven by fixtures.
-- [x] Fixture-driven tests for `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `COUNTA`, `IF`, `AND`, `OR`, `ROUND`.
-- [x] Fuzz targets for the formula parser and evaluator (run manually with `cargo fuzz`; not in CI yet).
-- [x] Property test: parse → print → parse round-trip.
-- [ ] Dependency graph with cycle detection (may slip to Phase 1).
-- [ ] ADR 0002: formula representation and recalculation model.
-
-## Desktop spike (`apps/cellnux-desktop`)
-
-- [ ] ADR 0001: comparison of the bridge options in blueprint section 4.2 (cxx-qt, C ABI + C++ app, qmetaobject-rs, Slint counterfactual).
-- [ ] Spike for the recommended option: QML grid bound to a Rust model, measurements recorded.
-- [ ] Virtualized grid rendering a million rows with viewport-only painting.
-- [ ] Editable cell bound to `cellnux-core` through the bridge.
-- [ ] RTL sheet direction rendered in the spike (column A on the right).
-- [ ] Build instructions for Fedora, Ubuntu and Debian.
-
-## File formats and libraries
-
-- [ ] Review of OOXML libraries: license, maintenance, format coverage, preservation ability.
-- [ ] Review of open-source spreadsheet engines for lessons learned.
-- [ ] ADR 0003: OOXML library selection.
-- [ ] First `.xlsx` fixture set with documented provenance, and a golden-file test harness design.
-- [ ] LibreOffice headless available in CI for differential testing (design only in Phase 0).
-
-## Benchmarks
-
-- [ ] Harness that runs a workload against a fixture and records environment and results.
-- [ ] Baseline measurements of LibreOffice Calc on the same fixtures.
-- [ ] First recorded comparison, with variance, against the targets in blueprint section 5.4.
-
-## Design
-
-- [ ] Original SVG icon for Cellnux following `design/README.md`.
-- [ ] Symbolic monochrome Linux icon.
-- [ ] Wordmark and short brand guideline.
+- [ ] Rename the application, application id, window titles and binaries to Cellnux.
+- [ ] Original Cellnux icon set from `design/`.
+- [ ] Flatpak manifest, then Fedora and Debian packages.

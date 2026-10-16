@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- **NuxOffice is now a fork of GridCraft** (ADR 0007): GridCraft's history, engine, file formats and egui UI are merged in; ArtCraft brand files and upstream release workflows removed; per-file licensing documented in `LICENSING.md`.
+- Our own `cellnux-core` and `cellnux-formulas` crates are retired in favor of the upstream engine (still in git history).
+- Blueprint 0.3: roadmap reordered with the VBA alpha first.
+
+### Added
+
+- `cellnux-vba`: VBA lexer, parser and sandboxed interpreter with the core Excel object model, running macros through engine commands; 34 tests including the blueprint `CalculateTotal` fixture.
+- NuxOffice CI workflow for DCO sign-off and `cargo deny`.
+
+### Changed
+
 - Blueprint updated to version 0.2: license decision made a Phase 0 blocker with an MPL-2.0 recommendation and DCO sign-off; Phases 3 and 4 swapped so the Spreadsheet API and scripting platform precede VBA; reference specifications, number and date semantics, testing strategy (property tests, fuzzing, differential testing), Rust/Qt bridge options, performance budgets, internationalization requirements and governance added.
 
 ### Added

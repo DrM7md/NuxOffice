@@ -14,9 +14,11 @@ An ADR captures one significant decision: the context, the options considered, t
 | Number | Title | Status | Notes |
 |---|---|---|---|
 | 0000 | [Template](0000-template.md) | — | |
-| 0001 | Rust + Qt/QML integration options | Needed | Options listed in blueprint section 4.2; must end with a spike plan |
-| 0002 | Formula representation and recalculation model | Needed | Number and date semantics are fixed in blueprint section 5.2 |
-| 0003 | OOXML library selection | Needed | Preservation of unknown parts is a hard requirement |
-| 0004 | JavaScript runtime and sandbox boundary | Needed | Phase 3 |
-| 0005 | [Project license](0005-project-license.md) | Accepted (2026-10-16) | MPL-2.0; contributions under the Developer Certificate of Origin |
-| 0006 | [Build Cellnux on the GridCraft engine crates](0006-gridcraft-engine.md) | Proposed | Adopt MIT/Apache-2.0 engine crates as pinned dependencies behind an adapter; owner decision pending |
+| 0001 | Rust + Qt/QML integration options | Withdrawn | The fork uses GridCraft's egui UI (ADR 0007) |
+| 0002 | Formula representation and recalculation model | Withdrawn | Provided by the upstream engine |
+| 0003 | OOXML library selection | Withdrawn | Provided by the upstream `xlsx` crate |
+| 0004 | JavaScript runtime and sandbox boundary | Needed | Later phase |
+| 0005 | [Project license](0005-project-license.md) | Accepted (2026-10-16), amended by 0007 | MPL-2.0 for NuxOffice code; DCO sign-off |
+| 0006 | [GridCraft engine as a library](0006-gridcraft-engine.md) | Superseded by 0007 | |
+| 0007 | [Fork GridCraft as the code base](0007-fork-gridcraft.md) | Accepted (2026-10-16) | Per-file licensing; VBA in `cellnux-*` crates |
+| 0008 | Arabic shaping and RTL in the egui front end | Needed | Text shaping engine choice, bidi, mirrored layout |

@@ -12,7 +12,7 @@ Thank you for helping build a Linux-first open-source office suite. This guide e
 ## Ground rules
 
 - **Originality.** Do not copy proprietary source code, assets, fonts, icons or UI from Microsoft Office or any other closed product. Implement from public specifications and original design.
-- **Licenses.** Do not add a dependency before checking its license, maintenance status and portability. `cargo deny check` runs in CI against the allow-list in `deny.toml`. State the license of every new dependency in your PR.
+- **Licenses.** Do not add a dependency before checking its license, maintenance status and portability. `cargo deny check` runs in CI against the allow-list in `deny.toml`. State the license of every new dependency in your PR. Which license covers which file is explained in [LICENSING.md](LICENSING.md).
 - **No fabricated claims.** Never invent benchmark numbers, compatibility percentages or claims of working VBA. Report what tests actually show.
 - **Data safety first.** Correctness and preservation of user data come before feature breadth.
 - **Security by default.** Macro execution stays disabled by default. Treat workbooks and scripts as untrusted input.
@@ -21,43 +21,37 @@ Thank you for helping build a Linux-first open-source office suite. This guide e
 ## Development setup
 
 ```bash
-rustup show            # installs the toolchain pinned in rust-toolchain.toml
-cargo build --workspace
-cargo test --workspace
-cargo clippy --workspace --all-targets -- -D warnings
-cargo fmt --all --check
-cargo install cargo-deny && cargo deny check   # optional locally, required in CI
+rustup show                         # installs the stable toolchain
+cargo run --release -p gridcraft    # the desktop application
+cargo xtask ci                      # fmt, clippy -D warnings, tests, assets, layers, wasm, parity, keytips
+cargo test -p cellnux-vba           # just the VBA crate
+cargo install cargo-deny && cargo deny check
 ```
 
-The Qt desktop application has no build yet. See [apps/cellnux-desktop/README.md](apps/cellnux-desktop/README.md).
+The wasm step needs `rustup target add wasm32-unknown-unknown`.
 
-## What we need right now (Phase 0)
+## What we need right now
 
 See [docs/roadmap/phase-0-checklist.md](docs/roadmap/phase-0-checklist.md). In short:
 
-- Architecture decision records comparing Rust + Qt/QML integration options.
-- Growth of `cellnux-core` (sparse workbook model) with tests.
-- A tiny formula tokenizer, parser and evaluator (`=A1+B1`, `=SUM(A1:A10)`).
-- A minimal Qt desktop spike showing a virtualized, editable grid.
-- A benchmark harness with reproducible fixtures.
-- Original vector SVG icons based on the approved visual direction.
-- Reviews of OOXML libraries and spreadsheet engines with license analysis.
+- VBA: reading modules from `vbaProject.bin`, a `macro.run` command with a consent prompt, more of the object model, dates and `Format`.
+- Real `.xlsm` files with macros that you are allowed to share, with the results you expect.
+- Arabic text shaping and right-to-left layout in the egui front end (ADR 0008).
+- Cellnux rebranding, icons and Linux packaging (Flatpak, Fedora, Debian).
 
 ## Repository layout
 
 | Path | Purpose |
 |---|---|
-| `crates/` | Rust workspace. One crate per responsibility; see `docs/architecture/README.md`. |
-| `apps/cellnux-desktop/` | Qt 6 / QML desktop application. |
-| `docs/` | Blueprint, architecture notes, ADRs, compatibility matrix, benchmark methodology, roadmap. |
-| `design/` | Brand reference and original vector icons. |
-| `fixtures/` | Sample files for format and formula tests. |
-| `benchmarks/` | Benchmark harness and recorded results. |
-| `tests/` | Cross-crate integration tests. |
-| `scripts/` | Developer tooling. |
-| `.github/` | CI workflows, issue and PR templates. |
+| `crates/` | Upstream GridCraft crates (`core`, `formula`, `functions`, `calc`, `model`, `xlsx`, `engine`, `ui-egui`, `mcp`, ...) and NuxOffice crates prefixed `cellnux-` |
+| `crates/vba/` | `cellnux-vba`, the VBA runtime |
+| `apps/` | Desktop, CLI and web applications |
+| `docs/` | Blueprint, ADRs, architecture, compatibility, roadmap, upstream parity documents, `docs/upstream/` |
+| `design/` | Cellnux brand reference |
+| `assets/`, `packaging/`, `xtask/` | Icons, packaging and build tooling (upstream) |
+| `.github/` | CI workflows, issue and PR templates |
 
-When adding a new top-level directory, propose it in an issue first.
+Read [AGENTS.md](AGENTS.md) before touching upstream crates: NuxOffice code belongs in `cellnux-*` crates, and every upstream edit is listed in `docs/upstream/CHANGES.md`.
 
 ## Architecture decision records
 
@@ -83,13 +77,17 @@ See [SECURITY.md](SECURITY.md). Do not open public issues for vulnerabilities.
 
 ## Licensing of contributions
 
-The project is licensed under the [Mozilla Public License 2.0](LICENSE) (see [ADR 0005](docs/adr/0005-project-license.md)). By contributing, you agree that your contribution is released under MPL-2.0, and you certify it under the [Developer Certificate of Origin](https://developercertificate.org/) by signing off your commits.
+NuxOffice is a fork of GridCraft and is licensed per file ([LICENSING.md](LICENSING.md)):
 
-New source files start with the SPDX header:
+- New files in `cellnux-*` crates are MPL-2.0 and start with:
 
-```rust
-// SPDX-License-Identifier: MPL-2.0
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
-```
+  ```rust
+  // SPDX-License-Identifier: MPL-2.0
+  // This Source Code Form is subject to the terms of the Mozilla Public
+  // License, v. 2.0. If a copy of the MPL was not distributed with this
+  // file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  ```
+
+- Changes inside files inherited from GridCraft stay MIT OR Apache-2.0.
+
+Every commit is certified under the [Developer Certificate of Origin](https://developercertificate.org/) with `git commit -s`.

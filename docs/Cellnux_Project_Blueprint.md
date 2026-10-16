@@ -1,10 +1,17 @@
 # Cellnux — Product & Engineering Blueprint
 
-> Version: 0.2 · Status: Approved product direction / proposed technical architecture
+> Version: 0.3 · Status: Approved product direction; engine and UI inherited from GridCraft (ADR 0007)
 > Primary application: **Cellnux** (spreadsheets)
 > Suite companions: **Writenux** (documents), **Presentnux** (presentations), **Datanux** (data tools)
 > Audience: AI coding agents, maintainers, contributors
 > Language of implementation/docs: English for source code and developer documentation; Arabic and English localization from day one.
+
+### Changes in 0.3
+
+- **NuxOffice is now a fork of [GridCraft](https://github.com/storytold/gridcraft)** (ADR 0007). The spreadsheet engine, file formats and egui desktop UI come from upstream; sections 4, 9, 10 and 13 are rewritten accordingly. Sections 5 and 6 remain the quality bar the inherited engine is measured against.
+- The Qt/QML plan and the Rust/Qt bridge comparison (former section 4.2) are withdrawn.
+- **VBA moves to the front of the roadmap.** GridCraft's command layer is the Spreadsheet API that blueprint 0.2 wanted before VBA, so the reason for the 0.2 phase order no longer applies.
+- Licensing is per file: upstream code MIT OR Apache-2.0, new NuxOffice code MPL-2.0 (section 12.1, `LICENSING.md`).
 
 ### Changes in 0.2
 
@@ -58,20 +65,21 @@ The goal is **not** to copy proprietary source code, assets, or branding. Implem
 - Power users wanting SQL/database connectivity, reusable scripts and plugins.
 - Users working offline, including Arabic/RTL spreadsheets.
 
-## 4. Technology direction (proposed, validate with spikes)
+## 4. Technology direction
 
-| Layer | Preferred technology | Notes |
+| Layer | Technology | Source |
 |---|---|---|
-| Spreadsheet core | **Rust** | Independent library, deterministic tests, efficient memory |
-| Desktop UI | **Qt 6 + QML** | Native-feeling desktop UI, virtualized grid; bridge chosen in ADR 0001 (section 4.2) |
-| Cross-language boundary | Stable versioned C ABI or tested bindings | Keep UI and core decoupled |
-| XLSX/XLSM I/O | Rust OOXML-compatible libraries + own adapters | Evaluate libraries and licenses (ADR 0003); preservation matters |
-| Modern scripting | **JavaScript/TypeScript** API | Embeddable runtime with strict sandbox/capability boundaries (ADR 0004) |
-| VBA compatibility | Separate parser/runtime + Excel-like object model | Incremental subset; no automatic trust |
-| Persistence | OOXML/ODS/CSV; optional SQLite for internal caches | Never replace spreadsheet semantics with SQLite alone |
-| Tests/CI | Rust tests, Qt UI tests, fixtures, GitHub Actions | Linux-first automated pipeline |
+| Spreadsheet core, formulas, 500+ functions, recalculation | Rust crates `core`, `numfmt`, `formula`, `functions`, `calc`, `model` | GridCraft (upstream) |
+| File formats (XLSX/XLSM, CSV, XLS/XLSB/ODS import) | Rust crate `xlsx` | GridCraft (upstream) |
+| Commands, undo, clipboard, sort, filter (the Spreadsheet API) | Rust crate `engine` | GridCraft (upstream) |
+| Desktop and web UI | egui (`ui-egui`), native and WebAssembly | GridCraft (upstream) |
+| Agents | MCP server, JSON control channel, CLI | GridCraft (upstream) |
+| VBA compatibility | `cellnux-vba`: lexer, parser, interpreter, object model over engine commands | NuxOffice |
+| Arabic shaping, RTL, Hijri dates | Changes in the UI and number formats; ADR 0008 | NuxOffice |
+| Modern scripting | Sandboxed JavaScript/TypeScript over the command layer (ADR 0004) | NuxOffice, later |
+| Packaging | Flatpak first, then Fedora and Debian packages | NuxOffice |
 
-**Do not prematurely lock in a dependency** without verifying license, maintenance, performance, format fidelity and portability. A Rust core and Qt frontend are the initial architectural preference, not a reason to skip prototyping.
+Upstream rules apply to every crate: never crash, clean-room, everything is a command, enforced layering, no vendor assets (`docs/upstream/GRIDCRAFT_AGENTS.md`).
 
 ### 4.1 Reference specifications
 
@@ -89,17 +97,6 @@ Compatibility is implemented from public specifications, never from proprietary 
 | Locale data | Unicode CLDR | Number, date and list separators per locale |
 
 Where Excel and OpenFormula differ, the behavior is chosen deliberately, documented in `docs/compatibility/`, and covered by a fixture.
-
-### 4.2 Rust/Qt bridge options (for ADR 0001)
-
-The bridge between the Rust core and the Qt UI is the largest technical risk in Phase 0. ADR 0001 must compare at least the following, each against license compatibility with the chosen project license, maintenance activity, Qt 6 and QML support, build complexity on Fedora/Ubuntu/Debian, suitability for item models with millions of rows, threading, and future Windows/macOS portability:
-
-1. **cxx-qt** (KDAB): Rust-defined `QObject`s exposed to QML, built on `cxx`.
-2. **C ABI + C++ Qt application**: the Rust core exports a stable C API (generated with `cbindgen`), consumed by a conventional C++/QML application; `cxx` as a variant for the C++ side.
-3. **qmetaobject-rs**: pure-Rust `QObject` definitions through macros.
-4. **Slint** as a non-Qt counterfactual (Rust-native toolkit) to make the cost of Qt explicit. `egui` and `iced` are evaluated briefly for completeness; immediate-mode or web-style toolkits are not expected to meet native desktop expectations for an office suite.
-
-The ADR ends with a spike plan: a minimal application showing a QML grid bound to a Rust model, the measurements taken, and the exit criteria. The decision is validated by the spike, not by the ADR text alone.
 
 ## 5. Spreadsheet engine architecture
 
@@ -198,7 +195,7 @@ Support, in phases:
 - Macro execution in a **separate restricted process** where practical; capability-based permissions, time/memory limits, cancellation, logging and no unrestricted filesystem/network access.
 - Treat untrusted workbooks as untrusted code. Opening a file must never silently execute macros.
 
-**Ordering rationale (changed in 0.2):** the Spreadsheet API and the modern scripting engine are built first (Phase 3). They are smaller, they validate the API with real automation, and they give plugin authors a platform early. The VBA runtime (Phase 4) then targets a proven API instead of defining it.
+**Ordering (0.3):** the engine's command layer already is the single Spreadsheet API, so VBA is built on it now (Phase 1) and the JavaScript platform follows later on the same commands.
 
 ### 7.3 Modern scripting platform
 Preferred first language: JavaScript, with TypeScript authoring support. Offer:
@@ -251,86 +248,48 @@ Arabic and English ship together from the first alpha, which means the following
 - **Fonts and shaping.** Arabic shaping, ligatures and diacritics render correctly in cells, headers and charts; fallback fonts are configured for Linux.
 - **Translation workflow.** Qt `.ts`/`.qm` files for the UI and a reviewed glossary so terms stay consistent across the suite.
 
-## 9. Proposed monorepo
+## 9. Repository layout
 
 ```text
 NuxOffice/
-├── README.md
-├── AGENTS.md
-├── CONTRIBUTING.md
-├── CODE_OF_CONDUCT.md
-├── SECURITY.md
-├── LICENSE                  (MPL-2.0)
-├── docs/
-│   ├── architecture/
-│   ├── compatibility/
-│   ├── benchmarks/
-│   ├── roadmap/
-│   └── adr/
+├── README.md, AGENTS.md, CONTRIBUTING.md, LICENSING.md, SECURITY.md, CODE_OF_CONDUCT.md
+├── LICENSE-MPL-2.0, LICENSE-MIT, LICENSE-APACHE, NOTICE, ATTRIBUTION.md
 ├── crates/
-│   ├── cellnux-core/
-│   ├── cellnux-formulas/
-│   ├── cellnux-formats/
-│   ├── cellnux-api/
-│   ├── cellnux-scripting/
-│   └── cellnux-vba/
-├── apps/
-│   └── cellnux-desktop/
-│       ├── src/
-│       ├── qml/
-│       └── assets/
-├── design/
-│   ├── brand/
-│   └── icons/
-├── fixtures/
-├── benchmarks/
-├── tests/
-├── scripts/
-└── .github/workflows/
+│   ├── core, numfmt, pdf, formula, functions, model, calc, xlsx, chart, engine, ui-egui, mcp   (upstream)
+│   └── vba                                                                                (cellnux-vba)
+├── apps/            gridcraft (desktop), gridcraft-cli, gridcraft-web                    (upstream; renamed at rebrand)
+├── docs/            blueprint, adr/, architecture/, compatibility/, roadmap/, upstream/, upstream parity documents
+├── design/          Cellnux and suite brand reference
+├── assets/, packaging/, xtask/, contributors/                                            (upstream)
+└── .github/         upstream CI plus NuxOffice DCO and license checks
 ```
 
-Future companion applications should share branding, UI components, build tooling and common libraries **without coupling their domain engines**.
+Upstream crates keep their names so that syncs stay cheap. NuxOffice crates are prefixed `cellnux-`.
 
 ## 10. Roadmap and acceptance criteria
 
-### Phase 0 — Research and proof of concept
-- Project license decided (ADR 0005: MPL-2.0) and `LICENSE` added; Developer Certificate of Origin adopted.
-- Review open-source spreadsheet engines and libraries, licensing and format coverage.
-- Benchmark LibreOffice Calc against a minimal Rust prototype on identical datasets.
-- Build a Qt grid rendering spike and a Rust/Qt interoperability spike (ADR 0001).
-- Publish architecture decision records and baseline measurements.
-- Stand up the testing layers of section 6.1 that already apply: property tests for the core, fuzz targets for the formula parser.
-- **Exit:** license in place; stable cross-language calls demonstrated; scrollable virtual grid; measurable calculation behavior.
+### Phase 0 — Fork foundation (done)
+- License, governance, GridCraft history merged, trademarks removed, upstream test suite passing.
 
-### Phase 1 — Usable spreadsheet alpha
-- Multi-sheet workbook; edit cells; formula bar; basic styles; undo/redo.
-- `.xlsx`/`.csv` import/export with regression tests, golden files and fuzz targets.
-- At least 20 documented spreadsheet functions with correctness fixtures.
-- Arabic and English UI, RTL sheets and bidirectional cell text.
-- **Exit:** create/open/edit/save/reopen sample workbooks without unintended data loss.
+### Phase 1 — VBA alpha
+- Core VBA language, the main object model (`Range`, `Cells`, `Worksheets`, `Application`), sandbox and limits.
+- Read modules from `vbaProject.bin`; list and run macros from the UI after explicit consent.
+- **Exit:** a curated corpus of shareable `.xlsm` macros runs with expected results; unsupported features fail with clear errors; no macro runs without consent.
 
-### Phase 2 — Productivity beta
-- Rich formatting, sorting/filtering, freeze panes, clipboard, basic charts.
-- Larger-file optimizations and accessibility/localization, including Hijri dates and Arabic-Indic digits.
-- Differential testing against LibreOffice running in CI.
-- Flatpak packaging and a first public beta.
-- **Exit:** documented performance and fidelity results on reproducible fixtures.
+### Phase 2 — Arabic and RTL
+- Shaped Arabic text, right-to-left sheets and mirrored UI, Arabic translation, Hijri dates, Arabic-Indic digits.
+- **Exit:** Arabic workbooks display, edit, print and export to PDF correctly.
 
-### Phase 3 — Spreadsheet API, modern scripting and plugins
-- The single internal Spreadsheet API (`cellnux-api`), versioned, with stable error and event semantics.
-- TypeScript SDK, JS runtime (ADR 0004), sandbox and permissions, debugger, SQLite/HTTP adapters.
-- Plugin manifest and capability model.
-- **Exit:** sample automation works offline and unauthorized access is blocked.
+### Phase 3 — Cellnux identity and Linux delivery
+- Rename the application and binaries, original icons, Flatpak and distribution packages, first public beta.
+- **Exit:** installable Cellnux beta on Fedora, Ubuntu and Debian.
 
-### Phase 4 — VBA compatibility alpha
-- Import/preserve `.xlsm` macros, implement the language subset and the core object model on top of `cellnux-api`.
-- Run a curated, safe test suite with explicit user consent, driven by the collected macro corpus.
-- **Exit:** supported macros execute with expected results; unsupported features produce clear errors.
+### Phase 4 — VBA depth and modern scripting
+- Events with consent, class modules, dates, more of the object model; sandboxed JavaScript/TypeScript automation.
+- **Exit:** documented compatibility on a larger macro corpus; scripting sample runs offline with permissions enforced.
 
 ### Phase 5 — Suite expansion
 - Writenux, Presentnux and Datanux as separately scoped products.
-- Shared launcher, visual identity, localization and packaging.
-- **Exit:** independent roadmaps and tested shared components.
 
 ## 11. Benchmark plan
 
@@ -349,11 +308,12 @@ Targets for each workload are in section 5.4. **Decision rule:** only replace/re
 
 ## 12. Security, legal and governance
 
-### 12.1 License (blocking)
+### 12.1 License
 
 A public repository without a license gives contributors and users no legal basis to participate. The license is therefore a **Phase 0 blocker**, decided in ADR 0005.
 
-- **Decision (ADR 0005, accepted 2026-10-16): MPL-2.0.** File-level copyleft keeps improvements to the core open while allowing the suite to link with Qt (LGPL/GPL/commercial) and with permissively licensed Rust crates, and it does not deter organizations from adopting or extending the product. **GPL-3.0** remains the alternative if stronger copyleft is preferred; it is compatible with Qt but narrows the set of usable dependencies and downstream integrations.
+- **Per-file licensing (ADR 0007):** code inherited from GridCraft, and NuxOffice edits inside those files, stay MIT OR Apache-2.0. New NuxOffice code is MPL-2.0. `LICENSING.md` explains the rules.
+- **Decision for NuxOffice code (ADR 0005, accepted 2026-10-16): MPL-2.0.** File-level copyleft keeps improvements to the core open while allowing the suite to link with Qt (LGPL/GPL/commercial) and with permissively licensed Rust crates, and it does not deter organizations from adopting or extending the product. **GPL-3.0** remains the alternative if stronger copyleft is preferred; it is compatible with Qt but narrows the set of usable dependencies and downstream integrations.
 - **Contributions:** the **Developer Certificate of Origin** (DCO, `Signed-off-by` trailer) is required on every commit instead of a contributor license agreement. It is lightweight, standard, and enforceable in CI.
 - **Dependencies:** `cargo deny` enforces an allow-list of licenses and audits advisories in CI. The allow-list is reviewed when the project license is chosen.
 - **Relicensing:** avoided by design; the license choice is made before external contributions are merged.
@@ -389,15 +349,12 @@ You are implementing **Cellnux**, a Linux-first open-source spreadsheet applicat
 11. After each increment, report changed files, tests run, known limitations and next step.
 12. Implement UI consistent with the approved restrained green **Cellnux** visual identity.
 13. Request explicit confirmation before irreversible architectural or licensing decisions.
-14. Follow the phase order of section 10: scripting platform (Phase 3) before VBA (Phase 4).
+14. Follow the phase order of section 10 and the fork rules in `AGENTS.md` (NuxOffice code in `cellnux-*` crates, minimal upstream edits).
 
-### Current requested deliverables (Phase 0)
-- ADR 0001 comparing the **Rust + Qt/QML** integration options of section 4.2, with a spike.
-- A working Rust workspace with a sparse workbook model and tests (started: `cellnux-core`).
-- A tiny formula parser/evaluator (`=A1+B1`, `=SUM(A1:A10)`) with fuzz target and property tests.
-- A minimal Qt desktop app displaying a virtualized editable grid.
-- A benchmark harness with reproducible fixtures and no fabricated results.
-- Phase 0/1 checklist kept current in `docs/roadmap/`.
+### Current requested deliverables (Phase 1, VBA alpha)
+- Read modules from `vbaProject.bin` (MS-CFB container, MS-OVBA decompression).
+- A `macro.run` engine command and a consent prompt in the UI.
+- More of the object model, with tests for every addition and a row in `docs/compatibility/README.md`.
 
 ## 14. Explicit non-goals for the first release
 

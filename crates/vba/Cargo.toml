@@ -1,0 +1,15 @@
+[package]
+name = "cellnux-vba"
+version.workspace = true
+edition.workspace = true
+license = "MPL-2.0"
+description = "Cellnux VBA: a sandboxed VBA lexer, parser and interpreter with an Excel-compatible object model over the engine"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+gridcraft-core = { workspace = true }
+gridcraft-engine = { workspace = true }
+serde_json = { workspace = true }

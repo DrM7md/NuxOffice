@@ -16,7 +16,7 @@ Performance claims in this project are backed by reproducible measurements or no
 ## Rules
 
 1. **Record the environment.** CPU, RAM, storage, OS and version, kernel, compiler and toolchain versions, application versions (including LibreOffice Calc and, where legally available, Microsoft Excel), build profile, and whether the cache was cold or warm.
-2. **Use the fixtures in `fixtures/`.** Every workload references a fixture by path and checksum so anyone can rerun it.
+2. **Use reproducible inputs.** Workbooks are generated in code from a seed or fetched from the pinned test corpus with a checksum (see upstream `docs/upstream/GRIDCRAFT_AGENTS.md`), so anyone can rerun the workload.
 3. **Run multiple times.** Report the number of runs, median, and variance (or min/max). Never report a single lucky run.
 4. **Same data, same machine** for every comparison. Cross-machine comparisons are not comparisons.
 5. **Never fabricate.** If a measurement has not been taken, the table says "not measured".
