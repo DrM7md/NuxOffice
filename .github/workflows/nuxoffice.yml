@@ -15,7 +15,7 @@ jobs:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'sync/upstream-')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Every commit in the PR carries a Signed-off-by trailer
@@ -33,7 +33,7 @@ jobs:
     name: Dependency and license audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
