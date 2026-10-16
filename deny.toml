@@ -36,8 +36,3 @@ highlight = "all"
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-
-# Workspace crates are `publish = false`; their license is decided in ADR 0005.
-# Until then cargo-deny must not fail on our own unlicensed crates.
-[licenses.private]
-ignore = true

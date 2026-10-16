@@ -106,7 +106,7 @@ Good first steps for Phase 0:
 
 ## License
 
-**Not yet finalized, and treated as a Phase 0 blocker.** The blueprint recommends **MPL-2.0**, with **GPL-3.0** as the alternative; the decision is recorded in ADR 0005. Until a `LICENSE` file is added, contributions are accepted on the understanding that they will be released under the license chosen for the project. Commits require a Developer Certificate of Origin sign-off (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+NuxOffice is licensed under the **Mozilla Public License 2.0** ([LICENSE](LICENSE)). The reasoning is recorded in [ADR 0005](docs/adr/0005-project-license.md). Contributions are accepted under the Developer Certificate of Origin: sign off every commit (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## Trademarks and originality
 

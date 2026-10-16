@@ -18,4 +18,4 @@ An ADR captures one significant decision: the context, the options considered, t
 | 0002 | Formula representation and recalculation model | Needed | Number and date semantics are fixed in blueprint section 5.2 |
 | 0003 | OOXML library selection | Needed | Preservation of unknown parts is a hard requirement |
 | 0004 | JavaScript runtime and sandbox boundary | Needed | Phase 3 |
-| 0005 | Project license | Needed, **blocking Phase 0 exit** | Recommendation MPL-2.0, alternative GPL-3.0; adds DCO enforcement |
+| 0005 | [Project license](0005-project-license.md) | Accepted (2026-10-16) | MPL-2.0; contributions under the Developer Certificate of Origin |

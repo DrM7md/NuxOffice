@@ -4,8 +4,8 @@ Exit criteria (blueprint section 10): license in place; stable cross-language ca
 
 ## Blocking decisions
 
-- [ ] ADR 0005: project license chosen (recommendation MPL-2.0, alternative GPL-3.0) and `LICENSE` added.
-- [ ] Developer Certificate of Origin sign-off enforced in CI.
+- [x] ADR 0005: project license chosen (MPL-2.0) and `LICENSE` added.
+- [x] Developer Certificate of Origin sign-off enforced in CI.
 - [ ] Trademark and name availability search documented.
 
 ## Repository foundation

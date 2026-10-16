@@ -260,7 +260,7 @@ NuxOffice/
 ├── CONTRIBUTING.md
 ├── CODE_OF_CONDUCT.md
 ├── SECURITY.md
-├── LICENSE                  (added once ADR 0005 is accepted)
+├── LICENSE                  (MPL-2.0)
 ├── docs/
 │   ├── architecture/
 │   ├── compatibility/
@@ -294,7 +294,7 @@ Future companion applications should share branding, UI components, build toolin
 ## 10. Roadmap and acceptance criteria
 
 ### Phase 0 — Research and proof of concept
-- Decide the project license (ADR 0005) and add `LICENSE`; adopt the Developer Certificate of Origin.
+- Project license decided (ADR 0005: MPL-2.0) and `LICENSE` added; Developer Certificate of Origin adopted.
 - Review open-source spreadsheet engines and libraries, licensing and format coverage.
 - Benchmark LibreOffice Calc against a minimal Rust prototype on identical datasets.
 - Build a Qt grid rendering spike and a Rust/Qt interoperability spike (ADR 0001).
@@ -353,7 +353,7 @@ Targets for each workload are in section 5.4. **Decision rule:** only replace/re
 
 A public repository without a license gives contributors and users no legal basis to participate. The license is therefore a **Phase 0 blocker**, decided in ADR 0005.
 
-- **Recommendation: MPL-2.0.** File-level copyleft keeps improvements to the core open while allowing the suite to link with Qt (LGPL/GPL/commercial) and with permissively licensed Rust crates, and it does not deter organizations from adopting or extending the product. **GPL-3.0** remains the alternative if stronger copyleft is preferred; it is compatible with Qt but narrows the set of usable dependencies and downstream integrations.
+- **Decision (ADR 0005, accepted 2026-10-16): MPL-2.0.** File-level copyleft keeps improvements to the core open while allowing the suite to link with Qt (LGPL/GPL/commercial) and with permissively licensed Rust crates, and it does not deter organizations from adopting or extending the product. **GPL-3.0** remains the alternative if stronger copyleft is preferred; it is compatible with Qt but narrows the set of usable dependencies and downstream integrations.
 - **Contributions:** the **Developer Certificate of Origin** (DCO, `Signed-off-by` trailer) is required on every commit instead of a contributor license agreement. It is lightweight, standard, and enforceable in CI.
 - **Dependencies:** `cargo deny` enforces an allow-list of licenses and audits advisories in CI. The allow-list is reviewed when the project license is chosen.
 - **Relicensing:** avoided by design; the license choice is made before external contributions are merged.
@@ -392,7 +392,6 @@ You are implementing **Cellnux**, a Linux-first open-source spreadsheet applicat
 14. Follow the phase order of section 10: scripting platform (Phase 3) before VBA (Phase 4).
 
 ### Current requested deliverables (Phase 0)
-- ADR 0005 (license) prepared for the owner's decision; `LICENSE` and DCO enforcement added once accepted.
 - ADR 0001 comparing the **Rust + Qt/QML** integration options of section 4.2, with a spike.
 - A working Rust workspace with a sparse workbook model and tests (started: `cellnux-core`).
 - A tiny formula parser/evaluator (`=A1+B1`, `=SUM(A1:A10)`) with fuzz target and property tests.
@@ -412,4 +411,4 @@ You are implementing **Cellnux**, a Linux-first open-source spreadsheet applicat
 ---
 
 **Product decisions confirmed:** Cellnux name, open-source direction, Linux-first spreadsheet focus, eventual office suite, progressive VBA compatibility and more powerful modern scripting, restrained coordinated family of icons, scripting platform before VBA, Flatpak-first packaging, DCO for contributions.
-**Engineering proposals pending validation:** Rust + Qt/QML stack and bridge (ADR 0001), specific libraries (ADR 0003), scripting runtime (ADR 0004), license (ADR 0005, recommendation MPL-2.0), detailed implementation schedule.
+**Engineering proposals pending validation:** Rust + Qt/QML stack and bridge (ADR 0001), specific libraries (ADR 0003), scripting runtime (ADR 0004), detailed implementation schedule. License decided: MPL-2.0 (ADR 0005).

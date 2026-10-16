@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- `LICENSE` (MPL-2.0) and ADR 0005 recording the decision; SPDX headers on source files; DCO sign-off check in CI.
 - Product and engineering blueprint (`docs/Cellnux_Project_Blueprint.md`).
 - Repository skeleton: Rust workspace, CI workflow, dependency and license audit, issue and PR templates, ADR process, roadmap checklist.
 - `cellnux-core` crate with cell addressing (A1 notation), typed cell values and a sparse workbook model.

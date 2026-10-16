@@ -45,7 +45,7 @@ After each increment, state:
 
 ## Things you must not do
 
-- Do not add a `LICENSE` file or change licensing text; the license is not finalized.
+- Do not change the license (MPL-2.0, ADR 0005) or licensing text. Every new source file starts with the SPDX header shown in CONTRIBUTING.md.
 - Do not rename the products or alter the approved visual direction.
 - Do not pull in Qt bindings, OOXML libraries or JavaScript runtimes without an ADR and a license check.
 - Do not commit generated build output, large binaries or real customer workbooks.

@@ -67,7 +67,7 @@ Major choices need an ADR under `docs/adr/`. Copy `docs/adr/0000-template.md` to
 
 - Work on a branch named `<area>/<short-description>`, for example `core/cell-address-parsing` or `docs/adr-qt-bridge`.
 - Write commit messages in English, imperative mood, with a short subject and a body explaining why.
-- Sign off every commit with the [Developer Certificate of Origin](https://developercertificate.org/) (`git commit -s`, which adds a `Signed-off-by:` trailer). This certifies that you have the right to submit the contribution; no contributor license agreement is needed. CI will enforce it once the license is in place.
+- Sign off every commit with the [Developer Certificate of Origin](https://developercertificate.org/) (`git commit -s`, which adds a `Signed-off-by:` trailer). This certifies that you have the right to submit the contribution; no contributor license agreement is needed. CI checks it on every pull request.
 - Keep PRs focused: one change per PR.
 - Include tests for Rust code and fixtures for format or formula behavior. Parsers of untrusted input also need a fuzz target and, where an invariant exists, a property-based test (see blueprint section 6.1).
 - Fill in the PR template: changed files, commands run, known limitations, next step.
@@ -83,4 +83,13 @@ See [SECURITY.md](SECURITY.md). Do not open public issues for vulnerabilities.
 
 ## Licensing of contributions
 
-The project license is not yet finalized. The blueprint recommends MPL-2.0, with GPL-3.0 as the alternative, and the decision is tracked as ADR 0005. By contributing, you agree that your contribution will be released under the open-source license selected for the project, and you certify it under the Developer Certificate of Origin by signing off your commits.
+The project is licensed under the [Mozilla Public License 2.0](LICENSE) (see [ADR 0005](docs/adr/0005-project-license.md)). By contributing, you agree that your contribution is released under MPL-2.0, and you certify it under the [Developer Certificate of Origin](https://developercertificate.org/) by signing off your commits.
+
+New source files start with the SPDX header:
+
+```rust
+// SPDX-License-Identifier: MPL-2.0
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+```
