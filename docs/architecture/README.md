@@ -44,6 +44,8 @@ Crates are built in the order the phases need them: `cellnux-core` → `cellnux-
 
 ## Open questions (need ADRs)
 
+0. **Whether to build on the GridCraft engine crates** instead of our own `cellnux-core`/`cellnux-formulas`/`cellnux-formats` (ADR 0006, proposed). If accepted, the crate map above changes as that ADR describes.
+
 1. Rust/Qt bridge: `cxx-qt`, C ABI + C++ application, `qmetaobject-rs`, with Slint as the non-Qt counterfactual (blueprint section 4.2).
 2. Formula intermediate representation and recalculation scheduling (number and date semantics are already fixed in blueprint section 5.2).
 3. OOXML library choice versus own adapters.
