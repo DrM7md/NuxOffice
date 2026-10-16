@@ -17,6 +17,15 @@ run_macro(&program, "CalculateTotal", &mut host, Limits::default())?;
 
 Nothing here runs a macro by itself. The caller decides when, after the user has consented.
 
+## Try it
+
+```bash
+cargo run -p cellnux-vba --example run_macro -- crates/vba/examples/demo.bas
+cargo run --release -p gridcraft -- macro-result.xlsx
+```
+
+The first command runs the `BuildReport` macro from `examples/demo.bas` on a new workbook, prints `Debug.Print` lines, `MsgBox` prompts and the filled cells, and saves `macro-result.xlsx`. The second opens the result in the desktop app. Pass a macro name to pick another one (`TrySandbox` shows the sandbox refusing `Shell`), `--in book.xlsx` to run on an existing workbook, and `--out file.xlsx` to choose the output.
+
 ## Architecture
 
 | Module | Role |
