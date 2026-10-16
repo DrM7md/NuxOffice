@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/DrM7md/NuxOffice/security/advisories/new
+    about: Report security issues privately, never in a public issue.
+  - name: Read the blueprint first
+    url: https://github.com/DrM7md/NuxOffice/blob/main/docs/Cellnux_Project_Blueprint.md
+    about: Vision, architecture and roadmap. Most "why" questions are answered there.

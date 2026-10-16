@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose new functionality or an improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user need or gap does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should change? Which layer (core, formulas, formats, desktop, VBA, scripting, design, docs)?
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Roadmap phase
+      options:
+        - Phase 0 (research and proof of concept)
+        - Phase 1 (spreadsheet alpha)
+        - Phase 2 (productivity beta)
+        - Phase 3 (VBA compatibility)
+        - Phase 4 (scripting and plugins)
+        - Phase 5 (suite expansion)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

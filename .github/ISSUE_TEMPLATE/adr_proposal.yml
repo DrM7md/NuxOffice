@@ -1,0 +1,29 @@
+name: Architecture decision proposal
+description: Start a discussion that should end in an ADR
+labels: ["adr"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Decision to make
+      placeholder: e.g. Rust/Qt bridge selection
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and constraints
+      description: Performance, licensing, portability, security, maintenance.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options with evidence
+      description: For each option, give license, maintenance status and any spike or benchmark results. No guesses presented as facts.
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation (optional)
