@@ -5,7 +5,7 @@
 The first and flagship application is **Cellnux**, a spreadsheet editor built for real-world `.xlsx` files, progressive VBA compatibility and a modern, sandboxed scripting platform. Writenux (documents), Presentnux (presentations) and Datanux (data tools) will follow on the same foundations.
 
 > **Status: Phase 0 — research and proof of concept.**
-> There is no runnable application yet. The repository holds the product blueprint, the engineering skeleton (Rust workspace, CI, contribution process) and the first core data-model crate. Contributions that move Phase 0 forward are very welcome.
+> There is no runnable application yet. The repository holds the product blueprint, the engineering skeleton (Rust workspace, CI, contribution process), the core data-model crate and the first slice of the formula engine. Contributions that move Phase 0 forward are very welcome.
 
 <p align="center">
   <img src="design/brand/suite-icons-reference.png" alt="NuxOffice suite icons: Cellnux, Writenux, Presentnux, Datanux" width="640">
@@ -32,7 +32,7 @@ The first and flagship application is **Cellnux**, a spreadsheet editor built fo
 
 | Layer | Preferred technology | State |
 |---|---|---|
-| Spreadsheet core | Rust workspace (`crates/`) | `cellnux-core` started |
+| Spreadsheet core | Rust workspace (`crates/`) | `cellnux-core` and `cellnux-formulas` started |
 | Desktop UI | Qt 6 + QML with a virtualized grid (`apps/cellnux-desktop`) | Spike pending |
 | Core/UI boundary | Stable versioned C ABI or tested bindings | ADR pending |
 | File formats | OOXML (`.xlsx`, `.xlsm`) and CSV first; ODS and legacy `.xls` later | Library review pending |
@@ -99,7 +99,8 @@ Good first steps for Phase 0:
 - Compare open-source spreadsheet engines and OOXML libraries (license, maintenance, format coverage) and write an ADR.
 - Build a Rust/Qt interoperability spike and report what works.
 - Build a Qt virtualized grid spike that scrolls a million rows smoothly.
-- Extend `cellnux-core` with the formula tokenizer and parser.
+- Add the dependency graph and incremental recalculation to `cellnux-formulas` (ADR 0002).
+- Implement more functions with fixtures: `SUMIF`, `COUNTIF`, `VLOOKUP`, `INDEX`, `MATCH`.
 - Add property-based tests and a fuzz target for the formula parser.
 - Design reproducible benchmark fixtures.
 - Recreate the approved icon reference as original vector SVG artwork.

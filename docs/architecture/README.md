@@ -22,7 +22,7 @@ Cellnux is layered so that the spreadsheet engine can be tested without a UI, an
 | Crate | Responsibility | Status |
 |---|---|---|
 | `cellnux-core` | In-memory data model: workbooks, worksheets, sparse cells, addressing, values. Later: styles, merges, names, tables, undo/redo. No I/O, no UI. | Started |
-| `cellnux-formulas` | Tokenizer, parser, AST, dependency graph, incremental recalculation, function library. Excel-compatible semantics as measured by fixtures. | Not created |
+| `cellnux-formulas` | Tokenizer, parser, AST, dependency graph, incremental recalculation, function library. Excel-compatible semantics as measured by fixtures. | Started: tokenizer, parser, evaluator, 10 functions; no dependency graph yet |
 | `cellnux-formats` | Reading and writing OOXML (`.xlsx`, `.xlsm`), CSV; later ODS and legacy `.xls`. Preservation of unsupported parts. Compatibility reports. | Not created |
 | `cellnux-api` | The single Spreadsheet API used by the UI, VBA runtime and scripting engine. Versioned, with stable error and event semantics. | Not created |
 | `cellnux-vba` | VBA lexer, parser, interpreter and Excel-like object model implemented against `cellnux-api`. | Not created |

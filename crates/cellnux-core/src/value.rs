@@ -102,11 +102,30 @@ impl From<CellError> for CellValue {
     }
 }
 
+/// Formats a number the way a spreadsheet shows it in the General format.
+///
+/// The value is rounded to 15 significant digits (so `0.1 + 0.2` displays as
+/// `0.3`), integers print without a decimal point, and negative zero prints
+/// as `0`. Non-finite values, which should never be stored in a cell, print
+/// as `#NUM!`. Exponent notation for very large or very small magnitudes is
+/// not applied yet; see `docs/compatibility/`.
+#[must_use]
+pub fn format_number(n: f64) -> String {
+    if !n.is_finite() {
+        return CellError::Num.as_str().to_owned();
+    }
+    if n == 0.0 {
+        return "0".to_owned();
+    }
+    let rounded: f64 = format!("{n:.14e}").parse().unwrap_or(n);
+    format!("{rounded}")
+}
+
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Blank => Ok(()),
-            Self::Number(n) => write!(f, "{n}"),
+            Self::Number(n) => f.write_str(&format_number(*n)),
             Self::Text(s) => f.write_str(s),
             Self::Bool(true) => f.write_str("TRUE"),
             Self::Bool(false) => f.write_str("FALSE"),
@@ -138,9 +157,21 @@ mod tests {
     }
 
     #[test]
+    fn numbers_display_with_fifteen_significant_digits() {
+        assert_eq!(format_number(0.1 + 0.2), "0.3");
+        assert_eq!(format_number(1.0 / 3.0), "0.333333333333333");
+        assert_eq!(format_number(-0.0), "0");
+        assert_eq!(format_number(1e15), "1000000000000000");
+        assert_eq!(format_number(123_456_789.123_456_79), "123456789.123457");
+        assert_eq!(format_number(f64::NAN), "#NUM!");
+        assert_eq!(format_number(f64::INFINITY), "#NUM!");
+    }
+
+    #[test]
     fn display_matches_spreadsheet_conventions() {
         assert_eq!(CellValue::Blank.to_string(), "");
         assert_eq!(CellValue::Number(42.0).to_string(), "42");
+        assert_eq!(CellValue::Number(-2.5).to_string(), "-2.5");
         assert_eq!(CellValue::Bool(true).to_string(), "TRUE");
         assert_eq!(CellValue::Error(CellError::Div0).to_string(), "#DIV/0!");
     }

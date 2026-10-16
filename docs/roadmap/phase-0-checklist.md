@@ -21,18 +21,18 @@ Exit criteria (blueprint section 10): license in place; stable cross-language ca
 - [x] A1 addressing with parsing, formatting and sheet-limit validation.
 - [x] Typed cell values and error values.
 - [x] Sparse worksheet storage and workbook with stable sheet identifiers.
-- [ ] Property-based tests for addressing round-trips and sparse-storage invariants.
+- [x] Property-based tests for addressing round-trips and sparse-storage invariants.
 - [ ] Date/time serial representation (1900 system with the leap-year compatibility quirk; 1904 opt-in).
 - [ ] Styles, merges and named ranges stored separately from values.
 - [ ] Undo/redo transactions.
 
 ## Formula engine slice (`cellnux-formulas`)
 
-- [ ] Tokenizer and parser for `=A1+B1` and `=SUM(A1:A10)` with typed, positioned errors.
-- [ ] Evaluator with Excel/OpenFormula coercion and error propagation, proven by fixtures.
-- [ ] Fixture-driven tests for `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `COUNTA`, `IF`, `AND`, `OR`, `ROUND`.
-- [ ] Fuzz target for the formula parser (no panics, no hangs on arbitrary input).
-- [ ] Property test: parse → print → parse round-trip.
+- [x] Tokenizer and parser for `=A1+B1` and `=SUM(A1:A10)` with typed, positioned errors.
+- [x] Evaluator with Excel/OpenFormula coercion and error propagation, proven by fixtures.
+- [x] Fixture-driven tests for `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `COUNTA`, `IF`, `AND`, `OR`, `ROUND`.
+- [x] Fuzz targets for the formula parser and evaluator (run manually with `cargo fuzz`; not in CI yet).
+- [x] Property test: parse → print → parse round-trip.
 - [ ] Dependency graph with cycle detection (may slip to Phase 1).
 - [ ] ADR 0002: formula representation and recalculation model.
 

@@ -1,0 +1,29 @@
+[package]
+name = "cellnux-formulas-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+license = "MPL-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+# libfuzzer-sys: MIT OR Apache-2.0 (with NCSA for libFuzzer itself).
+libfuzzer-sys = "0.4"
+cellnux-core = { path = "../../cellnux-core" }
+cellnux-formulas = { path = ".." }
+
+[[bin]]
+name = "parse"
+path = "fuzz_targets/parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "evaluate"
+path = "fuzz_targets/evaluate.rs"
+test = false
+doc = false
+bench = false

@@ -13,5 +13,6 @@ All notable changes to this project are documented here. The format follows [Kee
 - `LICENSE` (MPL-2.0) and ADR 0005 recording the decision; SPDX headers on source files; DCO sign-off check in CI.
 - Product and engineering blueprint (`docs/Cellnux_Project_Blueprint.md`).
 - Repository skeleton: Rust workspace, CI workflow, dependency and license audit, issue and PR templates, ADR process, roadmap checklist.
-- `cellnux-core` crate with cell addressing (A1 notation), typed cell values and a sparse workbook model.
+- `cellnux-core` crate with cell addressing (A1 notation), typed cell values and a sparse workbook model; numbers display with 15 significant digits; property-based tests.
+- `cellnux-formulas` crate: tokenizer, precedence-climbing parser with depth limit, AST with canonical printing, evaluator with spreadsheet coercion and error semantics, and the functions `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `COUNTA`, `IF`, `AND`, `OR`, `ROUND`. Fixture tests, property tests (print/parse round trip, no panics) and two `cargo fuzz` targets.
 - Approved suite icon reference image under `design/brand/`.

@@ -12,9 +12,16 @@ homepage = "https://github.com/DrM7md/NuxOffice"
 authors = ["NuxOffice contributors"]
 publish = false
 
+# Fuzz crates need nightly and libFuzzer; they are built with `cargo fuzz`,
+# not as part of the workspace.
+exclude = ["crates/cellnux-formulas/fuzz"]
+
 [workspace.dependencies]
-# Shared dependency versions go here once they are approved through an ADR
-# and pass `cargo deny check`.
+# Shared dependency versions. Add one only after a license check
+# (`cargo deny check`) and a note in the PR.
+cellnux-core = { path = "crates/cellnux-core" }
+# proptest: MIT OR Apache-2.0. Property-based testing (blueprint 6.1).
+proptest = { version = "1.6", default-features = false, features = ["std"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

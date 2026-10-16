@@ -20,5 +20,5 @@ mod value;
 mod workbook;
 
 pub use address::{AddressError, CellRef, MAX_COLS, MAX_ROWS};
-pub use value::{CellError, CellValue};
+pub use value::{CellError, CellValue, format_number};
 pub use workbook::{Cell, SheetId, Workbook, Worksheet};

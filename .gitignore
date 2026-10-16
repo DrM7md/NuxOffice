@@ -14,6 +14,12 @@ desktop.ini
 **/target/
 Cargo.lock.bak
 
+# cargo-fuzz
+crates/*/fuzz/artifacts/
+crates/*/fuzz/corpus/
+crates/*/fuzz/coverage/
+crates/*/fuzz/target/
+
 # Qt / CMake
 build/
 build-*/
