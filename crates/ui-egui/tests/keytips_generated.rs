@@ -2304,7 +2304,7 @@ fn keytip_awg_() {
 fn keytip_aws_() {
     let mut h = harness(blank());
     sequence(&mut h, "AWS", false);
-    assert!(h.state().dialog.is_some(), "AWS must open the scenarioManager dialog");
+    assert_eq!(h.state().dialog.as_ref().map(|d| d.name()), Some("scenarioManager"), "AWS must open the scenarioManager dialog");
 }
 
 #[test]

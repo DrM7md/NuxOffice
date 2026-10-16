@@ -1055,7 +1055,8 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
         "solver" => 460.0,
         _ => 380.0,
     };
-    let window = egui::Window::new(app.ui.language.tr(&d.title))
+    let title = if d.name == "scenarioAdd" && d.tab == "values" { "Scenario Values" } else { &d.title };
+    let window = egui::Window::new(app.ui.language.tr(title))
         .id(egui::Id::new("dialog").with(&d.name))
         .collapsible(false)
         .resizable(false)
@@ -2056,86 +2057,91 @@ fn scenario_manager(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, open:
     let list = app.session.run("data.scenarioManager", json!({})).unwrap_or(Json::Null);
     let scenarios = list.get("scenarios").and_then(Json::as_array).cloned().unwrap_or_default();
     d.list_index = d.list_index.min(scenarios.len().saturating_sub(1));
-    let selected = scenarios.get(d.list_index);
     let text = |s: &Json, key: &str| s.get(key).and_then(Json::as_str).unwrap_or("").to_string();
     ui.label(app.ui.language.tr("Scenarios:"));
     let tokens = crate::theme::Tokens::get(ui.ctx());
-    egui::Frame::new().fill(tokens.input_bg).stroke(Stroke::new(1.0, tokens.input_border)).inner_margin(4.0).show(ui, |ui| {
-        ui.set_min_size(vec2(470.0, 150.0));
-        egui::ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
-            if scenarios.is_empty() {
-                ui.label(app.ui.language.tr("No scenarios yet. Choose Add to create one."));
-            }
-            for (i, sc) in scenarios.iter().enumerate() {
-                let response = ui.selectable_label(i == d.list_index, text(sc, "name"));
-                if response.clicked() {
-                    d.list_index = i;
-                }
-                if response.double_clicked() {
-                    app.run_or_alert("data.scenarioShow", json!({"name": text(sc, "name")}));
+    ui.horizontal_top(|ui| {
+        ui.vertical(|ui| {
+            ui.set_width(350.0);
+            egui::Frame::new().fill(tokens.input_bg).stroke(Stroke::new(1.0, tokens.input_border)).inner_margin(4.0).show(ui, |ui| {
+                ui.set_min_size(vec2(340.0, 150.0));
+                egui::ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
+                    if scenarios.is_empty() {
+                        ui.label(app.ui.language.tr("No scenarios yet. Choose Add to create one."));
+                    }
+                    for (i, sc) in scenarios.iter().enumerate() {
+                        let response = ui.selectable_label(i == d.list_index, text(sc, "name"));
+                        if response.clicked() {
+                            d.list_index = i;
+                        }
+                        if response.double_clicked() {
+                            app.run_or_alert("data.scenarioShow", json!({"name": text(sc, "name")}));
+                        }
+                    }
+                });
+            });
+            if let Some(sc) = scenarios.get(d.list_index) {
+                ui.add_space(6.0);
+                ui.label(format!("{} {}", app.ui.language.tr("Changing cells:"), text(sc, "changing")));
+                let comment = text(sc, "comment");
+                if !comment.is_empty() {
+                    ui.label(format!("{} {comment}", app.ui.language.tr("Comment:")));
                 }
             }
         });
-    });
-    if let Some(sc) = scenarios.get(d.list_index) {
-        ui.add_space(6.0);
-        ui.label(format!("{} {}", app.ui.language.tr("Changing cells:"), text(sc, "changing")));
-        let comment = text(sc, "comment");
-        if !comment.is_empty() {
-            ui.label(format!("{} {comment}", app.ui.language.tr("Comment:")));
-        }
-    }
-    ui.add_space(8.0);
-    ui.horizontal_wrapped(|ui| {
-        if ui.add_enabled(selected.is_some(), egui::Button::new(app.ui.language.tr("Show"))).clicked()
-            && let Some(sc) = selected
-        {
-            app.run_or_alert("data.scenarioShow", json!({"name": text(sc, "name")}));
-        }
-        if ui.button(app.ui.language.tr("Add…")).clicked() {
-            app.open_dialog("scenarioAdd", json!({}));
-        }
-        if ui.add_enabled(selected.is_some(), egui::Button::new(app.ui.language.tr("Edit…"))).clicked()
-            && let Some(sc) = selected
-        {
-            app.open_dialog(
-                "scenarioAdd",
-                json!({"name": text(sc, "name"), "changing": text(sc, "changing"),
+        let selected = scenarios.get(d.list_index);
+        ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
+            ui.set_width(130.0);
+            if ui.add_enabled(selected.is_some(), egui::Button::new(app.ui.language.tr("Show"))).clicked()
+                && let Some(sc) = selected
+            {
+                app.run_or_alert("data.scenarioShow", json!({"name": text(sc, "name")}));
+            }
+            if ui.button(app.ui.language.tr("Add…")).clicked() {
+                app.open_dialog("scenarioAdd", json!({}));
+            }
+            if ui.add_enabled(selected.is_some(), egui::Button::new(app.ui.language.tr("Edit…"))).clicked()
+                && let Some(sc) = selected
+            {
+                app.open_dialog(
+                    "scenarioAdd",
+                    json!({"name": text(sc, "name"), "changing": text(sc, "changing"),
                 "comment": text(sc, "comment"), "values": sc["values"], "oldName": text(sc, "name"), "oldChanging": text(sc, "changing")}),
-            );
-        }
-        if ui.add_enabled(selected.is_some(), egui::Button::new(app.ui.language.tr("Delete"))).clicked()
-            && let Some(sc) = selected
-        {
-            app.run_or_alert("data.scenarioDelete", json!({"name": text(sc, "name")}));
-        }
-        if ui.add_enabled(!scenarios.is_empty(), egui::Button::new(app.ui.language.tr("Summary…"))).clicked() {
-            app.open_dialog("scenarioSummary", json!({}));
-            *open = false;
-        }
-        if ui.button(app.ui.language.tr("Close")).clicked() {
-            *open = false;
-        }
+                );
+            }
+            if ui.add_enabled(selected.is_some(), egui::Button::new(app.ui.language.tr("Delete"))).clicked()
+                && let Some(sc) = selected
+            {
+                app.run_or_alert("data.scenarioDelete", json!({"name": text(sc, "name")}));
+            }
+            if ui.add_enabled(!scenarios.is_empty(), egui::Button::new(app.ui.language.tr("Summary…"))).clicked() {
+                app.open_dialog("scenarioSummary", json!({}));
+                *open = false;
+            }
+            if ui.button(app.ui.language.tr("Close")).clicked() {
+                *open = false;
+            }
+        });
     });
 }
 
 fn scenario_cells(app: &SheetApp, changing: &str) -> Result<Vec<gridcraft_engine::core::CellRef>, String> {
     use gridcraft_engine::core::RangeRef;
-    let sheet = app.session.active().and_then(|d| d.wb.active()).ok_or("No active sheet")?;
+    let sheet = app.session.active().and_then(|d| d.wb.active()).ok_or_else(|| app.ui.language.tr("No active sheet").to_string())?;
     let mut cells = Vec::new();
     for item in changing.split(',').map(str::trim).filter(|s| !s.is_empty()) {
         let body = if let Some((name, body)) = item.rsplit_once('!') {
             let name = name.trim_matches('\'').replace("''", "'");
             if !name.eq_ignore_ascii_case(&sheet.name) {
-                return Err("Changing cells must be on the active sheet".into());
+                return Err(app.ui.language.tr("Changing cells must be on the active sheet").into());
             }
             body
         } else {
             item
         };
-        let range = RangeRef::parse(body).ok_or_else(|| format!("Invalid changing cells: {item}"))?;
+        let range = RangeRef::parse(body).ok_or_else(|| format!("{} {item}", app.ui.language.tr("Invalid changing cells:")))?;
         if range.count() > 32 {
-            return Err("A scenario can have at most 32 changing cells".into());
+            return Err(app.ui.language.tr("A scenario can have at most 32 changing cells").into());
         }
         for cell in range.iter() {
             if !cells.contains(&cell) {
@@ -2143,11 +2149,11 @@ fn scenario_cells(app: &SheetApp, changing: &str) -> Result<Vec<gridcraft_engine
             }
         }
         if cells.len() > 32 {
-            return Err("A scenario can have at most 32 changing cells".into());
+            return Err(app.ui.language.tr("A scenario can have at most 32 changing cells").into());
         }
     }
     if cells.is_empty() {
-        return Err("Choose at least one changing cell".into());
+        return Err(app.ui.language.tr("Choose at least one changing cell").into());
     }
     Ok(cells)
 }
@@ -2177,9 +2183,9 @@ fn scenario_add_dialog(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, op
             if ui.button(app.ui.language.tr("OK")).clicked() || (ui.input(|i| i.key_pressed(Key::Enter)) && !comment_focused) {
                 let name = text(d, "name");
                 if name.trim().is_empty() {
-                    app.message = Some((d.title.clone(), "Enter a scenario name".into()));
+                    app.message = Some((d.title.clone(), app.ui.language.tr("Enter a scenario name").into()));
                 } else if name.chars().count() > 255 {
-                    app.message = Some((d.title.clone(), "The name is too long (255 characters max)".into()));
+                    app.message = Some((d.title.clone(), app.ui.language.tr("The name is too long (255 characters max)").into()));
                 } else {
                     match scenario_cells(app, &text(d, "changing")) {
                         Ok(cells) => {
@@ -2190,7 +2196,7 @@ fn scenario_add_dialog(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, op
                                 .enumerate()
                                 .map(|(i, cell)| {
                                     if unchanged && let Some(value) = old_values.and_then(|v| v.get(i)) {
-                                        return value.as_str().map(str::to_string).unwrap_or_else(|| value.to_string());
+                                        return gridcraft_engine::cmd::whatif::scenario_value_input(value);
                                     }
                                     app.session.active().and_then(|doc| doc.wb.active().map(|sh| sh.value(*cell).display())).unwrap_or_default()
                                 })
@@ -2208,7 +2214,6 @@ fn scenario_add_dialog(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, op
             }
         });
     } else {
-        ui.label(app.ui.language.tr("Scenario Values"));
         let cells = d.values.get("cells").and_then(Json::as_array).cloned().unwrap_or_default();
         let mut values = d.values.get("draftValues").and_then(Json::as_array).cloned().unwrap_or_default();
         egui::ScrollArea::vertical().max_height(320.0).show(ui, |ui| {

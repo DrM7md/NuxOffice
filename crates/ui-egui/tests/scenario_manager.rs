@@ -129,3 +129,39 @@ fn enter_advances_add_dialog_and_confirms_values() {
     let list = h.state_mut().run("data.scenarioManager", json!({})).unwrap();
     assert_eq!(list["scenarios"].as_array().unwrap().len(), 3);
 }
+
+#[test]
+fn editing_cell_values_uses_general_number_text() {
+    let mut h = harness();
+    h.state_mut().open_dialog("scenarioManager", json!({}));
+    h.run_steps(3);
+    h.get_by_label("Base").click();
+    h.run_steps(3);
+    h.get_by_label("Edit…").click();
+    h.run_steps(3);
+    h.get_by_label("OK").click();
+    h.run_steps(3);
+    assert_eq!(h.state().dialog.as_ref().unwrap().values["draftValues"], json!(["10", "20"]));
+    assert!(h.query_by_label("Scenario Values").is_some());
+    h.get_by_label("Back").click();
+    h.run_steps(3);
+    assert_eq!(h.state().dialog.as_ref().unwrap().tab, "");
+    assert!(h.query_by_label("Edit Scenario").is_some());
+}
+
+#[test]
+fn german_scenario_manager_translates_controls_without_changing_document_text() {
+    let mut h = harness();
+    h.state_mut().ui.language = gridcraft_ui_egui::i18n::Language::De;
+    h.state_mut().open_dialog("scenarioManager", json!({}));
+    h.run_steps(4);
+    for label in ["Szenario-Manager", "Szenarien:", "Anzeigen", "Hinzufügen…", "Bearbeiten…", "Zusammenfassung…", "Base", "Best"] {
+        assert!(h.query_by_label(label).is_some(), "missing {label}");
+    }
+    h.get_by_label("Bearbeiten…").click();
+    h.run_steps(3);
+    h.get_by_label("OK").click();
+    h.run_steps(3);
+    assert!(h.query_by_label("Szenariowerte").is_some());
+    assert_eq!(h.state().dialog.as_ref().unwrap().values["draftValues"], json!(["10", "20"]));
+}
