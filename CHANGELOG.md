@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- Blueprint updated to version 0.2: license decision made a Phase 0 blocker with an MPL-2.0 recommendation and DCO sign-off; Phases 3 and 4 swapped so the Spreadsheet API and scripting platform precede VBA; reference specifications, number and date semantics, testing strategy (property tests, fuzzing, differential testing), Rust/Qt bridge options, performance budgets, internationalization requirements and governance added.
+
 ### Added
 
 - Product and engineering blueprint (`docs/Cellnux_Project_Blueprint.md`).

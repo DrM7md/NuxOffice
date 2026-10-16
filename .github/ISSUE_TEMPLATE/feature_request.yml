@@ -24,8 +24,8 @@ body:
         - Phase 0 (research and proof of concept)
         - Phase 1 (spreadsheet alpha)
         - Phase 2 (productivity beta)
-        - Phase 3 (VBA compatibility)
-        - Phase 4 (scripting and plugins)
+        - Phase 3 (Spreadsheet API, scripting and plugins)
+        - Phase 4 (VBA compatibility)
         - Phase 5 (suite expansion)
         - Not sure
     validations:

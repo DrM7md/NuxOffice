@@ -8,7 +8,7 @@ This directory tracks what Cellnux can actually read, write, preserve and execut
 |---|---|---|---|---|
 | `.csv` | Not started | Not started | n/a | Phase 1 |
 | `.xlsx` | Not started | Not started | Not started | Phase 1 |
-| `.xlsm` | Not started | Not started | Not started | Phase 3. Opening/preserving and executing VBA are tracked separately. |
+| `.xlsm` | Not started | Not started | Not started | Phase 4. Opening/preserving and executing VBA are tracked separately. |
 | `.ods` | Not started | Not started | Not started | Later |
 | `.xls` (legacy) | Not started | Not started | Not started | Later |
 

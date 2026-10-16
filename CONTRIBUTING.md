@@ -67,8 +67,9 @@ Major choices need an ADR under `docs/adr/`. Copy `docs/adr/0000-template.md` to
 
 - Work on a branch named `<area>/<short-description>`, for example `core/cell-address-parsing` or `docs/adr-qt-bridge`.
 - Write commit messages in English, imperative mood, with a short subject and a body explaining why.
+- Sign off every commit with the [Developer Certificate of Origin](https://developercertificate.org/) (`git commit -s`, which adds a `Signed-off-by:` trailer). This certifies that you have the right to submit the contribution; no contributor license agreement is needed. CI will enforce it once the license is in place.
 - Keep PRs focused: one change per PR.
-- Include tests for Rust code and fixtures for format or formula behavior.
+- Include tests for Rust code and fixtures for format or formula behavior. Parsers of untrusted input also need a fuzz target and, where an invariant exists, a property-based test (see blueprint section 6.1).
 - Fill in the PR template: changed files, commands run, known limitations, next step.
 - CI must pass. If you cannot run a check locally, say so in the PR.
 
@@ -82,4 +83,4 @@ See [SECURITY.md](SECURITY.md). Do not open public issues for vulnerabilities.
 
 ## Licensing of contributions
 
-The project license is not yet finalized (MPL-2.0 and GPL-3.0 are under consideration). By contributing, you agree that your contribution will be released under the open-source license selected for the project.
+The project license is not yet finalized. The blueprint recommends MPL-2.0, with GPL-3.0 as the alternative, and the decision is tracked as ADR 0005. By contributing, you agree that your contribution will be released under the open-source license selected for the project, and you certify it under the Developer Certificate of Origin by signing off your commits.

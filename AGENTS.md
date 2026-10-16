@@ -20,13 +20,17 @@ The project is in **Phase 0** (research and proof of concept). Do not generate t
 8. **Preserve user data.** Correctness and preservation before feature breadth. Never silently drop OOXML parts, macros, charts or formatting.
 9. **Separate MVP, planned and unsupported features** clearly in documentation and UI.
 10. **Ask before irreversible decisions** about architecture or licensing. Propose, do not decide, when the blueprint marks something as pending.
+11. **Follow the phase order.** The Spreadsheet API and modern scripting platform (Phase 3) come before VBA compatibility (Phase 4). Do not start VBA work on an API that does not exist yet.
+12. **Implement from the named specifications** in blueprint section 4.1 (ECMA-376, MS-OVBA, OpenFormula, UAX #9, CLDR), and document every deliberate divergence in `docs/compatibility/`.
 
 ## Engineering conventions
 
 - **Language:** Rust for the core (`crates/`), C++/QML for the desktop app (`apps/`). Source code, comments, commit messages and developer docs are in English. User-facing strings are localized (Arabic and English from day one).
 - **Rust:** edition 2024, `#![forbid(unsafe_code)]` unless an ADR justifies an exception, typed errors (no `unwrap` in library code), documented public items, unit tests next to the code and integration tests in `tests/`.
+- **Testing layers (blueprint 6.1):** unit tests, property-based tests for invariants, fixture corpus, golden files for formats, differential testing against LibreOffice headless, fuzz targets for every parser of untrusted input. A parser without a fuzz target is not done.
+- **Commits:** English, imperative subject, body explaining why, and a DCO `Signed-off-by:` trailer (`git commit -s`).
 - **Quality gates (CI):** `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo deny check`.
-- **Crate map:** `cellnux-core` (data model), then `cellnux-formulas`, `cellnux-formats`, `cellnux-api`, `cellnux-vba`, `cellnux-scripting`. Do not create a crate before its responsibilities are documented in [docs/architecture/README.md](docs/architecture/README.md).
+- **Crate map:** `cellnux-core` (data model), then `cellnux-formulas`, `cellnux-formats`, `cellnux-api`, `cellnux-scripting`, `cellnux-vba`. Do not create a crate before its responsibilities are documented in [docs/architecture/README.md](docs/architecture/README.md).
 - **Fixtures:** every format or formula behavior gets a reproducible fixture under `fixtures/`. Fixtures must be original or clearly licensed.
 - **Benchmarks:** follow [docs/benchmarks/README.md](docs/benchmarks/README.md). Record hardware, versions and variance.
 

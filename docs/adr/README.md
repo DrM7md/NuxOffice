@@ -11,11 +11,11 @@ An ADR captures one significant decision: the context, the options considered, t
 
 ## Index
 
-| Number | Title | Status |
-|---|---|---|
-| 0000 | [Template](0000-template.md) | — |
-| 0001 | Rust + Qt/QML integration options | Needed |
-| 0002 | Formula representation and recalculation model | Needed |
-| 0003 | OOXML library selection | Needed |
-| 0004 | JavaScript runtime and sandbox boundary | Needed |
-| 0005 | Project license | Needed |
+| Number | Title | Status | Notes |
+|---|---|---|---|
+| 0000 | [Template](0000-template.md) | — | |
+| 0001 | Rust + Qt/QML integration options | Needed | Options listed in blueprint section 4.2; must end with a spike plan |
+| 0002 | Formula representation and recalculation model | Needed | Number and date semantics are fixed in blueprint section 5.2 |
+| 0003 | OOXML library selection | Needed | Preservation of unknown parts is a hard requirement |
+| 0004 | JavaScript runtime and sandbox boundary | Needed | Phase 3 |
+| 0005 | Project license | Needed, **blocking Phase 0 exit** | Recommendation MPL-2.0, alternative GPL-3.0; adds DCO enforcement |

@@ -36,8 +36,8 @@ The first and flagship application is **Cellnux**, a spreadsheet editor built fo
 | Desktop UI | Qt 6 + QML with a virtualized grid (`apps/cellnux-desktop`) | Spike pending |
 | Core/UI boundary | Stable versioned C ABI or tested bindings | ADR pending |
 | File formats | OOXML (`.xlsx`, `.xlsm`) and CSV first; ODS and legacy `.xls` later | Library review pending |
-| Modern scripting | Embedded JavaScript/TypeScript runtime with capability-based sandbox | Phase 4 |
-| VBA | Separate parser and runtime with an Excel-like object model | Phase 3 |
+| Modern scripting | Embedded JavaScript/TypeScript runtime with capability-based sandbox | Phase 3 |
+| VBA | Separate parser and runtime with an Excel-like object model | Phase 4 |
 
 These are proposals to validate with spikes, not final decisions. See [docs/architecture](docs/architecture/README.md) and the [ADR log](docs/adr/README.md).
 
@@ -75,11 +75,11 @@ The Qt desktop application does not build yet. Follow [apps/cellnux-desktop](app
 
 ## Roadmap
 
-1. **Phase 0 — Research and proof of concept.** Library and license review, Rust/Qt interop spike, virtualized grid spike, baseline benchmarks, first ADRs. See the [Phase 0 checklist](docs/roadmap/phase-0-checklist.md).
+1. **Phase 0 — Research and proof of concept.** License decision, library and license review, Rust/Qt interop spike, virtualized grid spike, baseline benchmarks, first ADRs. See the [Phase 0 checklist](docs/roadmap/phase-0-checklist.md).
 2. **Phase 1 — Usable spreadsheet alpha.** Multi-sheet workbook, formula bar, basic styles, undo/redo, `.xlsx` and `.csv` round-trip, 20+ documented functions.
-3. **Phase 2 — Productivity beta.** Rich formatting, sort and filter, freeze panes, charts, large-file optimizations, accessibility and localization.
-4. **Phase 3 — VBA compatibility alpha.** `.xlsm` preservation, VBA language subset, core object model, consent-gated execution.
-5. **Phase 4 — Modern scripting and plugins.** TypeScript SDK, permissions, debugger, SQLite and HTTP adapters.
+3. **Phase 2 — Productivity beta.** Rich formatting, sort and filter, freeze panes, charts, large-file optimizations, Hijri dates and Arabic-Indic digits, differential testing against LibreOffice, Flatpak packaging.
+4. **Phase 3 — Spreadsheet API, modern scripting and plugins.** Versioned Spreadsheet API, TypeScript SDK, sandboxed JS runtime, permissions, debugger, SQLite and HTTP adapters.
+5. **Phase 4 — VBA compatibility alpha.** `.xlsm` preservation, VBA language subset, core object model on top of the Spreadsheet API, consent-gated execution.
 6. **Phase 5 — Suite expansion.** Writenux, Presentnux and Datanux.
 
 ## Read the blueprint
@@ -100,12 +100,13 @@ Good first steps for Phase 0:
 - Build a Rust/Qt interoperability spike and report what works.
 - Build a Qt virtualized grid spike that scrolls a million rows smoothly.
 - Extend `cellnux-core` with the formula tokenizer and parser.
+- Add property-based tests and a fuzz target for the formula parser.
 - Design reproducible benchmark fixtures.
 - Recreate the approved icon reference as original vector SVG artwork.
 
 ## License
 
-**Not yet finalized.** The project intends to use a community-friendly open-source license. **MPL-2.0** and **GPL-3.0** are under consideration pending legal review. Until a `LICENSE` file is added, contributions are accepted on the understanding that they will be released under the license chosen for the project.
+**Not yet finalized, and treated as a Phase 0 blocker.** The blueprint recommends **MPL-2.0**, with **GPL-3.0** as the alternative; the decision is recorded in ADR 0005. Until a `LICENSE` file is added, contributions are accepted on the understanding that they will be released under the license chosen for the project. Commits require a Developer Certificate of Origin sign-off (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## Trademarks and originality
 

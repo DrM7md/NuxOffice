@@ -38,10 +38,14 @@ A crate is created only once its responsibilities are documented here and the fi
 - **Preservation over features.** Unknown OOXML parts are preserved where safely possible; lossy saves warn first.
 - **Measure, then optimize.** Benchmarks follow the methodology in [../benchmarks](../benchmarks/README.md).
 
+## Build order
+
+Crates are built in the order the phases need them: `cellnux-core` → `cellnux-formulas` → `cellnux-formats` → `cellnux-api` → `cellnux-scripting` (Phase 3) → `cellnux-vba` (Phase 4). The VBA object model is implemented on top of `cellnux-api`, which the scripting engine proves first.
+
 ## Open questions (need ADRs)
 
-1. Rust/Qt bridge: `cxx-qt`, hand-written C ABI, or another option.
-2. Formula intermediate representation and recalculation scheduling.
+1. Rust/Qt bridge: `cxx-qt`, C ABI + C++ application, `qmetaobject-rs`, with Slint as the non-Qt counterfactual (blueprint section 4.2).
+2. Formula intermediate representation and recalculation scheduling (number and date semantics are already fixed in blueprint section 5.2).
 3. OOXML library choice versus own adapters.
 4. JavaScript runtime choice and sandbox boundary.
-5. Project license (MPL-2.0 or GPL-3.0).
+5. Project license: recommendation MPL-2.0, alternative GPL-3.0; blocking Phase 0 exit.
