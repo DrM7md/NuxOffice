@@ -11,7 +11,8 @@ permissions:
 jobs:
   dco:
     name: DCO sign-off
-    if: github.event_name == 'pull_request'
+    # Upstream sync PRs (branch sync/upstream-*) carry GridCraft commits, which are not signed off.
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'sync/upstream-')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
