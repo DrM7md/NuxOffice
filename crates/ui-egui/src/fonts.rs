@@ -156,13 +156,21 @@ fn dir_key(dir: &std::path::Path) -> DirKey {
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
-        if let Ok(meta) = std::fs::metadata(dir)
-            && meta.ino() != 0
-        {
-            return DirKey::Inode(meta.dev(), meta.ino());
+        if let Some(key) = inode_key(std::fs::metadata(dir).ok().map(|meta| (meta.dev(), meta.ino()))) {
+            return key;
         }
     }
     DirKey::Path(std::fs::canonicalize(dir).unwrap_or_else(|_| dir.to_path_buf()))
+}
+
+/// The device-and-inode key for a folder's `(device, inode)`, or `None` when the metadata
+/// couldn't be read or reports inode 0.
+#[cfg(unix)]
+fn inode_key(id: Option<(u64, u64)>) -> Option<DirKey> {
+    match id {
+        Some((dev, ino)) if ino != 0 => Some(DirKey::Inode(dev, ino)),
+        _ => None,
+    }
 }
 
 /// Catalog every face under `dirs`, recursing into subfolders. A folder reached twice (through a
@@ -533,6 +541,17 @@ mod tests {
         // Unreadable metadata falls back to the path, so two such folders are never taken for one.
         assert_eq!(dir_key(&dir.join("a")), DirKey::Path(dir.join("a")));
         assert_ne!(dir_key(&dir.join("a")), dir_key(&dir.join("b")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_folder_reporting_inode_zero_has_no_inode_key() {
+        // Inode 0 names no folder: two folders reporting it on one device would share a key and
+        // the second would never be read. No real folder can be made to report it, so the device
+        // and inode go in directly.
+        assert_eq!(inode_key(Some((7, 0))), None);
+        assert_eq!(inode_key(None), None);
+        assert_eq!(inode_key(Some((7, 42))), Some(DirKey::Inode(7, 42)));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
