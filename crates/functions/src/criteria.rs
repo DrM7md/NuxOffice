@@ -239,11 +239,13 @@ fn tokenize(pattern: &str) -> Vec<Tok> {
     while let Some(c) = it.next() {
         match c {
             // `~` takes the next character literally; a trailing `~` is dropped, as in Excel.
-            '~' => {
-                if let Some(n) = it.next() {
-                    out.push(Tok::Char(lower_char(n)));
-                }
-            }
+            '~' => match it.next() {
+                Some(n) => out.push(Tok::Char(lower_char(n))),
+                // A pattern that is only `~` would be empty and match empty text. Excel wasn't
+                // measured for it, so it stays a literal `~`, as before #1455.
+                None if out.is_empty() => out.push(Tok::Char('~')),
+                None => {}
+            },
             '*' => out.push(Tok::Star),
             '?' => out.push(Tok::Any),
             c => out.extend(std::iter::once(lower_char(c)).map(Tok::Char)),
@@ -428,5 +430,10 @@ mod tests {
         assert!(!wildcard_match("x~", "x~"));
         assert!(wildcard_match("*~~", "xyz~"));
         assert_eq!(wildcard_find("x~", "axb", 0), Some(1));
+        // A pattern that is only `~` stays a literal `~` (not measured in Excel).
+        assert!(wildcard_match("~", "~"));
+        assert!(!wildcard_match("~", ""));
+        assert_eq!(wildcard_find("~", "abc", 0), None);
+        assert_eq!(wildcard_find("~", "a~b", 0), Some(1));
     }
 }
