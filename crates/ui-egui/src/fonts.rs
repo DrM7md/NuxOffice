@@ -136,16 +136,44 @@ fn file_faces(data: &[u8]) -> Vec<(u32, String, String)> {
         .collect()
 }
 
+/// What makes two paths the same folder for the scan.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum DirKey {
+    /// Device and inode: one folder bound at several paths, as a Flatpak sandbox does with the
+    /// user's font folder, has three paths that `canonicalize` keeps apart and one inode.
+    #[cfg(unix)]
+    Inode(u64, u64),
+    /// The canonical path, or the path as given when it can't be resolved.
+    Path(PathBuf),
+}
+
+/// The key a folder is read once by: its device and inode on Unix, else its canonical path. A
+/// folder whose metadata can't be read (or that reports inode 0) is known by its path, so two
+/// different folders are never taken for one.
+#[cfg(not(target_arch = "wasm32"))]
+fn dir_key(dir: &std::path::Path) -> DirKey {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if let Ok(meta) = std::fs::metadata(dir)
+            && meta.ino() != 0
+        {
+            return DirKey::Inode(meta.dev(), meta.ino());
+        }
+    }
+    DirKey::Path(std::fs::canonicalize(dir).unwrap_or_else(|_| dir.to_path_buf()))
+}
+
 /// Catalog every face under `dirs`, recursing into subfolders. A folder reached twice (through a
-/// symlink) is read once, so a link back to a parent ends the walk.
+/// symlink, or bound at a second path) is read once, so a link back to a parent ends the walk.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn scan_dirs(dirs: &[PathBuf]) -> Vec<Face> {
     let mut out: Vec<Face> = Vec::new();
     let mut stack: Vec<PathBuf> = dirs.to_vec();
-    let mut seen_dirs: HashSet<PathBuf> = HashSet::new();
+    let mut seen_dirs: HashSet<DirKey> = HashSet::new();
     while let Some(dir) = stack.pop() {
-        let key = std::fs::canonicalize(&dir).unwrap_or_else(|_| dir.clone());
-        if !seen_dirs.insert(key) {
+        if !seen_dirs.insert(dir_key(&dir)) {
             continue;
         }
         let Ok(entries) = std::fs::read_dir(&dir) else { continue };
@@ -476,6 +504,48 @@ mod tests {
         std::fs::write(dir.join("Sub/Ubuntu-Light.ttf"), epaint_default_fonts::UBUNTU_LIGHT).expect("write");
         std::os::unix::fs::symlink(&dir, dir.join("Sub/loop")).expect("symlink");
         assert_eq!(scan_dirs(std::slice::from_ref(&dir)).len(), 1, "the loop doesn't multiply faces");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_folder_is_known_by_its_device_and_inode() {
+        use std::os::unix::fs::MetadataExt;
+        let dir = std::env::temp_dir().join(format!("gridcraft-fonts-key-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("Real")).expect("temp dir");
+        std::fs::create_dir_all(dir.join("Other")).expect("temp dir");
+        std::os::unix::fs::symlink(dir.join("Real"), dir.join("Alias")).expect("symlink");
+        let meta = std::fs::metadata(dir.join("Real")).expect("metadata");
+        // A Flatpak sandbox binds one folder at several paths that `canonicalize` keeps apart; the
+        // device and inode are what they share.
+        assert_eq!(dir_key(&dir.join("Real")), DirKey::Inode(meta.dev(), meta.ino()));
+        assert_eq!(dir_key(&dir.join("Alias")), dir_key(&dir.join("Real")), "one folder, one key");
+        assert_ne!(dir_key(&dir.join("Other")), dir_key(&dir.join("Real")), "two folders, two keys");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn a_folder_without_metadata_is_known_by_its_path() {
+        let dir = std::env::temp_dir().join(format!("gridcraft-fonts-nokey-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        // Unreadable metadata falls back to the path, so two such folders are never taken for one.
+        assert_eq!(dir_key(&dir.join("a")), DirKey::Path(dir.join("a")));
+        assert_ne!(dir_key(&dir.join("a")), dir_key(&dir.join("b")));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn two_folders_holding_the_same_font_are_both_read() {
+        let dir = std::env::temp_dir().join(format!("gridcraft-fonts-two-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        for sub in ["One", "Two"] {
+            std::fs::create_dir_all(dir.join(sub)).expect("temp dir");
+            std::fs::write(dir.join(sub).join("Ubuntu-Light.ttf"), epaint_default_fonts::UBUNTU_LIGHT).expect("write");
+        }
+        let faces = scan_dirs(&[dir.join("One"), dir.join("Two"), dir.join("Missing")]);
+        assert_eq!(faces.len(), 2, "equal contents are not the same folder: {faces:?}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
