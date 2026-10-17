@@ -1194,6 +1194,24 @@ fn lookup_of_an_empty_cell_stays_blank() {
 }
 
 #[test]
+fn blank_lookup_values_match_excel_windows_observation() {
+    // Excel 365 Windows 2609, build 16.0.20430.20032, black-box check 2026-10-13:
+    // A1="k", B1 and A2 genuinely empty.
+    // All three value lookups preserve blankness inside ISBLANK/concatenation.
+    let mut t = T::new();
+    t.set("A1", "k");
+    for (at, f, want) in [
+        ("D1", "=ISBLANK(VLOOKUP(\"k\",A1:B1,2,FALSE))", Value::Bool(true)),
+        ("D2", "=ISBLANK(HLOOKUP(\"k\",A1:A2,2,FALSE))", Value::Bool(true)),
+        ("D3", "=ISBLANK(LOOKUP(\"k\",A1:A1,B1:B1))", Value::Bool(true)),
+        ("D4", "=\"x\"&HLOOKUP(\"k\",A1:A2,2,FALSE)&\"y\"", Value::from("xy")),
+    ] {
+        t.set(at, f);
+        assert_eq!(t.get(at), want, "{f}");
+    }
+}
+
+#[test]
 fn cell_width_is_the_column_width_dialog_value_rounded() {
     // #735: Excel 365 values. Widths in px as `home.columnWidth {"chars"}` sets them
     // (chars * 7 + 5): 10.71 -> 80, 12 -> 89, 10.57 -> 79, 2.86 -> 25; B keeps the default 8.43 (64).
