@@ -13,6 +13,15 @@ fn value(app: &SheetApp, cell: &str) -> Value {
 
 #[test]
 fn popup_sorts_the_clicked_filter_without_moving_headers_or_table_totals() {
+    check_popup_sort(false);
+}
+
+#[test]
+fn enter_on_a_sort_button_preserves_the_clicked_filter_header_and_table_totals() {
+    check_popup_sort(true);
+}
+
+fn check_popup_sort(press_enter: bool) {
     for table in [false, true] {
         for descending in [false, true] {
             let mut session = Session::new();
@@ -52,9 +61,17 @@ fn popup_sorts_the_clicked_filter_without_moving_headers_or_table_totals() {
             }
             h.run_steps(4);
             assert!(h.state().grid.filter_menu.is_some(), "the clicked filter popup opens");
-            h.get_by_label(if descending { "↓  Sort Descending" } else { "↑  Sort Ascending" }).click();
+            let label = if descending { "↓  Sort Descending" } else { "↑  Sort Ascending" };
+            if press_enter {
+                h.get_by_label(label).focus();
+                h.run_steps(2);
+                h.key_press(egui::Key::Enter);
+            } else {
+                h.get_by_label(label).click();
+            }
             h.run_steps(4);
 
+            assert!(h.state().grid.filter_menu.is_none(), "sorting closes the popup");
             assert_eq!(value(h.state(), "A1"), Value::from("Summary"));
             assert_eq!(value(h.state(), "B2"), Value::from("Company"));
             assert_eq!(value(h.state(), "B3"), Value::from(if descending { "Zeta" } else { "Alpha" }), "table={table}, descending={descending}");
