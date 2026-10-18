@@ -199,6 +199,9 @@ pub struct Prefs {
     pub user_dictionary: Vec<String>,
     /// View › Show › Formula Bar (an application option in Excel, not saved in the file).
     pub formula_bar: bool,
+    /// Default row height of new workbooks, in pixels (NuxOffice: 28 px = 21 pt, matching the
+    /// owner's Excel). Sheets added to an open workbook take that workbook's own default instead.
+    pub new_workbook_row_height: f32,
 }
 
 impl Default for Prefs {
@@ -213,9 +216,13 @@ impl Default for Prefs {
             r1c1: false,
             user_dictionary: vec![],
             formula_bar: true,
+            new_workbook_row_height: NEW_WORKBOOK_ROW_HEIGHT,
         }
     }
 }
+
+/// Default row height of new workbooks, in pixels (21 pt).
+pub const NEW_WORKBOOK_ROW_HEIGHT: f32 = 28.0;
 
 /// Requests from commands to the UI (open a dialog, show a message…).
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -305,6 +312,12 @@ impl Session {
         for _ in 1..self.prefs.sheets_in_new_workbook.clamp(1, 255) {
             let name = wb.next_sheet_name();
             wb.sheets.push(Arc::new(gridcraft_model::Sheet::new(name)));
+        }
+        let h = self.prefs.new_workbook_row_height;
+        if h > 0.0 && h.is_finite() {
+            for sh in &mut wb.sheets {
+                Arc::make_mut(sh).default_row_height = h.min(546.0);
+            }
         }
         self.add_document(DocState::new(wb, None, format!("Book{n}")))
     }

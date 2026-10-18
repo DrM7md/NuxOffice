@@ -1747,6 +1747,8 @@ mod tests {
 
     fn s() -> Session {
         let mut s = Session::new();
+        // Pagination expectations below are for Excel's standard 15 pt rows.
+        s.prefs.new_workbook_row_height = gridcraft_model::DEFAULT_ROW_HEIGHT;
         s.new_workbook();
         s
     }

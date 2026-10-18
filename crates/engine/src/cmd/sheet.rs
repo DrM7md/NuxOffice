@@ -656,7 +656,12 @@ fn insert_sheet(s: &mut Session, p: &Json) -> Result<Json> {
     let idx = edit_doc(d, |cx| {
         // Excel inserts before the active sheet; the "+" button appends after it.
         let at = before.unwrap_or(cx.wb.active_sheet + 1).min(cx.wb.sheets.len());
-        cx.wb.sheets.insert(at, Arc::new(Sheet::new(name.clone())));
+        // A new sheet takes the workbook's default row height (that of its first sheet).
+        let mut sheet = Sheet::new(name.clone());
+        if let Some(first) = cx.wb.sheets.first() {
+            sheet.default_row_height = first.default_row_height;
+        }
+        cx.wb.sheets.insert(at, Arc::new(sheet));
         // Names scoped to later sheets shift.
         for n in cx.wb.names.iter_mut() {
             if let Some(sc) = n.scope.as_mut()
