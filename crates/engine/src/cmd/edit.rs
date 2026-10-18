@@ -272,6 +272,9 @@ fn cell_set(s: &mut Session, p: &Json) -> Result<Json> {
                     return Ok(Json::Null);
                 }
                 crate::pivot::PivotCellTarget::RowHeader => {
+                    if input.trim().is_empty() {
+                        return Err(EngineError::Other("A PivotTable report field name cannot be blank.".into()));
+                    }
                     if cx
                         .wb
                         .sheet(sheet)
@@ -289,6 +292,9 @@ fn cell_set(s: &mut Session, p: &Json) -> Result<Json> {
                     return Ok(Json::Null);
                 }
                 crate::pivot::PivotCellTarget::ColHeader => {
+                    if input.trim().is_empty() {
+                        return Err(EngineError::Other("A PivotTable report field name cannot be blank.".into()));
+                    }
                     if cx
                         .wb
                         .sheet(sheet)
