@@ -675,6 +675,9 @@ pub fn symbol_face_installed() -> bool {
     }
 }
 
+/// Gamma applied to glyph coverage on light backgrounds (1.0 = egui's default; higher = thinner).
+pub const LIGHT_TEXT_GAMMA: f32 = 1.35;
+
 pub fn apply(ctx: &egui::Context, dark: bool) {
     // Install both palettes before System can switch between the style slots.
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
@@ -696,6 +699,13 @@ pub fn apply(ctx: &egui::Context, dark: bool) {
         v.window_corner_radius = egui::CornerRadius::same(10);
         v.menu_corner_radius = egui::CornerRadius::same(8);
         v.popup_shadow = egui::epaint::Shadow { offset: [0, 4], blur: 16, spread: 0, color: t.shadow };
+        // Thinner, crisper text, closer to the ClearType rendering of desktop spreadsheets: glyphs
+        // sit on whole pixels (no sub-pixel binning blur) and, on light backgrounds, partially
+        // covered pixels are lightened (coverage^gamma) so strokes do not read as semi-bold.
+        v.text_options.subpixel_binning = false;
+        if !dark {
+            v.text_options.color_transfer_function = egui::epaint::FontColorTransferFunction::Gamma(LIGHT_TEXT_GAMMA);
+        }
         ctx.set_visuals_of(theme, v);
     }
     ctx.options_mut(|o| o.fallback_theme = egui::Theme::Light);
