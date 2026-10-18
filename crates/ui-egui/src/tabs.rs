@@ -128,7 +128,8 @@ pub fn sheet_tabs(app: &mut SheetApp, ui: &mut Ui) {
                                 if active && reveal_active {
                                     resp.scroll_to_me(None);
                                 }
-                                let r = r.shrink2(vec2(0.0, 1.0));
+                                // A gap under the tab, so it floats above the bar edge as in the desktop strip.
+                                let r = Rect::from_min_max(pos2(r.left() + 1.0, r.top() + 1.0), pos2(r.right() - 1.0, r.bottom() - 5.0));
                                 let lifted = Rect::from_min_max(pos2(r.left(), r.top() - 2.0), r.max);
                                 if active || in_group {
                                     // The active tab (and every grouped one) is white, joined to the sheet above.
@@ -149,7 +150,7 @@ pub fn sheet_tabs(app: &mut SheetApp, ui: &mut Ui) {
                                     let band = Rect::from_min_size(pos2(r.left() + 6.0, r.bottom() - 4.0), vec2(r.width() - 12.0, 3.0));
                                     ui.painter().rect_filled(band, 1.0, theme::color32(c));
                                 } else if active {
-                                    let band = Rect::from_center_size(pos2(r.center().x, r.bottom() - 3.0), vec2(tw.min(48.0), 2.5));
+                                    let band = Rect::from_center_size(pos2(r.center().x, r.bottom() - 2.0), vec2(tw.min(48.0), 2.5));
                                     ui.painter().rect_filled(band, 1.0, t.accent);
                                 }
                                 if renaming {
@@ -179,7 +180,13 @@ pub fn sheet_tabs(app: &mut SheetApp, ui: &mut Ui) {
                                         app.grid.renaming_tab = None;
                                     }
                                 } else {
-                                    ui.painter().text(r.center(), Align2::CENTER_CENTER, &name, font, if active { t.accent } else { t.text });
+                                    ui.painter().text(
+                                        r.center() - vec2(0.0, 1.5),
+                                        Align2::CENTER_CENTER,
+                                        &name,
+                                        font,
+                                        if active { t.accent } else { t.text },
+                                    );
                                 }
                                 resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, active || in_group, &name));
                                 if resp.clicked() {
