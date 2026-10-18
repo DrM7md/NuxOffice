@@ -40,13 +40,18 @@ pub fn sheet_tabs(app: &mut SheetApp, ui: &mut Ui) {
     egui::Panel::bottom("sheet_tabs").exact_size(32.0).frame(egui::Frame::NONE.fill(t.tab_bar)).show(ui, |ui| {
         let rect = ui.max_rect();
         ui.painter().line_segment([rect.left_top(), rect.right_top()], Stroke::new(1.0, t.ribbon_border));
-        ui.horizontal_centered(|ui| {
+        // A right-to-left sheet mirrors the bar like Excel: navigation and tabs start at the right
+        // edge, the horizontal scrollbar sits on the left.
+        let rtl = app.session.active().and_then(|d| d.wb.active()).is_some_and(|s| s.right_to_left);
+        let flow = if rtl { egui::Layout::right_to_left(egui::Align::Center) } else { egui::Layout::left_to_right(egui::Align::Center) };
+        ui.with_layout(flow, |ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
             ui.add_space(8.0);
-            if crate::widgets::icon_button(ui, Icon::Left, t.text_dim, "Previous sheet", vec2(24.0, 24.0)).clicked() {
+            let (back, forward) = if rtl { (Icon::Right, Icon::Left) } else { (Icon::Left, Icon::Right) };
+            if crate::widgets::icon_button(ui, back, t.text_dim, "Previous sheet", vec2(24.0, 24.0)).clicked() {
                 app.run_or_alert("sheet.previous", json!({}));
             }
-            if crate::widgets::icon_button(ui, Icon::Right, t.text_dim, "Next sheet", vec2(24.0, 24.0)).clicked() {
+            if crate::widgets::icon_button(ui, forward, t.text_dim, "Next sheet", vec2(24.0, 24.0)).clicked() {
                 app.run_or_alert("sheet.next", json!({}));
             }
             let all = crate::widgets::icon_button(ui, Icon::SheetList, t.text_dim, "All sheets", vec2(24.0, 24.0));
@@ -80,7 +85,7 @@ pub fn sheet_tabs(app: &mut SheetApp, ui: &mut Ui) {
                 data.insert_temp(reveal_id, reveal_key);
                 changed
             });
-            ui.allocate_ui_with_layout(vec2(tabs_width, 30.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            ui.allocate_ui_with_layout(vec2(tabs_width, 30.0), flow, |ui| {
                 // Translate vertical wheel movement into horizontal
                 // worksheet-tab scrolling.
                 let wheel_scroll = if ui.rect_contains_pointer(ui.max_rect()) {
@@ -217,8 +222,14 @@ pub fn sheet_tabs(app: &mut SheetApp, ui: &mut Ui) {
             }
             // The track ends where the grid does, so it stops under the vertical scrollbar.
             let avail = ui.available_rect_before_wrap();
-            let right = app.grid.rect.map_or(avail.right(), |r| r.right()).min(avail.right());
-            let track = Rect::from_min_max(pos2(avail.left() + 8.0, avail.center().y - 7.0), pos2(right, avail.center().y + 7.0));
+            let track = if rtl {
+                // Mirrored: the track starts where the grid does (after its left-hand scrollbar).
+                let left = app.grid.rect.map_or(avail.left(), |r| r.left()).max(avail.left());
+                Rect::from_min_max(pos2(left, avail.center().y - 7.0), pos2(avail.right() - 8.0, avail.center().y + 7.0))
+            } else {
+                let right = app.grid.rect.map_or(avail.right(), |r| r.right()).min(avail.right());
+                Rect::from_min_max(pos2(avail.left() + 8.0, avail.center().y - 7.0), pos2(right, avail.center().y + 7.0))
+            };
             crate::grid::horizontal_scrollbar(app, ui, track, &t);
         });
     });

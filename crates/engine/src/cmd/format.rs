@@ -170,7 +170,15 @@ pub fn specs() -> Vec<CommandSpec> {
             col_width
         ),
         cmd!("home.autofitRowHeight", "AutoFit Row Height", ["Home", "Cells", "Format"], None, "{rows?}", has_doc, autofit_rows),
-        cmd!("home.autofitColumnWidth", "AutoFit Column Width", ["Home", "Cells", "Format"], None, "{cols?}", has_doc, autofit_cols),
+        cmd!(
+            "home.autofitColumnWidth",
+            "AutoFit Column Width",
+            ["Home", "Cells", "Format"],
+            None,
+            "{cols?, measured?: {\"B\": px} widest content measured by the UI}",
+            has_doc,
+            autofit_cols
+        ),
         cmd!("home.defaultWidth", "Default Width…", ["Home", "Cells", "Format"], None, "{width: 64}", has_doc, default_width),
         cmd!("home.hideRows", "Hide Rows", ["Home", "Cells", "Format", "Hide & Unhide"], Some("Cmd+9"), "{rows?}", has_doc, |s, p| hide(
             s, p, true, true
@@ -1027,6 +1035,18 @@ pub fn approx_text_width(text: &str, size: f32, bold: bool) -> f32 {
 
 fn autofit_cols(s: &mut Session, p: &Json) -> Result<Json> {
     let lines = line_targets(s, p, false)?;
+    // A UI with font metrics passes the widest content it measured per column (`{"B": 211.4}`);
+    // those columns use it instead of the per-character estimate.
+    let measured: std::collections::HashMap<u32, f32> = p
+        .get("measured")
+        .and_then(Json::as_object)
+        .map(|m| {
+            m.iter()
+                .filter_map(|(k, v)| Some((gridcraft_core::letters_to_col(&k.to_ascii_uppercase())?, v.as_f64()? as f32)))
+                .filter(|(_, w)| w.is_finite() && *w > 0.0)
+                .collect()
+        })
+        .unwrap_or_default();
     edit(s, |cx| {
         let si = cx.sheet_index();
         let Some(sh) = cx.wb.sheet(si) else { return Ok(Json::Null) };
@@ -1048,6 +1068,9 @@ fn autofit_cols(s: &mut Session, p: &Json) -> Result<Json> {
                             approx_text_width(line, st.font.size, st.font.bold) + 6.0 + st.align.indent as f32 * 9.0 + sh.filter_button_space(cell),
                         );
                     }
+                }
+                if let Some(&w) = measured.get(&c) {
+                    max = w;
                 }
                 if max > 0.0 {
                     widths.push((c, max.clamp(8.0, 1785.0)));

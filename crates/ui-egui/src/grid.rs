@@ -1846,7 +1846,14 @@ fn interact(app: &mut SheetApp, ui: &mut egui::Ui, resp: &egui::Response, geo: &
         } else if in_col_header {
             let col = geo.col_at(sh, p.x);
             let selected = sel.ranges.len() == 1 && sel.current().is_full_cols() && sel.current().contains(CellRef::new(0, col));
-            ctx.set_cursor_icon(if selected { CursorIcon::Move } else { CursorIcon::Default });
+            if selected {
+                ctx.set_cursor_icon(CursorIcon::Move);
+            } else {
+                header_arrow_cursor(&ctx, HeaderArrow::Down);
+            }
+        } else if in_row_header {
+            // Points toward the row: right on a left-to-right sheet, left on a right-to-left one.
+            header_arrow_cursor(&ctx, if geo.rtl { HeaderArrow::Left } else { HeaderArrow::Right });
         }
         app.grid.hover_cell = in_cells.then(|| geo.cell_at(sh, p));
     }
@@ -1965,7 +1972,13 @@ fn interact(app: &mut SheetApp, ui: &mut egui::Ui, resp: &egui::Response, geo: &
         if let Some((command, params)) = autofit {
             app.grid.drag = Drag::None;
             app.grid.drag_select = false;
-            app.run_or_alert(command, params);
+            if command == "home.autofitColumnWidth" {
+                // Measure the cells' text with the fonts that draw it (shaped Arabic, real glyph
+                // widths) instead of the engine's per-character estimate.
+                autofit_columns_measured(app, ui.ctx(), wb, sh, params);
+            } else {
+                app.run_or_alert(command, params);
+            }
             resp.request_focus();
             return;
         }
@@ -3159,6 +3172,88 @@ fn header_menu(app: &mut SheetApp, ui: &mut egui::Ui, was_open: bool) {
     if close {
         app.grid.header_menu = None;
     }
+}
+
+/// AutoFit for columns using real text measurement: each column becomes as wide as its widest
+/// displayed value in the font that draws it, plus the cell padding, like Excel's double-click on
+/// a column border. One `home.autofitColumnWidth` command (one undo step) carries the measured
+/// widths; columns with nothing measured fall back to the engine's estimate.
+fn autofit_columns_measured(app: &mut SheetApp, ctx: &egui::Context, wb: &Workbook, sh: &Sheet, params: serde_json::Value) {
+    let cols: Vec<u32> = match params.get("cols").and_then(serde_json::Value::as_str).and_then(RangeRef::parse) {
+        Some(r) => (r.start.col..=r.end.col).take(16_384).collect(),
+        None => app
+            .session
+            .active()
+            .map(|d| d.selection.ranges.iter().filter(|r| r.is_full_cols()).flat_map(|r| r.start.col..=r.end.col).take(16_384).collect())
+            .unwrap_or_default(),
+    };
+    let mut measured = serde_json::Map::new();
+    if let Some(used) = sh.used_range() {
+        for &c in &cols {
+            let col = RangeRef::new(CellRef::new(used.start.row, c), CellRef::new(used.end.row, c));
+            let mut max: f32 = 0.0;
+            for (cell, _) in sh.cells.iter_range(col) {
+                if sh.merge_at(cell).is_some_and(|m| !m.is_single()) {
+                    continue;
+                }
+                let st = wb.styles.get(sh.style_id(cell));
+                let text = gridcraft_engine::display::cell_text(wb, sh, cell);
+                if text.is_empty() {
+                    continue;
+                }
+                let font = FontId::new(st.font.size * 96.0 / 72.0, theme::cell_family(&st.font.name, st.font.bold, st.font.italic));
+                for line in text.lines() {
+                    let w = ctx.fonts_mut(|f| f.layout_no_wrap(line.to_string(), font.clone(), Color32::PLACEHOLDER).size().x);
+                    max = max.max(w + 7.0 + st.align.indent as f32 * 9.0 + sh.filter_button_space(cell));
+                }
+            }
+            if max > 0.0 {
+                measured.insert(col_to_letters(c), json!(max.ceil()));
+            }
+        }
+    }
+    let mut params = params;
+    if let Some(m) = params.as_object_mut() {
+        m.insert("measured".into(), serde_json::Value::Object(measured));
+    }
+    app.run_or_alert("home.autofitColumnWidth", params);
+}
+
+#[derive(Clone, Copy)]
+enum HeaderArrow {
+    Down,
+    Right,
+    Left,
+}
+
+/// The small black arrow desktop spreadsheets show over row and column headers ("select this
+/// column/row"). No system cursor has this shape, so the cursor is hidden and the arrow drawn at
+/// the pointer, its tip on the hot spot, with a white outline so it reads on any background.
+fn header_arrow_cursor(ctx: &egui::Context, dir: HeaderArrow) {
+    let Some(tip) = ctx.pointer_hover_pos() else { return };
+    ctx.set_cursor_icon(CursorIcon::None);
+    // Shape pointing down, relative to the tip: a head 9 wide and 6 tall on a 3-wide shaft.
+    let shape: [egui::Vec2; 7] =
+        [vec2(0.0, 0.0), vec2(-4.5, -6.0), vec2(-1.5, -6.0), vec2(-1.5, -13.0), vec2(1.5, -13.0), vec2(1.5, -6.0), vec2(4.5, -6.0)];
+    let points: Vec<Pos2> = shape
+        .iter()
+        .map(|v| {
+            let v = match dir {
+                HeaderArrow::Down => *v,
+                HeaderArrow::Right => vec2(v.y, -v.x),
+                HeaderArrow::Left => vec2(-v.y, v.x),
+            };
+            tip + v
+        })
+        .collect();
+    let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Tooltip, egui::Id::new("header_arrow_cursor")));
+    painter.add(egui::Shape::Path(egui::epaint::PathShape::closed_line(points.clone(), Stroke::new(2.0, Color32::WHITE))));
+    // The outline is concave; fill it as two convex parts (head and shaft).
+    let head = vec![points[0], points[1], points[6]];
+    let shaft = vec![points[2], points[3], points[4], points[5]];
+    painter.add(egui::Shape::convex_polygon(head, Color32::BLACK, Stroke::NONE));
+    painter.add(egui::Shape::convex_polygon(shaft, Color32::BLACK, Stroke::NONE));
+    ctx.request_repaint();
 }
 
 /// Runs an action chosen in a context menu.

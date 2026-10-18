@@ -183,7 +183,17 @@ fn table_filter_autofit_works_through_command_and_header_double_click() {
             let rect = geo.cell_rect(sheet, cell);
             let button = gridcraft_ui_egui::grid::filter_button_rect(&geo, sheet, cell);
             let style = app.session.active().unwrap().wb.styles.get(sheet.style_id(cell));
-            let text_width = gridcraft_engine::cmd::format::approx_text_width("Quarterly Revenue", style.font.size, style.font.bold) * geo.z;
+            // A double-click measures the heading with the font that draws it; the command alone
+            // uses the engine's estimate.
+            let text_width = if double_click {
+                let font = egui::FontId::new(
+                    style.font.size * 96.0 / 72.0 * geo.z,
+                    gridcraft_ui_egui::theme::cell_family(&style.font.name, style.font.bold, style.font.italic),
+                );
+                h.ctx.fonts_mut(|f| f.layout_no_wrap("Quarterly Revenue".to_string(), font, egui::Color32::PLACEHOLDER).size().x)
+            } else {
+                gridcraft_engine::cmd::format::approx_text_width("Quarterly Revenue", style.font.size, style.font.bold) * geo.z
+            };
             assert!(rect.left() + text_width + 2.5 * geo.z < button.left(), "heading overlaps filter: zoom={zoom}, double_click={double_click}");
             assert_eq!(app.session.active().unwrap().undo.len(), 1);
             h.state_mut().session.execute("edit.undo", json!({})).unwrap();
