@@ -133,14 +133,14 @@ impl Dialog {
                 "rowHeight",
                 "Row Height",
                 "home.rowHeight",
-                vec![Number { key: "height", label: "Row height (pixels):" }],
+                vec![Number { key: "height", label: "Row height:" }],
                 json!({"height": app.session.active().and_then(|d| d.wb.active().map(|s| s.row_height(d.selection.active.row))).unwrap_or(20.0)}),
             ),
             "columnWidth" => Dialog::form(
                 "columnWidth",
                 "Column Width",
                 "home.columnWidth",
-                vec![Number { key: "chars", label: "Column width (characters):" }],
+                vec![Number { key: "chars", label: "Column width:" }],
                 json!({"chars": app.session.active().and_then(|d| d.wb.active().map(|s| gridcraft_engine::cmd::format::points_to_chars(s.col_width(d.selection.active.col) as f64))).unwrap_or(8.43)}),
             ),
             "defaultWidth" => Dialog::form(
@@ -942,6 +942,12 @@ fn data_validation_form(ui: &mut egui::Ui, d: &mut Dialog, confirm: &mut bool, o
 fn build_params(d: &Dialog) -> Json {
     let mut v = Json::Object(d.values.clone());
     match d.name.as_str() {
+        "columnWidth" | "rowHeight" => {
+            if let Some(m) = v.as_object_mut() {
+                m.remove("text");
+                m.remove("focused");
+            }
+        }
         "dataValidation" => {
             let kind = d.values.get("type").and_then(Json::as_str).unwrap_or("any");
             let operator = d.values.get("operator").and_then(Json::as_str).unwrap_or("between");
@@ -1033,12 +1039,15 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
         "recommendedCharts" => 600.0,
         "analysisToolPak" => 420.0,
         "solver" => 460.0,
+        "columnWidth" | "rowHeight" => 250.0,
         _ => 380.0,
     };
     let window = egui::Window::new(app.ui.language.tr(&d.title))
         .id(egui::Id::new("dialog").with(&d.name))
         .collapsible(false)
         .resizable(false)
+        // Column Width and Row Height draw their own light title row, like the desktop dialogs.
+        .title_bar(!matches!(d.name.as_str(), "columnWidth" | "rowHeight"))
         .default_width(width)
         .anchor(egui::Align2::CENTER_CENTER, vec2(0.0, -40.0))
         .open(&mut win_open);
@@ -1228,6 +1237,7 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
                         open = false;
                     }
                 }
+                "columnWidth" | "rowHeight" => size_dialog(app, ui, &mut d, &mut confirm, &mut open),
                 _ => form(ui, &mut d, &mut confirm, &mut open),
             }
         });
@@ -1363,6 +1373,106 @@ fn paste_special_shortcuts(d: &mut Dialog, ctx: &egui::Context) {
             _ => true,
         });
     });
+}
+
+/// Column Width and Row Height, laid out like the desktop dialogs: one labelled box with its
+/// access key underlined, and OK / Cancel side by side. Row height is shown in points, as in Excel
+/// (the command takes pixels: 1 pt = 4/3 px); column width in characters.
+fn size_dialog(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, confirm: &mut bool, open: &mut bool) {
+    let lang = crate::i18n::current(ui.ctx());
+    let t = crate::theme::Tokens::get(ui.ctx());
+    let rows = d.name == "rowHeight";
+    let (label, key_index, value_key, max) = if rows { ("Row height:", 0, "height", 409.0) } else { ("Column width:", 0, "chars", 255.0) };
+    let text_key = "text";
+    if !d.values.contains_key(text_key) {
+        let v = d.values.get(value_key).and_then(Json::as_f64).unwrap_or(0.0);
+        let shown = if rows { v * 0.75 } else { v };
+        let s = format!("{:.2}", shown);
+        let s = s.trim_end_matches('0').trim_end_matches('.').to_string();
+        d.values.insert(text_key.into(), json!(s));
+    }
+    let mut text = d.values.get(text_key).and_then(Json::as_str).unwrap_or("").to_string();
+    // Title row: small, light title on the left; help and close on the right.
+    ui.allocate_ui_with_layout(vec2(ui.available_width(), 26.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+        ui.label(egui::RichText::new(lang.tr(&d.title)).font(crate::theme::ui_font(13.0)).color(t.text_dim));
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let close = ui.add(
+                egui::Button::new(egui::RichText::new("✕").font(crate::theme::ui_font(14.0)).color(t.text)).frame(false).min_size(vec2(30.0, 24.0)),
+            );
+            if close.clicked() {
+                *open = false;
+            }
+            ui.add_space(14.0);
+            ui.add(egui::Label::new(egui::RichText::new("?").font(crate::theme::ui_font(14.0)).color(t.text_dim)).sense(egui::Sense::hover()))
+                .on_hover_text(lang.tr(if rows {
+                    "Sets the height of the selected rows, in points."
+                } else {
+                    "Sets the width of the selected columns, in characters of the default font."
+                }));
+        });
+    });
+    ui.add_space(8.0);
+    let mut submit = false;
+    ui.horizontal(|ui| {
+        let shown_label = lang.tr(label);
+        let mut job = egui::text::LayoutJob::default();
+        for (i, c) in shown_label.chars().enumerate() {
+            let underline = if i == key_index && shown_label == label { egui::Stroke::new(1.0, t.text) } else { egui::Stroke::NONE };
+            job.append(
+                &c.to_string(),
+                0.0,
+                egui::TextFormat { font_id: crate::theme::ui_font(13.0), color: t.text, underline, ..Default::default() },
+            );
+        }
+        ui.label(job);
+        ui.allocate_ui_with_layout(vec2(ui.available_width(), 28.0), egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let id = egui::Id::new("size_dialog_box").with(&d.name);
+            let resp =
+                ui.add(egui::TextEdit::singleline(&mut text).id(id).desired_width(96.0).margin(vec2(6.0, 4.0)).font(crate::theme::ui_font(13.0)));
+            if !d.values.contains_key("focused") {
+                resp.request_focus();
+                if let Some(mut state) = egui::TextEdit::load_state(ui.ctx(), id) {
+                    let all = egui::text::CCursorRange::two(egui::text::CCursor::new(0), egui::text::CCursor::new(text.chars().count()));
+                    state.cursor.set_char_range(Some(all));
+                    state.store(ui.ctx(), id);
+                }
+                d.values.insert("focused".into(), json!(true));
+            }
+            if resp.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
+                submit = true;
+            }
+        });
+    });
+    d.values.insert(text_key.into(), json!(text));
+    ui.add_space(14.0);
+    ui.allocate_ui_with_layout(vec2(ui.available_width(), 30.0), egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        let button = |label: &str, primary: bool| {
+            egui::Button::new(egui::RichText::new(lang.tr(label)).font(crate::theme::ui_font(13.0)))
+                .min_size(vec2(76.0, 28.0))
+                .corner_radius(4)
+                .stroke(if primary { egui::Stroke::new(1.5, t.text) } else { egui::Stroke::new(1.0, t.input_border) })
+        };
+        if ui.add(button("Cancel", false)).clicked() {
+            *open = false;
+        }
+        ui.add_space(6.0);
+        if ui.add(button("OK", true)).clicked() || ui.input(|i| i.key_pressed(Key::Enter)) {
+            submit = true;
+        }
+    });
+    ui.add_space(4.0);
+    if submit {
+        match text.trim().parse::<f64>() {
+            Ok(v) if (0.0..=max).contains(&v) => {
+                d.values.insert(value_key.into(), json!(if rows { v * 4.0 / 3.0 } else { v }));
+                *confirm = true;
+            }
+            _ => {
+                let what = if rows { "Row height must be a number from 0 to 409." } else { "Column width must be a number from 0 to 255." };
+                app.message = Some((d.title.clone(), lang.tr(what).to_string()));
+            }
+        }
+    }
 }
 
 fn ok_cancel(ui: &mut egui::Ui, confirm: &mut bool, open: &mut bool) {

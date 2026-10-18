@@ -16,9 +16,10 @@ use crate::editor::{EditState, REF_COLORS};
 use crate::theme::{self, Tokens};
 
 pub const COL_HEADER_H: f32 = 21.0;
-/// Sheet units are 96-dpi pixels (as in XLSX); on screen one unit is drawn at this many points,
-/// which matches desktop spreadsheet density (a default 20 px row is 16 pt tall).
-pub const DISPLAY_SCALE: f32 = 0.8;
+/// Sheet units are 96-dpi pixels (as in XLSX); on screen one unit is drawn at this many points.
+/// NuxOffice draws at 1.0, like Excel on Windows: at 100% zoom a 64 px column is 64 device-
+/// independent pixels wide and an 11 pt font is 11 pt tall (upstream GridCraft uses 0.8).
+pub const DISPLAY_SCALE: f32 = 1.0;
 
 /// The zoom percentages a Ctrl+wheel notch steps between: four per doubling (about 20% apart),
 /// so 25, 50, 100, 200 and 400 are on it. Excel steps 15 points a notch instead; the status bar's
@@ -1700,7 +1701,8 @@ pub(crate) fn paint_headers(
     t: &Tokens,
     quads: &[((u32, u32), (u32, u32), Rect)],
 ) {
-    let font = theme::ui_font((11.5 * (geo.z / DISPLAY_SCALE).max(0.75)).min(16.0));
+    // Header labels scale with zoom like Excel's (no upper cap), never below a readable size.
+    let font = theme::ui_font((12.0 * (geo.z / DISPLAY_SCALE)).max(8.5));
     // The headers' own area: inside the outline bands.
     let r = Rect::from_min_max(pos2(geo.head_left(), geo.head_top()), geo.rect.max);
     let top = Rect::from_min_max(pos2(geo.cells.left(), r.top()), pos2(r.right(), geo.cells.top()));
@@ -2577,7 +2579,8 @@ fn keyboard(app: &mut SheetApp, ctx: &egui::Context, resp: &egui::Response, geo:
     }
     let other_focus = ctx.memory(|m| m.focused()).is_some_and(|f| f != resp.id && (editing || !stale.contains(&f)));
     // An open filter menu owns the keyboard even when a click inside it left focus on nothing (#1516).
-    if editing || app.dialog.is_some() || other_focus || app.message.is_some() || app.grid.filter_menu.is_some() {
+    // An open context menu owns the keyboard too (its access keys and search box).
+    if editing || app.dialog.is_some() || other_focus || app.message.is_some() || app.grid.filter_menu.is_some() || app.grid.header_menu.is_some() {
         return;
     }
     if ctx.memory(|m| m.focused()).is_none() {
@@ -3121,72 +3124,55 @@ fn list_picker(app: &mut SheetApp, ui: &mut egui::Ui, geo: &Geo, was_open: bool)
 
 fn header_menu(app: &mut SheetApp, ui: &mut egui::Ui, was_open: bool) {
     let Some((at, rows)) = app.grid.header_menu else { return };
-    let mut close = false;
-    let response = egui::Area::new(egui::Id::new("header_menu")).fixed_pos(at).order(egui::Order::Foreground).show(ui.ctx(), |ui| {
-        egui::Frame::popup(ui.style()).show(ui, |ui| {
-            ui.set_min_width(190.0);
-            let insert_copied = insert_copied_item(app);
-            let mut items: Vec<(&str, &str)> = if rows {
-                vec![
-                    ("Cut", "edit.cut"),
-                    ("Copy", "edit.copy"),
-                    ("Paste", "edit.paste"),
-                    ("-", ""),
-                    ("Insert", "home.insertRows"),
-                    ("Delete", "home.deleteRows"),
-                    ("Clear Contents", "edit.clearContents"),
-                    ("-", ""),
-                    ("Row Height…", "ui:rowHeight"),
-                    ("AutoFit Row Height", "home.autofitRowHeight"),
-                    ("Hide", "home.hideRows"),
-                    ("Unhide", "home.unhideRows"),
-                    ("Group", "data.group"),
-                ]
-            } else {
-                vec![
-                    ("Cut", "edit.cut"),
-                    ("Copy", "edit.copy"),
-                    ("Paste", "edit.paste"),
-                    ("-", ""),
-                    ("Insert", "home.insertColumns"),
-                    ("Delete", "home.deleteColumns"),
-                    ("Clear Contents", "edit.clearContents"),
-                    ("-", ""),
-                    ("Column Width…", "ui:columnWidth"),
-                    ("AutoFit Column Width", "home.autofitColumnWidth"),
-                    ("Hide", "home.hideColumns"),
-                    ("Unhide", "home.unhideColumns"),
-                    ("Sort A to Z", "data.sortAscending"),
-                    ("Group", "data.group"),
-                ]
-            };
-            if let Some(item) = insert_copied {
-                items.insert(5, item);
-            }
-            let lang = crate::i18n::current(ui.ctx());
-            for (label, id) in items {
-                if label == "-" {
-                    ui.separator();
-                    continue;
-                }
-                if ui.add(egui::Button::new(lang.tr(label)).frame(false).min_size(vec2(180.0, 20.0))).clicked() {
-                    close = true;
-                    match id {
-                        "ui:insertPaste" => app.open_dialog("insertPaste", json!({})),
-                        "ui:rowHeight" => app.open_dialog("rowHeight", json!({})),
-                        "ui:columnWidth" => app.open_dialog("columnWidth", json!({})),
-                        "edit.copy" | "edit.cut" => {
-                            app.copy_to_clipboard(ui.ctx(), id);
-                        }
-                        "edit.paste" => app.paste_from_clipboard(),
-                        other => app.run_or_alert(other, json!({})),
-                    }
-                }
-            }
-        });
-    });
-    if close || popup_dismissed(&response.response, was_open) {
+    use crate::excel_menu::Entry::{self, Heading, Item, PasteRow, Separator};
+    // Same items and order as the desktop spreadsheet's row/column header menu.
+    let insert = match insert_copied_item(app) {
+        Some((_, "ui:insertPaste")) => ("Insert Copied Cells…", "ui:insertPaste"),
+        Some((label, id)) => (label, id),
+        None if rows => ("&Insert", "home.insertRows"),
+        None => ("&Insert", "home.insertColumns"),
+    };
+    let entries: Vec<Entry> = vec![
+        Item { label: "Cu&t", icon: Some(crate::icons::Icon::Cut), action: "edit.cut" },
+        Item { label: "&Copy", icon: Some(crate::icons::Icon::Copy), action: "edit.copy" },
+        Heading { label: "Paste Options:", icon: Some(crate::icons::Icon::Paste) },
+        PasteRow,
+        Item { label: "Paste &Special…", icon: None, action: "ui:pasteSpecial" },
+        Separator,
+        Item { label: insert.0, icon: None, action: insert.1 },
+        Item { label: "&Delete", icon: None, action: if rows { "home.deleteRows" } else { "home.deleteColumns" } },
+        Item { label: "Clear Co&ntents", icon: None, action: "edit.clearContents" },
+        Separator,
+        Item { label: "&Format Cells…", icon: Some(crate::icons::Icon::Format), action: "ui:formatCells" },
+        if rows {
+            Item { label: "Row &Height…", icon: None, action: "ui:rowHeight" }
+        } else {
+            Item { label: "Column &Width…", icon: None, action: "ui:columnWidth" }
+        },
+        Item { label: "&Hide", icon: None, action: if rows { "home.hideRows" } else { "home.hideColumns" } },
+        Item { label: "&Unhide", icon: None, action: if rows { "home.unhideRows" } else { "home.unhideColumns" } },
+    ];
+    let (chosen, close) = crate::excel_menu::show(ui.ctx(), egui::Id::new("header_menu"), at, &entries, !was_open);
+    if let Some(id) = chosen {
+        run_menu_action(app, ui.ctx(), id);
+    }
+    if close {
         app.grid.header_menu = None;
+    }
+}
+
+/// Runs an action chosen in a context menu.
+fn run_menu_action(app: &mut SheetApp, ctx: &egui::Context, id: &str) {
+    match id {
+        crate::excel_menu::PASTE | "edit.paste" => app.paste_from_clipboard(),
+        crate::excel_menu::PASTE_VALUES => app.run_or_alert("edit.pasteSpecial", json!({"what": "values"})),
+        "edit.copy" | "edit.cut" => app.copy_to_clipboard(ctx, id),
+        "ui:pasteSpecial" => app.open_dialog("pasteSpecial", json!({})),
+        "ui:insertPaste" => app.open_dialog("insertPaste", json!({})),
+        "ui:formatCells" => app.open_dialog("formatCells", json!({})),
+        "ui:rowHeight" => app.open_dialog("rowHeight", json!({})),
+        "ui:columnWidth" => app.open_dialog("columnWidth", json!({})),
+        other => app.run_or_alert(other, json!({})),
     }
 }
 
