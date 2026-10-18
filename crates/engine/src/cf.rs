@@ -237,10 +237,15 @@ impl CfCache {
                             }
                             [(a, ca), (b, cb)] => lerp(*ca, *cb, if b > a { (n - a) / (b - a) } else { 0.0 }),
                             [(a, ca), (m, cm), (b, cb)] => {
-                                if n <= *m {
-                                    lerp(*ca, *cm, if m > a { (n - a) / (m - a) } else { 0.0 })
-                                } else {
+                                // The last segment containing the value wins: at a repeated
+                                // adjacent threshold the later colour takes it, as with two
+                                // stops (#1848).
+                                if n >= *m {
                                     lerp(*cm, *cb, if b > m { (n - m) / (b - m) } else { 1.0 })
+                                } else if n >= *a {
+                                    lerp(*ca, *cm, if m > a { (n - a) / (m - a) } else { 1.0 })
+                                } else {
+                                    *ca
                                 }
                             }
                             _ => [255, 255, 255],
@@ -509,5 +514,70 @@ mod tests {
         let mid = fill("A7").unwrap();
         assert_ne!(mid, [0xFF, 0, 0]);
         assert_ne!(mid, [0, 0xFF, 0]);
+    }
+
+    /// Three stops with the first threshold repeated: the value at it takes the later colour,
+    /// as with two stops (#1848).
+    #[test]
+    fn color_scale_three_stops_repeating_the_first_threshold_take_the_later_colour() {
+        let mut s = crate::Session::new();
+        s.new_workbook();
+        s.execute("range.setValues", json!({"range": "A1", "values": [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]})).unwrap();
+        let sh = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().wb).sheet_mut(0).unwrap();
+        sh.cond_formats = vec![CondFormat {
+            ranges: vec![RangeRef::parse("A1:A11").unwrap()],
+            rule: CfRule::ColorScale {
+                stops: vec![
+                    (CfValueKind::Number(2.0), Color::rgb(0xFF, 0, 0)),
+                    (CfValueKind::Number(2.0), Color::rgb(0, 0xFF, 0)),
+                    (CfValueKind::Number(8.0), Color::rgb(0, 0, 0xFF)),
+                ],
+            },
+            priority: 1,
+            stop_if_true: false,
+        }];
+        let fill = |a: &str| {
+            let d = s.doc().unwrap();
+            CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
+        };
+        // Below the repeated threshold: the first colour; at it: the second one.
+        assert_eq!(fill("A2"), Some([0xFF, 0, 0]));
+        assert_eq!(fill("A3"), Some([0, 0xFF, 0]));
+        assert_eq!(fill("A9"), Some([0, 0, 0xFF]));
+        assert_eq!(fill("A11"), Some([0, 0, 0xFF]));
+        let mid = fill("A6").unwrap();
+        assert_ne!(mid, [0, 0xFF, 0]);
+        assert_ne!(mid, [0, 0, 0xFF]);
+    }
+
+    /// Three stops with the last threshold repeated: the value at it takes the later colour,
+    /// as with two stops (#1848).
+    #[test]
+    fn color_scale_three_stops_repeating_the_last_threshold_take_the_later_colour() {
+        let mut s = crate::Session::new();
+        s.new_workbook();
+        s.execute("range.setValues", json!({"range": "A1", "values": [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]})).unwrap();
+        let sh = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().wb).sheet_mut(0).unwrap();
+        sh.cond_formats = vec![CondFormat {
+            ranges: vec![RangeRef::parse("A1:A11").unwrap()],
+            rule: CfRule::ColorScale {
+                stops: vec![
+                    (CfValueKind::Number(2.0), Color::rgb(0xFF, 0, 0)),
+                    (CfValueKind::Number(8.0), Color::rgb(0, 0xFF, 0)),
+                    (CfValueKind::Number(8.0), Color::rgb(0, 0, 0xFF)),
+                ],
+            },
+            priority: 1,
+            stop_if_true: false,
+        }];
+        let fill = |a: &str| {
+            let d = s.doc().unwrap();
+            CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
+        };
+        // Between the two thresholds: the first segment; at the repeated one: the later colour.
+        assert_eq!(fill("A2"), Some([0xFF, 0, 0]));
+        assert_eq!(fill("A6"), Some([128, 128, 0]));
+        assert_eq!(fill("A9"), Some([0, 0, 0xFF]));
+        assert_eq!(fill("A11"), Some([0, 0, 0xFF]));
     }
 }
