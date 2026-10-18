@@ -37,3 +37,7 @@ Every NuxOffice edit inside a file that comes from GridCraft is listed here, so 
 | `crates/ui-egui/tests/borders.rs` | Border dialog test uses the new line-style-then-edge flow and plain OK/Cancel labels | Follows the dialog | No |
 | `crates/ui-egui/src/widgets.rs` (`color_palette`) | Delegates to the new `color_picker.rs` (MPL-2.0) and takes a caller key | Desktop palette and Colors window | Maybe |
 | `crates/ui-egui/src/ribbon.rs`, `panes.rs`, `tabs.rs`, `lib.rs` | Palette callers pass a key and collect More Colors results; the Colors window is drawn each frame | Wiring for the new picker | Maybe |
+| `crates/ui-egui/src/ribbon.rs` (groups) | Group captions and dialog launchers under every ribbon group, a taller card with a soft shadow; helpers in new `ribbon_extra.rs` (MPL-2.0) | Desktop ribbon layout | Maybe |
+| `crates/ui-egui/src/ribbon.rs` (Page Layout) | Rebuilt in the desktop order: Themes, Page Setup, Scale to Fit, Sheet Options, Arrange | Familiar tab | Maybe |
+| `crates/ui-egui/src/ribbon.rs`, `lib.rs` (title bar) | App mark, Quick Access Toolbar with Undo/Redo lists and a customize menu, dim "Book - Cellnux" title, `qat_hidden` preference; right-click menu over the ribbon (Hide Quick Access Toolbar, Customize the Ribbon, Collapse the Ribbon) | Desktop title bar | No |
+| `crates/ui-egui/src/formula_bar.rs` | Rounded Name Box, dotted divider, Cancel/Enter/fx in one rounded box | Desktop formula bar | Maybe |

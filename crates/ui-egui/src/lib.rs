@@ -32,6 +32,7 @@ pub mod paper_view;
 pub mod pivot_pane;
 pub mod printing;
 pub mod ribbon;
+pub mod ribbon_extra;
 pub mod selection_glide;
 pub mod tabs;
 pub mod text_box;
@@ -57,6 +58,8 @@ pub struct UiState {
     pub system_theme: bool,
     pub ribbon_tab: String,
     pub ribbon_collapsed: bool,
+    /// Hide the Quick Access Toolbar (Save, Undo, Redo…) in the title bar.
+    pub qat_hidden: bool,
     pub formula_bar_expanded: bool,
     pub status_bar: bool,
     /// Motion in the UI: the selection outline glides to a new selection (View ▸ Animations).
@@ -103,6 +106,7 @@ impl Default for UiState {
             system_theme: false,
             ribbon_tab: "Home".into(),
             ribbon_collapsed: false,
+            qat_hidden: false,
             formula_bar_expanded: false,
             status_bar: true,
             animations: true,
