@@ -17,6 +17,7 @@ pub mod dialogs;
 pub mod editor;
 pub mod excel_menu;
 pub mod fonts;
+pub mod format_cells;
 pub mod formula_bar;
 mod formula_locale;
 pub mod grid;
