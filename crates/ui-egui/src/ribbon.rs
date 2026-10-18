@@ -76,10 +76,11 @@ pub fn title_bar(app: &mut SheetApp, ui: &mut Ui) {
             // Centered title, dim as in desktop suites: "Book1 - Cellnux".
             let title = app.session.active().map(|d| d.display_title()).unwrap_or_default();
             let dirty = app.session.active().is_some_and(|d| d.is_dirty());
+            let grouped = app.session.active().is_some_and(|d| d.grouped.len() > 1);
             ui.painter().text(
                 rect.center(),
                 Align2::CENTER_CENTER,
-                format!("{title}{} - Cellnux", if dirty { " •" } else { "" }),
+                format!("{title}{}{} - Cellnux", if grouped { "  [Group]" } else { "" }, if dirty { " •" } else { "" }),
                 theme::ui_font(13.0),
                 t.text_dim,
             );

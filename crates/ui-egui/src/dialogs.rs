@@ -1039,6 +1039,8 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
         "analysisToolPak" => 420.0,
         "solver" => 460.0,
         "columnWidth" | "rowHeight" => 250.0,
+        "insertCells" | "deleteCells" => 280.0,
+        "moveSheet" => 440.0,
         _ => 380.0,
     };
     let window = egui::Window::new(app.ui.language.tr(&d.title))
@@ -1046,7 +1048,7 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
         .collapsible(false)
         .resizable(false)
         // Column Width and Row Height draw their own light title row, like the desktop dialogs.
-        .title_bar(!matches!(d.name.as_str(), "columnWidth" | "rowHeight" | "formatCells"))
+        .title_bar(!matches!(d.name.as_str(), "columnWidth" | "rowHeight" | "formatCells" | "insertCells" | "deleteCells" | "moveSheet"))
         .default_width(width)
         .anchor(egui::Align2::CENTER_CENTER, vec2(0.0, -40.0))
         .open(&mut win_open);
@@ -1055,6 +1057,8 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
             ui.set_min_width(width - 20.0);
             match d.name.as_str() {
                 "formatCells" => crate::format_cells::show(app, ui, &mut d, &mut confirm, &mut open),
+                "insertCells" | "deleteCells" => crate::sheet_dialogs::cells(app, ui, &mut d, &mut confirm, &mut open),
+                "moveSheet" => crate::sheet_dialogs::move_copy(app, ui, &mut d, &mut confirm, &mut open),
                 "dataValidation" => data_validation_form(ui, &mut d, &mut confirm, &mut open),
                 "insertFunction" => insert_function(app, ui, &mut d, &mut confirm),
                 "find" => find(app, ui, &mut d),

@@ -41,3 +41,7 @@ Every NuxOffice edit inside a file that comes from GridCraft is listed here, so 
 | `crates/ui-egui/src/ribbon.rs` (Page Layout) | Rebuilt in the desktop order: Themes, Page Setup, Scale to Fit, Sheet Options, Arrange | Familiar tab | Maybe |
 | `crates/ui-egui/src/ribbon.rs`, `lib.rs` (title bar) | App mark, Quick Access Toolbar with Undo/Redo lists and a customize menu, dim "Book - Cellnux" title, `qat_hidden` preference; right-click menu over the ribbon (Hide Quick Access Toolbar, Customize the Ribbon, Collapse the Ribbon) | Desktop title bar | No |
 | `crates/ui-egui/src/formula_bar.rs` | Rounded Name Box, dotted divider, Cancel/Enter/fx in one rounded box | Desktop formula bar | Maybe |
+| `crates/engine/src/lib.rs`, `cmd/sheet.rs` | Sheet groups: `DocState::grouped`, `sheet.group` / `sheet.ungroup`; cell, edit and formatting commands repeat on every grouped sheet in one undo step; the group drops when sheets change or a sheet outside it is activated | Excel's grouped sheets | Yes |
+| `crates/ui-egui/src/tabs.rs` | Desktop tab strip: grouped tabs, Shift/Ctrl+click grouping, drag with a drop marker and Ctrl+drag to copy, rename selects the whole name, New Sheet beside the tabs, a splitter before the scrollbar; right-click menu in new `sheet_tab_menu.rs` (MPL-2.0) | Matches Excel | Maybe |
+| `crates/ui-egui/src/dialogs.rs` | Insert/Delete cells and Move or Copy drawn by new `sheet_dialogs.rs` (MPL-2.0) | Desktop dialogs | Maybe |
+| `crates/ui-egui/src/ribbon.rs` (title) | "[Group]" in the title while sheets are grouped | Matches Excel | Maybe |
