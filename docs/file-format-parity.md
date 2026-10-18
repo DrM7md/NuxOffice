@@ -1,6 +1,6 @@
 # File-format parity
 
-> **Last reviewed:** 2026-10-11 · **Last updated:** 2026-10-13 · **Change:** minor (safe save and AutoSave error feedback); previously trivial (XLSX chart sheets are kept on save (#727); previously minor: CSV save keeps the separator it was opened with) · **Target:** Microsoft Excel (Microsoft 365), Excel for Mac 16.113.4
+> **Last reviewed:** 2026-10-11 · **Last updated:** 2026-10-18 · **Change:** trivial (formulas over Excel's 8,192 characters, and `%` or call chains past the nesting limit, are parse errors instead of stack overflows when a file is opened; previously trivial: XLSX chart sheets are kept on save (#727)) · **Target:** Microsoft Excel (Microsoft 365), Excel for Mac 16.113.4
 
 Saving exclusively creates a unique sibling temporary file, syncs it before replacement and preserves existing file permissions. Pre-existing temporary names and symlinks are untouched; failed saves remove only the temporary file created by that call.
 
@@ -87,6 +87,8 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | maintenance | Refreshed save safety and AutoSave error feedback onto 0.8.0/main; preserve the upstream parser-limit documentation. No scope or readiness change. |
+| 2026-10-14 | trivial | Formula parser: text longer than Excel's 8,192 characters, and postfix chains (`1%%%…`, `f(1)(1)…`) past the 256-level nesting limit, are parse errors (the cell keeps its formula text and cached value) instead of trees deep enough to overflow the stack when a hostile file is opened, saved or dropped |
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
 | 2026-10-12 | trivial | XLSX chart sheets are kept on save (#727) |
 | 2026-10-12 | trivial | CSV and TSV export is capped at 512 MiB and refuses a larger used range with an error (#528) |
