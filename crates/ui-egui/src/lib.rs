@@ -11,6 +11,7 @@ mod border_preview;
 mod cell_pictures;
 pub mod cf_icons;
 pub mod chartview;
+pub mod color_picker;
 pub mod control;
 pub mod credits;
 pub mod dialogs;
@@ -1132,6 +1133,7 @@ impl SheetApp {
             });
         }
         dialogs::show(self, &ctx);
+        color_picker::window(&ctx);
         widgets::message_box(self, &ctx);
         widgets::toast(self, &ctx);
         control::issue_screenshots(self, &ctx);

@@ -167,9 +167,9 @@ fn color_combo(ui: &mut Ui, id: &str, current: Option<Color32>, theme_colors: &[
         crate::icons::Icon::Chevron,
         t.text,
     );
-    let mut out = None;
+    let mut out = crate::color_picker::take_result(ui.ctx(), id).map(Some);
     egui::Popup::menu(&resp).show(|ui| {
-        if let Some(c) = crate::widgets::color_palette(ui, theme_colors, lang.tr(auto_label)) {
+        if let Some(c) = crate::widgets::color_palette(ui, theme_colors, auto_label, id) {
             out = Some(if c == "none" { None } else { Some(c) });
             ui.close();
         }
@@ -1090,7 +1090,9 @@ fn fill_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
         ui.vertical(|ui| {
             ui.set_width(270.0);
             key_label(ui, "Background &Color:");
-            if let Some(c) = crate::widgets::color_palette(ui, &theme.colors, lang.tr("No Color")) {
+            let picked = crate::widgets::color_palette(ui, &theme.colors, "No Color", "formatCellsFill")
+                .or_else(|| crate::color_picker::take_result(ui.ctx(), "formatCellsFill"));
+            if let Some(c) = picked {
                 st.fill = if c == "none" { Fill::default() } else { Fill::solid(Color::from_hex(&c).unwrap_or_default()) };
             }
             ui.add_space(8.0);
