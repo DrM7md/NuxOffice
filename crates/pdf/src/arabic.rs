@@ -65,10 +65,14 @@ impl Face {
 }
 
 fn face(is_bold: bool) -> Result<&'static Face, Error> {
-    static REGULAR: OnceLock<Result<Face, Error>> = OnceLock::new();
-    static BOLD: OnceLock<Result<Face, Error>> = OnceLock::new();
+    static REGULAR: OnceLock<Face> = OnceLock::new();
+    static BOLD: OnceLock<Face> = OnceLock::new();
     let cache = if is_bold { &BOLD } else { &REGULAR };
-    cache.get_or_init(|| load_face(is_bold)).as_ref().map_err(Clone::clone)
+    if let Some(face) = cache.get() {
+        return Ok(face);
+    }
+    let loaded = load_face(is_bold)?;
+    Ok(cache.get_or_init(|| loaded))
 }
 
 fn load_face(is_bold: bool) -> Result<Face, Error> {
