@@ -9,6 +9,7 @@
 pub mod backstage;
 mod border_preview;
 mod cell_pictures;
+pub mod cf_icons;
 pub mod chartview;
 pub mod control;
 pub mod credits;

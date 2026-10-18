@@ -635,29 +635,47 @@ fn home(app: &mut SheetApp, ui: &mut Ui) {
             }
             ba.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), "Border presets"));
             egui::Popup::menu(&ba).show(|ui| {
-                for (label, preset) in [
-                    ("Bottom Border", "bottom"),
-                    ("Top Border", "top"),
-                    ("Left Border", "left"),
-                    ("Right Border", "right"),
-                    ("No Border", "none"),
-                    ("All Borders", "all"),
-                    ("Outside Borders", "outside"),
-                    ("Thick Outside Borders", "thickOutside"),
-                    ("Bottom Double Border", "doubleBottom"),
-                    ("Thick Bottom Border", "thickBottom"),
-                    ("Top and Bottom Border", "topBottom"),
-                    ("Top and Thick Bottom Border", "topThickBottom"),
-                    ("Top and Double Bottom Border", "topDoubleBottom"),
-                    ("Inside Borders", "inside"),
-                ] {
-                    if crate::border_preview::preset_button(ui, label, preset).clicked() {
-                        app.grid.last_border = preset.to_string();
-                        act(app, "home.borders", json!({"preset": preset}));
+                // Same groups and order as the desktop Borders menu.
+                ui.spacing_mut().item_spacing.y = 0.0;
+                let lang = app.ui.language;
+                let heading = |ui: &mut Ui, text: &str| {
+                    ui.add_space(4.0);
+                    ui.label(egui::RichText::new(lang.tr(text)).font(theme::ui_bold(13.0)));
+                    ui.add_space(4.0);
+                };
+                heading(ui, "Borders");
+                let groups: [&[(&str, &str)]; 3] = [
+                    &[("&Bottom Border", "bottom"), ("To&p Border", "top"), ("&Left Border", "left"), ("&Right Border", "right")],
+                    &[("&No Border", "none"), ("&All Borders", "all"), ("Out&side Borders", "outside"), ("&Thick Outside Borders", "thickOutside")],
+                    &[
+                        ("&Bottom Double Border", "doubleBottom"),
+                        ("T&hick Bottom Border", "thickBottom"),
+                        ("Top an&d Bottom Border", "topBottom"),
+                        ("Top and Thi&ck Bottom Border", "topThickBottom"),
+                        ("Top and Do&uble Bottom Border", "topDoubleBottom"),
+                    ],
+                ];
+                for (gi, group) in groups.iter().enumerate() {
+                    if gi > 0 {
+                        ui.separator();
+                    }
+                    for (label, preset) in group.iter() {
+                        if crate::border_preview::preset_button(ui, label, preset).clicked() {
+                            app.grid.last_border = preset.to_string();
+                            act(app, "home.borders", json!({"preset": preset}));
+                        }
                     }
                 }
                 ui.separator();
-                if ui.button("More Borders…").clicked() {
+                heading(ui, "Draw Borders");
+                // Drawing borders with the pointer is not implemented yet: shown, but disabled.
+                ui.add_enabled_ui(false, |ui| {
+                    for label in ["Dra&w Border", "Draw Border &Grid", "&Erase Border", "&Line Color", "Line St&yle"] {
+                        crate::border_preview::preset_button(ui, label, "draw").on_disabled_hover_text(lang.tr("Not available yet"));
+                    }
+                });
+                ui.separator();
+                if crate::border_preview::preset_button(ui, "&More Borders…", "all").clicked() {
                     app.open_dialog("formatCells", json!({"tab": "Border"}));
                 }
             });
@@ -769,16 +787,32 @@ fn home(app: &mut SheetApp, ui: &mut Ui) {
             }
             ui.label(egui::RichText::new(app.ui.language.tr("Merge & Center")).font(theme::ui_font(12.5)));
             egui::Popup::menu(&ma).show(|ui| {
-                menu_items(
-                    app,
-                    ui,
-                    &[
-                        ("Merge & Center", "home.mergeCenter", json!({})),
-                        ("Merge Across", "home.mergeAcross", json!({})),
-                        ("Merge Cells", "home.mergeCells", json!({})),
-                        ("Unmerge Cells", "home.unmergeCells", json!({})),
-                    ],
-                );
+                // Desktop order, each with its own icon and access key.
+                ui.spacing_mut().item_spacing.y = 0.0;
+                let t = Tokens::get(ui.ctx());
+                for (label, cmd, kind) in [
+                    ("Merge && &Center", "home.mergeCenter", 0u8),
+                    ("Merge &Across", "home.mergeAcross", 1),
+                    ("&Merge Cells", "home.mergeCells", 2),
+                    ("&Unmerge Cells", "home.unmergeCells", 3),
+                    ("Center Across &Selection", "home.formatCells", 4),
+                ] {
+                    let resp = ui.add(egui::Button::new("").frame(false).min_size(vec2(260.0, 30.0)));
+                    let plain = label.replace("&&", "\u{1}").replace('&', "").replace('\u{1}', "&");
+                    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &plain));
+                    let icon = Rect::from_center_size(pos2(resp.rect.left() + 18.0, resp.rect.center().y), vec2(18.0, 16.0));
+                    merge_icon(ui.painter(), icon, kind, t.text, t.accent);
+                    let galley = ui.painter().layout_job(crate::border_preview::access_key_job(label, theme::ui_font(13.0), t.text));
+                    ui.painter().galley(pos2(resp.rect.left() + 40.0, resp.rect.center().y - galley.size().y / 2.0), galley, t.text);
+                    if resp.clicked() {
+                        if kind == 4 {
+                            act(app, cmd, json!({"style": {"align": {"h": "CenterAcross"}}}));
+                        } else {
+                            act(app, cmd, json!({}));
+                        }
+                        ui.close();
+                    }
+                }
             });
         });
     });
@@ -1141,89 +1175,210 @@ fn number_combo(app: &mut SheetApp, ui: &mut Ui, st: &Style) {
     }
 }
 
-fn cf_menu(app: &mut SheetApp, ui: &mut Ui) {
-    ui.menu_button("Highlight Cells Rules", |ui| {
-        for (label, op) in [("Greater Than…", "greater"), ("Less Than…", "less"), ("Between…", "between"), ("Equal To…", "equal")] {
-            if ui.button(label).clicked() {
-                app.open_dialog("cfQuick", json!({"type": "cellIs", "operator": op, "title": label}));
+/// A conditional-formatting menu row: an icon column, then the label with its access key
+/// underlined (`&`), bold for the five rule families as in the desktop menu.
+fn cf_button(ui: &Ui, label: &str, big: bool) -> egui::Button<'static> {
+    let t = Tokens::get(ui.ctx());
+    let lang = crate::i18n::current(ui.ctx());
+    let plain: String = label.replace('&', "");
+    let shown = lang.tr(&plain).to_string();
+    let key = if shown == plain { label.find('&').map(|b| label[..b].chars().count()) } else { None };
+    let font = if big { theme::ui_bold(13.5) } else { theme::ui_font(13.0) };
+    let mut job = egui::text::LayoutJob::default();
+    for (i, c) in shown.chars().enumerate() {
+        let underline = if Some(i) == key { Stroke::new(1.0, t.text) } else { Stroke::NONE };
+        let lead = if i == 0 { if big { 46.0 } else { 30.0 } } else { 0.0 };
+        job.append(&c.to_string(), lead, egui::TextFormat { font_id: font.clone(), color: t.text, underline, ..Default::default() });
+    }
+    egui::Button::new(job).frame(false).min_size(vec2(270.0, if big { 40.0 } else { 26.0 }))
+}
+
+fn cf_icon_at(ui: &Ui, row: Rect, icon: crate::cf_icons::CfIcon, big: bool) {
+    let s = if big { 30.0 } else { 18.0 };
+    let r = Rect::from_center_size(pos2(row.left() + 8.0 + s / 2.0, row.center().y), vec2(s, s));
+    crate::cf_icons::paint(ui.painter(), r, icon);
+}
+
+/// A plain row; returns true when clicked.
+fn cf_item(ui: &mut Ui, label: &str, icon: Option<crate::cf_icons::CfIcon>, big: bool) -> bool {
+    let resp = ui.add(cf_button(ui, label, big));
+    if let Some(icon) = icon {
+        cf_icon_at(ui, resp.rect, icon, big);
+    }
+    resp.clicked()
+}
+
+/// A row that opens a submenu.
+fn cf_submenu(ui: &mut Ui, label: &str, icon: Option<crate::cf_icons::CfIcon>, big: bool, content: impl FnOnce(&mut Ui)) {
+    let (resp, _) = egui::containers::menu::SubMenuButton::from_button(cf_button(ui, label, big)).ui(ui, |ui| {
+        ui.set_min_width(300.0);
+        content(ui);
+    });
+    if let Some(icon) = icon {
+        cf_icon_at(ui, resp.rect, icon, big);
+    }
+    let a = Rect::from_center_size(pos2(resp.rect.right() - 12.0, resp.rect.center().y), vec2(12.0, 12.0));
+    icons::paint(ui.painter(), a, Icon::Right, Tokens::get(ui.ctx()).text);
+}
+
+fn cf_more_rules(app: &mut SheetApp, ui: &mut Ui) {
+    ui.separator();
+    if cf_item(ui, "&More Rules…", None, false) {
+        app.open_dialog("cfQuick", json!({"type": "expression", "title": "New Formatting Rule"}));
+    }
+}
+
+/// Conditional Formatting, laid out like the desktop menu: five rule families with large icons
+/// and submenus, then New Rule, Clear Rules and Manage Rules. Icons are this project's own
+/// (`cf_icons`).
+/// Original icons for the Merge menu: a 3-column cell block showing the merge result.
+/// `kind`: 0 Merge & Center, 1 Merge Across, 2 Merge Cells, 3 Unmerge, 4 Center Across Selection.
+fn merge_icon(p: &egui::Painter, r: Rect, kind: u8, ink: Color32, accent: Color32) {
+    let stroke = Stroke::new(1.2, ink);
+    p.rect_stroke(r, 0.0, stroke, StrokeKind::Inside);
+    let third = r.width() / 3.0;
+    let mid_y = r.center().y;
+    match kind {
+        0 | 4 => {
+            // One wide cell with arrows pointing out from the centre.
+            let y = mid_y;
+            p.arrow(pos2(r.center().x, y), vec2(-(r.width() / 2.0 - 3.0), 0.0), Stroke::new(1.2, accent));
+            p.arrow(pos2(r.center().x, y), vec2(r.width() / 2.0 - 3.0, 0.0), Stroke::new(1.2, accent));
+            if kind == 4 {
+                p.line_segment([pos2(r.left() + third, r.top()), pos2(r.left() + third, r.top() + 3.0)], stroke);
+                p.line_segment([pos2(r.right() - third, r.bottom() - 3.0), pos2(r.right() - third, r.bottom())], stroke);
             }
         }
-        if ui.button("Text that Contains…").clicked() {
+        1 => {
+            p.line_segment([pos2(r.left(), mid_y), pos2(r.right(), mid_y)], stroke);
+            p.arrow(pos2(r.left() + 3.0, r.top() + r.height() * 0.28), vec2(r.width() - 6.0, 0.0), Stroke::new(1.2, accent));
+            p.arrow(pos2(r.left() + 3.0, r.bottom() - r.height() * 0.28), vec2(r.width() - 6.0, 0.0), Stroke::new(1.2, accent));
+        }
+        2 => {
+            p.line_segment([pos2(r.left(), mid_y), pos2(r.right(), mid_y)], Stroke::new(1.2, accent));
+        }
+        _ => {
+            for k in 1..3 {
+                let x = r.left() + third * k as f32;
+                p.line_segment([pos2(x, r.top()), pos2(x, r.bottom())], Stroke::new(1.2, accent));
+            }
+            p.line_segment([pos2(r.left(), mid_y), pos2(r.right(), mid_y)], Stroke::new(1.2, accent));
+        }
+    }
+}
+
+/// `Some(true)` when every selected area is whole rows, `Some(false)` when every one is whole
+/// columns, `None` otherwise (including the whole sheet).
+fn whole_lines(app: &SheetApp) -> Option<bool> {
+    let sel = &app.session.active()?.selection;
+    let rows = sel.ranges.iter().all(|r| r.is_full_rows() && !r.is_full_cols());
+    let cols = sel.ranges.iter().all(|r| r.is_full_cols() && !r.is_full_rows());
+    if rows {
+        Some(true)
+    } else if cols {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+fn cf_menu(app: &mut SheetApp, ui: &mut Ui) {
+    use crate::cf_icons::CfIcon;
+    ui.spacing_mut().item_spacing.y = 1.0;
+    ui.set_min_width(280.0);
+    let hex = |s: &str| Color32::from_hex(s).unwrap_or(Color32::GRAY);
+    cf_submenu(ui, "&Highlight Cells Rules", Some(CfIcon::HighlightRules), true, |ui| {
+        for (label, op, icon) in [
+            ("&Greater Than…", "greater", CfIcon::GreaterThan),
+            ("&Less Than…", "less", CfIcon::LessThan),
+            ("&Between…", "between", CfIcon::Between),
+            ("&Equal To…", "equal", CfIcon::EqualTo),
+        ] {
+            if cf_item(ui, label, Some(icon), true) {
+                app.open_dialog("cfQuick", json!({"type": "cellIs", "operator": op, "title": label.replace('&', "")}));
+            }
+        }
+        if cf_item(ui, "&Text that Contains…", Some(CfIcon::TextContains), true) {
             app.open_dialog("cfQuick", json!({"type": "containsText", "title": "Text that Contains"}));
         }
-        if ui.button("A Date Occurring…").clicked() {
+        if cf_item(ui, "&A Date Occurring…", Some(CfIcon::DateOccurring), true) {
             app.open_dialog("cfQuick", json!({"type": "timePeriod", "title": "A Date Occurring"}));
         }
-        if ui.button("Duplicate Values…").clicked() {
+        if cf_item(ui, "&Duplicate Values…", Some(CfIcon::Duplicate), true) {
             act(app, "home.conditionalFormat", json!({"rule": {"type": "duplicate"}}));
         }
+        cf_more_rules(app, ui);
     });
-    ui.menu_button("Top/Bottom Rules", |ui| {
-        menu_items(
-            app,
-            ui,
-            &[
-                ("Top 10 Items", "home.conditionalFormat", json!({"rule": {"type": "top10", "rank": 10}})),
-                ("Top 10%", "home.conditionalFormat", json!({"rule": {"type": "top10", "rank": 10, "percent": true}})),
-                ("Bottom 10 Items", "home.conditionalFormat", json!({"rule": {"type": "top10", "rank": 10, "bottom": true}})),
-                ("Bottom 10%", "home.conditionalFormat", json!({"rule": {"type": "top10", "rank": 10, "bottom": true, "percent": true}})),
-                ("Above Average", "home.conditionalFormat", json!({"rule": {"type": "aboveAverage"}})),
-                ("Below Average", "home.conditionalFormat", json!({"rule": {"type": "aboveAverage", "below": true}})),
-            ],
-        );
+    cf_submenu(ui, "&Top/Bottom Rules", Some(CfIcon::TopBottom), true, |ui| {
+        for (label, rule, icon) in [
+            ("&Top 10 Items…", json!({"type": "top10", "rank": 10}), CfIcon::Top10),
+            ("To&p 10%…", json!({"type": "top10", "rank": 10, "percent": true}), CfIcon::Top10Percent),
+            ("&Bottom 10 Items…", json!({"type": "top10", "rank": 10, "bottom": true}), CfIcon::Bottom10),
+            ("B&ottom 10%…", json!({"type": "top10", "rank": 10, "bottom": true, "percent": true}), CfIcon::Bottom10Percent),
+            ("&Above Average…", json!({"type": "aboveAverage"}), CfIcon::AboveAverage),
+            ("Below A&verage…", json!({"type": "aboveAverage", "below": true}), CfIcon::BelowAverage),
+        ] {
+            if cf_item(ui, label, Some(icon), true) {
+                act(app, "home.conditionalFormat", json!({"rule": rule}));
+            }
+        }
+        cf_more_rules(app, ui);
     });
-    ui.menu_button("Data Bars", |ui| {
+    cf_submenu(ui, "&Data Bars", Some(CfIcon::DataBars), true, |ui| {
         for (label, c) in
             [("Blue", "#638EC6"), ("Green", "#63BE7B"), ("Red", "#F8696B"), ("Orange", "#FFB628"), ("Light Blue", "#008AEF"), ("Purple", "#D6007B")]
         {
-            if ui.button(label).clicked() {
+            if cf_item(ui, label, Some(CfIcon::Bar(hex(c))), true) {
                 act(app, "home.conditionalFormat", json!({"rule": {"type": "dataBar", "color": c}}));
             }
         }
+        cf_more_rules(app, ui);
     });
-    ui.menu_button("Color Scales", |ui| {
-        for (label, cols) in [
-            ("Green - Yellow - Red", vec!["#63BE7B", "#FFEB84", "#F8696B"]),
-            ("Red - Yellow - Green", vec!["#F8696B", "#FFEB84", "#63BE7B"]),
-            ("Green - White - Red", vec!["#63BE7B", "#FCFCFF", "#F8696B"]),
-            ("Blue - White - Red", vec!["#5A8AC6", "#FCFCFF", "#F8696B"]),
-            ("White - Green", vec!["#FCFCFF", "#63BE7B"]),
-            ("White - Red", vec!["#FCFCFF", "#F8696B"]),
+    cf_submenu(ui, "Color &Scales", Some(CfIcon::ColorScales), true, |ui| {
+        for (label, cols, two) in [
+            ("Green - Yellow - Red", ["#63BE7B", "#FFEB84", "#F8696B"], false),
+            ("Red - Yellow - Green", ["#F8696B", "#FFEB84", "#63BE7B"], false),
+            ("Green - White - Red", ["#63BE7B", "#FCFCFF", "#F8696B"], false),
+            ("Blue - White - Red", ["#5A8AC6", "#FCFCFF", "#F8696B"], false),
+            ("White - Green", ["#FCFCFF", "#B1DEC1", "#63BE7B"], true),
+            ("White - Red", ["#FCFCFF", "#FBB2B4", "#F8696B"], true),
         ] {
-            if ui.button(label).clicked() {
-                act(app, "home.conditionalFormat", json!({"rule": {"type": "colorScale", "colors": cols}}));
+            if cf_item(ui, label, Some(CfIcon::Scale([hex(cols[0]), hex(cols[1]), hex(cols[2])])), true) {
+                let colors: Vec<&str> = if two { vec![cols[0], cols[2]] } else { cols.to_vec() };
+                act(app, "home.conditionalFormat", json!({"rule": {"type": "colorScale", "colors": colors}}));
             }
         }
+        cf_more_rules(app, ui);
     });
-    ui.menu_button("Icon Sets", |ui| {
-        for (label, set) in [
-            ("3 Arrows", "3Arrows"),
-            ("3 Traffic Lights", "3TrafficLights1"),
-            ("3 Symbols", "3Symbols"),
-            ("4 Ratings", "4Rating"),
-            ("5 Arrows", "5Arrows"),
-            ("5 Quarters", "5Quarters"),
+    cf_submenu(ui, "&Icon Sets", Some(CfIcon::IconSets), true, |ui| {
+        let (g, y, r, b) = (hex("#46A05A"), hex("#F2C12E"), hex("#E64646"), hex("#5B9BD5"));
+        for (label, set, dots) in [
+            ("3 Arrows", "3Arrows", [g, y, r]),
+            ("3 Traffic Lights", "3TrafficLights1", [g, y, r]),
+            ("3 Symbols", "3Symbols", [g, y, r]),
+            ("4 Ratings", "4Rating", [b, b, b]),
+            ("5 Arrows", "5Arrows", [g, y, r]),
+            ("5 Quarters", "5Quarters", [b, b, b]),
         ] {
-            if ui.button(label).clicked() {
+            if cf_item(ui, label, Some(CfIcon::Dots(dots)), true) {
                 act(app, "home.conditionalFormat", json!({"rule": {"type": "iconSet", "set": set}}));
             }
         }
+        cf_more_rules(app, ui);
     });
     ui.separator();
-    if ui.button("New Rule…").clicked() {
+    if cf_item(ui, "&New Rule…", Some(CfIcon::NewRule), false) {
         app.open_dialog("cfQuick", json!({"type": "expression", "title": "New Formatting Rule"}));
     }
-    ui.menu_button("Clear Rules", |ui| {
-        menu_items(
-            app,
-            ui,
-            &[
-                ("Clear Rules from Selected Cells", "home.clearRules", json!({})),
-                ("Clear Rules from Entire Sheet", "home.clearRules", json!({"sheet": true})),
-            ],
-        );
+    cf_submenu(ui, "&Clear Rules", Some(CfIcon::ClearRules), false, |ui| {
+        if cf_item(ui, "Clear Rules from &Selected Cells", None, false) {
+            act(app, "home.clearRules", json!({}));
+        }
+        if cf_item(ui, "Clear Rules from &Entire Sheet", None, false) {
+            act(app, "home.clearRules", json!({"sheet": true}));
+        }
     });
-    if ui.button("Manage Rules…").clicked() {
+    if cf_item(ui, "Manage &Rules…", Some(CfIcon::ManageRules), false) {
         app.open_dialog("manageRules", json!({}));
     }
 }
@@ -2452,14 +2607,24 @@ pub fn shortcut(app: &mut SheetApp, key: Key, m: Modifiers) {
         Key::Num9 => Some(("home.hideRows", json!({}))),
         Key::Num0 if shift => Some(("home.unhideColumns", json!({}))),
         Key::Num0 => Some(("home.hideColumns", json!({}))),
-        Key::Minus => {
-            app.open_dialog("deleteCells", json!({}));
-            None
-        }
-        Key::Plus | Key::Equals if shift => {
-            app.open_dialog("insertCells", json!({}));
-            None
-        }
+        // As in Excel: with whole rows or whole columns selected, Ctrl+Shift+= / Ctrl+- insert or
+        // delete them at once; any other selection asks which way to shift.
+        Key::Minus => match whole_lines(app) {
+            Some(true) => Some(("home.deleteRows", json!({}))),
+            Some(false) => Some(("home.deleteColumns", json!({}))),
+            None => {
+                app.open_dialog("deleteCells", json!({}));
+                None
+            }
+        },
+        Key::Plus | Key::Equals if shift => match whole_lines(app) {
+            Some(true) => Some(("home.insertRows", json!({}))),
+            Some(false) => Some(("home.insertColumns", json!({}))),
+            None => {
+                app.open_dialog("insertCells", json!({}));
+                None
+            }
+        },
         Key::Semicolon => {
             // Insert today's date.
             let text = app

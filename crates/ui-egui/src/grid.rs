@@ -1178,6 +1178,11 @@ pub(crate) fn paint_quadrant(
                 _ if numeric => HAlign::Right,
                 _ => HAlign::Left,
             },
+            // Cells are painted left-to-right and mirrored afterwards on a right-to-left sheet, so
+            // an explicit Left/Right is swapped here to land on the side the user chose (as in
+            // Excel, Align Right stays on the right in either sheet direction).
+            HAlign::Left if geo.rtl => HAlign::Right,
+            HAlign::Right if geo.rtl => HAlign::Left,
             h => h,
         };
         let indent = st.align.indent as f32 * 9.0 * z;
@@ -1296,7 +1301,12 @@ pub(crate) fn paint_quadrant(
             } else {
                 galley.clone()
             };
-            let pos = rotated_text_pos(*rect, galley.size(), angle, st.align.h, st.align.v, pad, indent);
+            let h = match st.align.h {
+                HAlign::Left if geo.rtl => HAlign::Right,
+                HAlign::Right if geo.rtl => HAlign::Left,
+                h => h,
+            };
+            let pos = rotated_text_pos(*rect, galley.size(), angle, h, st.align.v, pad, indent);
             let mut shape = egui::epaint::TextShape::new(pos, galley, color);
             shape.angle = angle;
             cp.add(shape);
