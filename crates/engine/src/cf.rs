@@ -71,13 +71,21 @@ fn percentile(sorted: &[f64], p: f64) -> f64 {
 fn threshold(wb: &Workbook, sheet: usize, at: CellRef, st: &RuleStats, k: &CfValueKind) -> f64 {
     let min = st.sorted.first().copied().unwrap_or(0.0);
     let max = st.sorted.last().copied().unwrap_or(0.0);
+    // A stop's own formula (#1848): evaluate it, then read the result as that stop's kind.
+    let eval = |f: &str| gridcraft_calc::evaluate(wb, sheet, at, f).to_number().unwrap_or(0.0);
     match k {
         CfValueKind::Min => min,
         CfValueKind::Max => max,
         CfValueKind::Number(n) => *n,
         CfValueKind::Percent(p) => min + (max - min) * p / 100.0,
         CfValueKind::Percentile(p) => percentile(&st.sorted, *p),
-        CfValueKind::Formula(f) => gridcraft_calc::evaluate(wb, sheet, at, f).to_number().unwrap_or(0.0),
+        CfValueKind::Formula(f) => eval(f),
+        CfValueKind::FormulaNumber(f) => eval(f),
+        CfValueKind::FormulaPercent(f) => {
+            let p = eval(f);
+            min + (max - min) * p / 100.0
+        }
+        CfValueKind::FormulaPercentile(f) => percentile(&st.sorted, eval(f)),
     }
 }
 
@@ -216,11 +224,17 @@ impl CfCache {
                 },
                 CfRule::ColorScale { stops } => {
                     if let Some(n) = v.as_f64() {
-                        let pts: Vec<(f64, [u8; 3])> = stops
-                            .iter()
-                            .map(|(k, col)| (threshold(wb, sheet, c, &st, k), col.resolve(&wb.theme).unwrap_or([255, 255, 255])))
-                            .collect();
+                        // Excel draws the thresholds in ascending order with the colours kept in
+                        // stop order: the first stop's colour sits at the lowest threshold (#1848).
+                        let mut thresholds: Vec<f64> = stops.iter().map(|(k, _)| threshold(wb, sheet, c, &st, k)).collect();
+                        thresholds.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                        let pts: Vec<(f64, [u8; 3])> =
+                            thresholds.into_iter().zip(stops.iter().map(|(_, col)| col.resolve(&wb.theme).unwrap_or([255, 255, 255]))).collect();
                         let rgb = match pts.as_slice() {
+                            [(a, ca), (b, cb)] if a == b => {
+                                // Equal thresholds: a value at or above them takes the later colour.
+                                if n < *a { *ca } else { *cb }
+                            }
                             [(a, ca), (b, cb)] => lerp(*ca, *cb, if b > a { (n - a) / (b - a) } else { 0.0 }),
                             [(a, ca), (m, cm), (b, cb)] => {
                                 if n <= *m {
@@ -409,5 +423,91 @@ mod tests {
         let mut cache = CfCache::new();
         let mut look = |a: &str| cache.look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.style).is_some();
         assert_eq!([look("A1"), look("A2")], [true, false]);
+    }
+
+    /// Excel draws a colour scale with its thresholds in ascending order and the colours kept in
+    /// stop order, so the first stop's colour sits at the lowest threshold (#1848).
+    #[test]
+    fn color_scale_sorts_thresholds_keeping_the_colours_in_stop_order() {
+        let mut s = crate::Session::new();
+        s.new_workbook();
+        s.execute("range.setValues", json!({"range": "A1", "values": [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]})).unwrap();
+        let sh = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().wb).sheet_mut(0).unwrap();
+        sh.cond_formats = vec![CondFormat {
+            ranges: vec![RangeRef::parse("A1:A11").unwrap()],
+            rule: CfRule::ColorScale {
+                stops: vec![(CfValueKind::Number(8.0), Color::rgb(0xFF, 0, 0)), (CfValueKind::Number(2.0), Color::rgb(0, 0xFF, 0))],
+            },
+            priority: 1,
+            stop_if_true: false,
+        }];
+        let fill = |a: &str| {
+            let d = s.doc().unwrap();
+            CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
+        };
+        // Measured in #1848: 0–2 the first stop's colour, even steps between, 8–10 the second's.
+        assert_eq!(fill("A1"), Some([0xFF, 0, 0]));
+        assert_eq!(fill("A3"), Some([0xFF, 0, 0]));
+        assert_eq!(fill("A9"), Some([0, 0xFF, 0]));
+        assert_eq!(fill("A11"), Some([0, 0xFF, 0]));
+        // The middle interpolates instead of showing one stop's flat colour.
+        let mid = fill("A6").unwrap();
+        assert_ne!(mid, [0xFF, 0, 0]);
+        assert_ne!(mid, [0, 0xFF, 0]);
+    }
+
+    /// Two stops at the same threshold: a value at or above them takes the later colour (#1848).
+    #[test]
+    fn color_scale_equal_thresholds_take_the_later_colour() {
+        let mut s = crate::Session::new();
+        s.new_workbook();
+        s.execute("range.setValues", json!({"range": "A1", "values": [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]})).unwrap();
+        let sh = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().wb).sheet_mut(0).unwrap();
+        sh.cond_formats = vec![CondFormat {
+            ranges: vec![RangeRef::parse("A1:A11").unwrap()],
+            rule: CfRule::ColorScale {
+                stops: vec![(CfValueKind::Number(8.0), Color::rgb(0xFF, 0, 0)), (CfValueKind::Number(8.0), Color::rgb(0, 0xFF, 0))],
+            },
+            priority: 1,
+            stop_if_true: false,
+        }];
+        let fill = |a: &str| {
+            let d = s.doc().unwrap();
+            CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
+        };
+        // Measured in #1848: 0–7 the first colour, 8–10 the later one.
+        assert_eq!(fill("A8"), Some([0xFF, 0, 0]));
+        assert_eq!(fill("A9"), Some([0, 0xFF, 0]));
+        assert_eq!(fill("A11"), Some([0, 0xFF, 0]));
+    }
+
+    /// A percent stop whose value is a formula keeps its kind: the formula's result is a percent
+    /// of the span, not the threshold itself (#1848).
+    #[test]
+    fn color_scale_formula_percent_stop_is_read_as_a_percent() {
+        let mut s = crate::Session::new();
+        s.new_workbook();
+        s.execute("range.setValues", json!({"range": "A1", "values": [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]})).unwrap();
+        s.execute("range.setValues", json!({"range": "Z1", "values": [[2]]})).unwrap();
+        let sh = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().wb).sheet_mut(0).unwrap();
+        sh.cond_formats = vec![CondFormat {
+            ranges: vec![RangeRef::parse("A1:A11").unwrap()],
+            rule: CfRule::ColorScale {
+                stops: vec![(CfValueKind::FormulaPercent("$Z$1*10".into()), Color::rgb(0xFF, 0, 0)), (CfValueKind::Max, Color::rgb(0, 0xFF, 0))],
+            },
+            priority: 1,
+            stop_if_true: false,
+        }];
+        let fill = |a: &str| {
+            let d = s.doc().unwrap();
+            CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
+        };
+        // $Z$1*10 = 20, a percent of the 0..10 span: the threshold is 2, not 20.
+        assert_eq!(fill("A1"), Some([0xFF, 0, 0]));
+        assert_eq!(fill("A3"), Some([0xFF, 0, 0]));
+        assert_eq!(fill("A11"), Some([0, 0xFF, 0]));
+        let mid = fill("A7").unwrap();
+        assert_ne!(mid, [0xFF, 0, 0]);
+        assert_ne!(mid, [0, 0xFF, 0]);
     }
 }
