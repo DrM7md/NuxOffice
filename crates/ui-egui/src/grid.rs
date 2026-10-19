@@ -2037,7 +2037,9 @@ pub(crate) fn paint_headers(
     let full_row = |rr: u32| sel.ranges.iter().any(|x| x.is_full_rows() && rr >= x.start.row && rr <= x.end.row);
     let _ = bounds;
     // The heading under the pointer is tinted, as in the desktop app.
-    let hover = p.ctx().pointer_hover_pos();
+    // Headings are laid out in logical coordinates and mirrored afterwards on a right-to-left
+    // sheet, so the pointer is too.
+    let hover = p.ctx().pointer_hover_pos().map(|h| geo.mirror_pos(h));
     // Hidden columns and rows leave a double divider where they sit, as in Excel.
     let hidden_mark = Stroke::new(1.0, t.header_text.gamma_multiply(0.6));
     let mut done_cols = std::collections::HashSet::new();

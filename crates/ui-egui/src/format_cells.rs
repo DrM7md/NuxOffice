@@ -248,14 +248,18 @@ const SYMBOLS: [(&str, &str); 5] = [("None", ""), ("$", "$"), ("€", "€"), ("
 
 fn category_of(code: &str) -> &'static str {
     let lower = code.to_ascii_lowercase();
+    // The code without quoted text and bracketed parts: `[Red]` holds a `d` and `[$-409]` a `$`,
+    // neither of which says Date or Currency.
     let unquoted: String = {
         let mut out = String::new();
-        let mut q = false;
+        let (mut q, mut b) = (false, false);
         for c in lower.chars() {
-            if c == '"' {
-                q = !q;
-            } else if !q {
-                out.push(c);
+            match c {
+                '"' if !b => q = !q,
+                '[' if !q => b = true,
+                ']' if !q && b => b = false,
+                _ if !q && !b => out.push(c),
+                _ => {}
             }
         }
         out
@@ -280,7 +284,7 @@ fn category_of(code: &str) -> &'static str {
         "Time"
     } else if unquoted.contains('d') || unquoted.contains('y') || (unquoted.contains('m') && !unquoted.contains('0')) {
         "Date"
-    } else if unquoted.chars().all(|c| "0#,.;_()[]red- ".contains(c)) {
+    } else if unquoted.chars().all(|c| "0#,.;_()- ".contains(c)) {
         "Number"
     } else {
         "Custom"
@@ -1261,5 +1265,21 @@ pub(crate) fn show(app: &mut SheetApp, ui: &mut Ui, d: &mut Dialog, confirm: &mu
             app.run_or_alert(if merge { "home.mergeCells" } else { "home.unmergeCells" }, json!({}));
         }
         *confirm = true;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::category_of;
+
+    #[test]
+    fn colour_and_locale_brackets_dont_change_the_category() {
+        // Codes this dialog writes for red negatives: [Red] must not read as a Date's `d`.
+        for code in ["0.00;[Red]0.00", "#,##0_);[Red](#,##0)", "#,##0.00;[Red]#,##0.00"] {
+            assert_eq!(category_of(code), "Number", "{code}");
+        }
+        assert_eq!(category_of("[h]:mm:ss"), "Time", "an elapsed-hours code is still Time");
+        assert_eq!(category_of("d-mmm-yy"), "Date");
+        assert_eq!(category_of("0.00%"), "Percentage");
     }
 }

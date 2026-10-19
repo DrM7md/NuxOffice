@@ -319,12 +319,17 @@ fn click_tab(app: &mut SheetApp, i: usize, m: egui::Modifiers, visible: &[usize]
 fn tab_menu(app: &mut SheetApp, ctx: &egui::Context) {
     let color_sheet = egui::Id::new("nux_tab_color_sheet");
     if let Some(open) = crate::sheet_tab_menu::is_open(ctx) {
-        ctx.data_mut(|d| d.insert_temp(color_sheet, open.sheet));
+        let name = app.session.active().and_then(|d| d.wb.sheets.get(open.sheet).map(|s| s.name.clone())).unwrap_or_default();
+        ctx.data_mut(|d| d.insert_temp(color_sheet, name));
     }
-    // A colour from the Colors window (More Colors…) lands on the sheet whose menu asked for it.
+    // A colour from the Colors window (More Colors…) lands on the sheet whose menu asked for it,
+    // found by name: sheets may have moved while the window was open.
     if let Some(c) = crate::color_picker::take_result(ctx, "tabColor") {
-        let sheet: Option<usize> = ctx.data(|d| d.get_temp(color_sheet));
-        app.run_or_alert("sheet.tabColor", json!({"sheet": sheet, "color": c}));
+        let name: String = ctx.data(|d| d.get_temp(color_sheet)).unwrap_or_default();
+        let sheet = app.session.active().and_then(|d| d.wb.sheets.iter().position(|s| s.name == name));
+        if let Some(sheet) = sheet {
+            app.run_or_alert("sheet.tabColor", json!({"sheet": sheet, "color": c}));
+        }
     }
     let Some(d) = app.session.active() else { return };
     let colors = d.wb.theme.colors;
@@ -364,8 +369,8 @@ fn tab_menu(app: &mut SheetApp, ctx: &egui::Context) {
         Choice::Ungroup => app.run_or_alert("sheet.ungroup", json!({})),
         Choice::Link => {
             let n = name(app, i);
-            let quoted = if n.chars().all(|c| c.is_alphanumeric() || c == '_') { n } else { format!("'{}'", n.replace('\'', "''")) };
-            ctx.copy_text(format!("#{quoted}!A1"));
+            // Quoted as formulas quote it ('2024', 'A1', 'My Sheet'), so the address resolves.
+            ctx.copy_text(format!("#{}!A1", gridcraft_engine::formula::quote_sheet(&n)));
         }
     }
 }

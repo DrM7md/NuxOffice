@@ -149,11 +149,15 @@ pub fn show(ctx: &egui::Context, theme_colors: &[u32; 12], protected: bool, any_
     let mut sub_open: bool = ctx.data(|d| d.get_temp(sub_id)).unwrap_or(false);
     let mut sub_anchor: Option<Rect> = None;
     // Accelerator: a typed access key runs its item.
-    let typed: Option<char> = ctx.input(|i| {
-        i.events.iter().find_map(|e| match e {
+    // Typed text is the menu's while it is open: taken from the input, so the grid doesn't also
+    // start editing the active cell with it.
+    let typed: Option<char> = ctx.input_mut(|i| {
+        let typed = i.events.iter().find_map(|e| match e {
             egui::Event::Text(s) => s.chars().next().map(|c| c.to_ascii_lowercase()),
             _ => None,
-        })
+        });
+        i.events.retain(|e| !matches!(e, egui::Event::Text(_)));
+        typed
     });
     // The menu opens upwards from the tab bar, like the desktop one.
     let height: f32 = rows.iter().map(|r| if matches!(r, Row::Sep) { 9.0 } else { H }).sum::<f32>() + 12.0;
@@ -176,7 +180,7 @@ pub fn show(ctx: &egui::Context, theme_colors: &[u32; 12], protected: bool, any_
                 if let Some(g) = glyph {
                     paint(ui.painter(), Rect::from_min_size(pos2(r.left() + 8.0, r.center().y - 9.0), vec2(18.0, 18.0)), *g, ink);
                 }
-                let shown = lang.tr(label).to_string();
+                let shown = crate::border_preview::tr_access(lang, label);
                 let job = crate::border_preview::access_key_job(&shown, font.clone(), ink);
                 let galley = ui.painter().layout_job(job);
                 ui.painter().galley(pos2(r.left() + 38.0, r.center().y - galley.size().y / 2.0), galley, ink);

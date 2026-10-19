@@ -81,9 +81,18 @@ struct MoreColors {
     hex: String,
 }
 
-/// The colour chosen in a Colors window opened by the palette with this `key`, once.
+/// The colour chosen in a Colors window opened by the palette with this `key`, once. The answer
+/// is kept for the frame OK was clicked in and the next one only: a caller that isn't drawn by
+/// then (its menu or dialog closed) never receives it later.
 pub fn take_result(ctx: &egui::Context, key: &str) -> Option<String> {
-    ctx.data_mut(|d| d.remove_temp::<String>(result_id(key)))
+    let now = ctx.cumulative_frame_nr();
+    let (color, made) = ctx.data_mut(|d| d.remove_temp::<(String, u64)>(result_id(key)))?;
+    (now <= made.saturating_add(1)).then_some(color)
+}
+
+/// True while the Colors window (More Colors…) is open.
+pub fn is_open(ctx: &egui::Context) -> bool {
+    ctx.data(|d| d.get_temp::<MoreColors>(more_id()).is_some())
 }
 
 /// A swatch; returns true when clicked.
@@ -174,6 +183,10 @@ pub fn palette(ui: &mut Ui, theme_colors: &[u32; 12], none_label: &str, key: &st
     let keys = ui.input(|i| {
         [egui::Key::ArrowLeft, egui::Key::ArrowRight, egui::Key::ArrowUp, egui::Key::ArrowDown, egui::Key::Enter].map(|k| i.key_pressed(k))
     });
+    // The Colors window owns the keyboard while it is open (its Hex field, Enter for OK), and
+    // Enter with no highlighted swatch belongs to whatever holds the palette (OK in a dialog).
+    let keys = if is_open(ui.ctx()) { [false; 5] } else { keys };
+    let keys = [keys[0], keys[1], keys[2], keys[3], keys[4] && cur.is_some()];
     let rows: Vec<usize> = if high_contrast { vec![0, 6] } else { vec![0, 1, 2, 3, 4, 5, 6] };
     if keys[..4].iter().any(|k| *k) {
         cur = Some(match cur {
@@ -198,17 +211,17 @@ pub fn palette(ui: &mut Ui, theme_colors: &[u32; 12], none_label: &str, key: &st
             }
         });
     }
-    if keys.iter().any(|k| *k) {
+    let (arrows, enter) = (keys[..4].iter().any(|k| *k), keys[4]);
+    if arrows || enter {
         ui.ctx().input_mut(|i| {
-            i.events.retain(|e| {
-                !matches!(
-                    e,
-                    egui::Event::Key {
-                        key: egui::Key::ArrowLeft | egui::Key::ArrowRight | egui::Key::ArrowUp | egui::Key::ArrowDown | egui::Key::Enter,
-                        pressed: true,
-                        ..
-                    }
-                )
+            i.events.retain(|e| match e {
+                egui::Event::Key {
+                    key: egui::Key::ArrowLeft | egui::Key::ArrowRight | egui::Key::ArrowUp | egui::Key::ArrowDown,
+                    pressed: true,
+                    ..
+                } => !arrows,
+                egui::Event::Key { key: egui::Key::Enter, pressed: true, .. } => !enter,
+                _ => true,
             });
         });
     }
@@ -232,9 +245,9 @@ pub fn palette(ui: &mut Ui, theme_colors: &[u32; 12], none_label: &str, key: &st
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             let (r, resp) = ui.allocate_exact_size(vec2(64.0, 28.0), Sense::click());
             resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, true, high_contrast, "High-contrast only"));
-            ui.painter().rect(r, CornerRadius::same(14), Color32::TRANSPARENT, Stroke::new(1.0, Color32::from_gray(120)), StrokeKind::Inside);
+            ui.painter().rect(r, CornerRadius::same(14), Color32::TRANSPARENT, Stroke::new(1.0, t.text_dim), StrokeKind::Inside);
             let knob = if high_contrast { pos2(r.right() - 14.0, r.center().y) } else { pos2(r.left() + 14.0, r.center().y) };
-            ui.painter().circle_filled(knob, 8.0, if high_contrast { t.accent } else { Color32::from_gray(90) });
+            ui.painter().circle_filled(knob, 8.0, if high_contrast { t.accent } else { t.text_dim });
             ui.painter().text(
                 pos2(if high_contrast { r.left() + 10.0 } else { r.right() - 10.0 }, r.center().y),
                 if high_contrast { Align2::LEFT_CENTER } else { Align2::RIGHT_CENTER },
@@ -304,7 +317,9 @@ pub fn palette(ui: &mut Ui, theme_colors: &[u32; 12], none_label: &str, key: &st
         ui.ctx().data_mut(|d| {
             d.insert_temp(more_id(), MoreColors { key: key.to_string(), current: None, new: start, custom: false, hex: hex_of(start) })
         });
-        ui.close();
+        if ui.stack().iter().any(|s| matches!(s.info.kind, Some(egui::UiKind::Menu | egui::UiKind::Popup))) {
+            ui.close();
+        }
     }
     if picked.is_some() {
         ui.data_mut(|d| d.remove_temp::<Option<(usize, usize)>>(pal_id));
@@ -528,12 +543,8 @@ pub fn window(ctx: &egui::Context) {
                             resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, st.custom == custom, text));
                             let sel = st.custom == custom;
                             let r = if sel { r } else { Rect::from_min_max(r.min + vec2(0.0, 3.0), r.max) };
-                            ui.painter().rect_filled(
-                                r,
-                                CornerRadius::ZERO,
-                                if sel { Color32::from_rgb(249, 249, 249) } else { Color32::from_rgb(240, 240, 240) },
-                            );
-                            let s = Stroke::new(1.0, Color32::from_gray(214));
+                            ui.painter().rect_filled(r, CornerRadius::ZERO, if sel { t.input_bg } else { t.window });
+                            let s = Stroke::new(1.0, t.input_border);
                             ui.painter().line_segment([r.left_bottom(), r.left_top()], s);
                             ui.painter().line_segment([r.left_top(), r.right_top()], s);
                             ui.painter().line_segment([r.right_top(), r.right_bottom()], s);
@@ -543,11 +554,9 @@ pub fn window(ctx: &egui::Context) {
                             }
                         }
                     });
-                    egui::Frame::new()
-                        .fill(Color32::from_rgb(249, 249, 249))
-                        .stroke(Stroke::new(1.0, Color32::from_gray(214)))
-                        .inner_margin(egui::Margin::same(12))
-                        .show(ui, |ui| {
+                    egui::Frame::new().fill(t.input_bg).stroke(Stroke::new(1.0, t.input_border)).inner_margin(egui::Margin::same(12)).show(
+                        ui,
+                        |ui| {
                             ui.set_min_size(vec2(260.0, 300.0));
                             ui.set_max_width(260.0);
                             if st.custom {
@@ -555,7 +564,8 @@ pub fn window(ctx: &egui::Context) {
                             } else {
                                 standard_tab(ui, &mut st);
                             }
-                        });
+                        },
+                    );
                 });
                 ui.add_space(14.0);
                 ui.vertical(|ui| {
@@ -565,7 +575,7 @@ pub fn window(ctx: &egui::Context) {
                                 [118.0, 32.0],
                                 egui::Button::new(egui::RichText::new(lang.tr(text)).font(theme::ui_font(13.5)))
                                     .corner_radius(4)
-                                    .stroke(if primary { Stroke::new(1.5, t.accent) } else { Stroke::new(1.0, Color32::from_gray(170)) }),
+                                    .stroke(if primary { Stroke::new(1.5, t.accent) } else { Stroke::new(1.0, t.input_border) }),
                             )
                         };
                     if button(ui, "OK", true).clicked() {
@@ -583,21 +593,22 @@ pub fn window(ctx: &egui::Context) {
                         ui.painter().rect_filled(half, CornerRadius::ZERO, st.new);
                         let low = Rect::from_min_max(pos2(r.left(), r.center().y), r.max);
                         ui.painter().rect_filled(low, CornerRadius::ZERO, st.current.unwrap_or(Color32::WHITE));
-                        ui.painter().rect_stroke(r, CornerRadius::ZERO, Stroke::new(1.0, Color32::from_gray(90)), StrokeKind::Inside);
+                        ui.painter().rect_stroke(r, CornerRadius::ZERO, Stroke::new(1.0, t.text_dim), StrokeKind::Inside);
                         ui.label(egui::RichText::new(lang.tr("Current")).font(theme::ui_font(13.0)));
                     });
                 });
             });
         });
-    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) || !open {
+    if ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) || !open {
         result = Some(None);
     }
     match result {
         Some(Some(c)) => {
             let key = st.key.clone();
+            let frame = ctx.cumulative_frame_nr();
             ctx.data_mut(|d| {
                 d.remove_temp::<MoreColors>(more_id());
-                d.insert_temp(result_id(&key), hex_of(c));
+                d.insert_temp(result_id(&key), (hex_of(c), frame));
             });
         }
         Some(None) => {

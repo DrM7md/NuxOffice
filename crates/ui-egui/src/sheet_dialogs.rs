@@ -51,7 +51,7 @@ fn caption(ui: &mut Ui, text: &str) {
 fn radio(ui: &mut Ui, selected: bool, label: &str) -> bool {
     let t = Tokens::get(ui.ctx());
     let lang = crate::i18n::current(ui.ctx());
-    let shown = lang.tr(label).to_string();
+    let shown = crate::border_preview::tr_access(lang, label);
     let (plain, key) = access_key(&shown);
     let job = crate::border_preview::access_key_job(&shown, theme::ui_font(13.0), t.text);
     let galley = ui.painter().layout_job(job);
@@ -140,7 +140,7 @@ pub(crate) fn move_copy(app: &SheetApp, ui: &mut Ui, d: &mut Dialog, confirm: &m
     let mut before = d.values.get("before").and_then(Json::as_u64).map_or(source, |v| v as usize).min(names.len());
     let mut copy = d.values.get("copy").and_then(Json::as_bool).unwrap_or(false);
     let label = |ui: &mut Ui, text: &str| {
-        let shown = lang.tr(text).to_string();
+        let shown = crate::border_preview::tr_access(lang, text);
         ui.label(crate::border_preview::access_key_job(&shown, theme::ui_font(13.0), t.text));
     };
     light_title(ui, "Move or Copy", open, "Moves or copies the selected sheet within this workbook.");
@@ -188,7 +188,10 @@ pub(crate) fn move_copy(app: &SheetApp, ui: &mut Ui, d: &mut Dialog, confirm: &m
         before = before.saturating_sub(1);
     }
     ui.add_space(10.0);
-    let resp = ui.checkbox(&mut copy, crate::border_preview::access_key_job(lang.tr("&Create a copy"), theme::ui_font(13.0), t.text));
+    let resp = ui.checkbox(
+        &mut copy,
+        crate::border_preview::access_key_job(&crate::border_preview::tr_access(lang, "&Create a copy"), theme::ui_font(13.0), t.text),
+    );
     resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, true, copy, "Create a copy"));
     if typed(ui, 'c') {
         copy = !copy;

@@ -140,3 +140,18 @@ Also: three tests that lost `#[test]` while resolving conflicts were restored (#
 | #761 | Merged after the owner approved allowing `https://github.com/rust-windowing/winit` in `deny.toml`: `winit` is pinned to `39c4009` (winit's own 0.30 backport, PR #4694) in the single `[patch.crates-io]` table beside #922's egui pin; `main.rs` keeps #1730's remembered window |
 
 Not merged: #657 (large conflict, small gain), #1253 (Chinese strings).
+
+### Review fixes from the GridCraft bot on #1988–#1993 — 2026-10-19
+
+The same fixes were pushed to the upstream pull requests and applied here.
+
+| File | Change | Why | Upstream? |
+|---|---|---|---|
+| `crates/ui-egui/src/lib.rs` | The Colors window is drawn before dialogs | Its Escape no longer also closes Format Cells | Yes (#1988) |
+| `crates/ui-egui/src/border_preview.rs` | `tr_access`: translate access-key labels by their plain text | "Entire &row" etc. showed in English in other languages | Yes (#1989) |
+| `crates/ui-egui/src/tabs.rs` | Link to this Sheet uses `formula::quote_sheet`; a tab's More Colors answer finds its sheet by name | `#2024!A1` didn't resolve; sheets may move while the window is open | Yes (#1989) |
+| `crates/ui-egui/src/grid.rs` | The heading hover test mirrors the pointer | The wrong heading was tinted on right-to-left sheets | Yes (#1992) |
+| NuxOffice files (`color_picker.rs`, `sheet_tab_menu.rs`, `sheet_dialogs.rs`, `ribbon_extra.rs`, `format_cells.rs`) | More Colors closes only its menu; the palette leaves keys to the Colors window and takes Enter only for a highlighted swatch; answers expire after a frame; the Colors window uses theme tokens; the tab menu consumes its access key; icon-only buttons are named by their translated tooltip; Format Cells ignores `[Red]` when choosing the category | Bot findings, all reproduced by tests | Yes (#1988–#1991) |
+
+New tests: `color_palette.rs`, `sheet_tab_menu.rs`, `format_cells_dialog.rs`, `heading_hover.rs`,
+`desktop_ribbon.rs` (the last adapted: NuxOffice keeps "Coming soon" notes).

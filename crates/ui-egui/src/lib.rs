@@ -1293,8 +1293,9 @@ impl SheetApp {
                 self.perf.grid_ms = now_ms() - g0;
             });
         }
-        dialogs::show(self, &ctx);
+        // The Colors window first, so its Escape doesn't also close the dialog that opened it.
         color_picker::window(&ctx);
+        dialogs::show(self, &ctx);
         widgets::message_box(self, &ctx);
         widgets::toast(self, &ctx);
         control::issue_screenshots(self, &ctx);

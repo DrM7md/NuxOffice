@@ -280,7 +280,9 @@ pub(crate) fn big(
             chevron(ui.painter(), pos2(left + lw - 5.0, y + 1.0), &t);
         }
     }
-    let plain = label.replace('\n', " ");
+    // An icon-only button (the Draw tab's pens and tools) is named by its whole translated
+    // tooltip, so the pens read apart ("Pen: Red, 0.5 mm").
+    let plain = if label.is_empty() { lang.tr(tip).to_string() } else { label.replace('\n', " ") };
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, &plain));
     resp.on_hover_text(lang.tr(tip))
 }

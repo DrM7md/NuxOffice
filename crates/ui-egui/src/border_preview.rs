@@ -53,6 +53,15 @@ pub(crate) fn preset_button(ui: &mut Ui, label: &str, preset: &str) -> Response 
     response
 }
 
+/// Translates a label that marks its access key with `&` ("Entire &row"). The catalogs hold
+/// the plain text ("Entire row"); a translation is shown without an access key, and a label with
+/// no translation keeps its English access key.
+pub(crate) fn tr_access(lang: crate::i18n::Language, label: &str) -> String {
+    let plain = label.replace('&', "");
+    let shown = lang.tr(&plain);
+    if shown == plain { label.to_string() } else { shown.to_string() }
+}
+
 /// Lays out `label` with the character after `&` underlined (Windows menu access key).
 pub(crate) fn access_key_job(label: &str, font: egui::FontId, color: Color32) -> egui::text::LayoutJob {
     let mut job = egui::text::LayoutJob::default();
