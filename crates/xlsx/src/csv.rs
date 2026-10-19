@@ -95,6 +95,7 @@ pub fn decode_ansi(bytes: &[u8], page: AnsiCodePage) -> String {
 
 /// Decodes CSV bytes: UTF-8/UTF-16 BOMs, else UTF-8, else the guessed ANSI code page
 /// (Windows-1252, -1256 or -1251, [`guess_code_page`]).
+#[cfg(test)]
 pub fn decode_text(bytes: &[u8]) -> String {
     decode_text_as(bytes).0
 }
