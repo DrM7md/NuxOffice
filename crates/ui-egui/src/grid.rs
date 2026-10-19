@@ -520,18 +520,7 @@ fn col32(c: Color, wb: &Workbook, default: Color32) -> Color32 {
 }
 
 fn numfmt_color(c: gridcraft_engine::numfmt::FormatColor) -> Color32 {
-    use gridcraft_engine::numfmt::FormatColor as F;
-    match c {
-        F::Black => Color32::BLACK,
-        F::Blue => Color32::from_rgb(0, 0, 255),
-        F::Cyan => Color32::from_rgb(0, 255, 255),
-        F::Green => Color32::from_rgb(0, 128, 0),
-        F::Magenta => Color32::from_rgb(255, 0, 255),
-        F::Red => Color32::from_rgb(255, 0, 0),
-        F::White => Color32::WHITE,
-        F::Yellow => Color32::from_rgb(255, 255, 0),
-        F::Indexed(_) => Color32::BLACK,
-    }
+    c.rgb().map(|[r, g, b]| Color32::from_rgb(r, g, b)).unwrap_or(Color32::BLACK)
 }
 
 /// Last column of a Center Across Selection run starting at `start`: it extends over following columns (up to `limit`) while `continues` holds.
@@ -4021,6 +4010,19 @@ mod tests {
         assert_eq!(list_picker_height(8, 18.0, 3.0), 8.0 * 18.0 + 7.0 * 3.0);
         assert_eq!(list_picker_height(30, 18.0, 3.0), list_picker_height(8, 18.0, 3.0));
         assert_eq!(list_picker_height(0, 18.0, 3.0), 18.0);
+    }
+
+    #[test]
+    fn number_format_colors_resolve_named_and_indexed_rgb() {
+        use gridcraft_engine::numfmt::FormatColor as F;
+        assert_eq!(numfmt_color(F::Green), Color32::from_rgb(0, 255, 0));
+        assert_eq!(numfmt_color(F::Indexed(1)), Color32::BLACK);
+        assert_eq!(numfmt_color(F::Indexed(10)), Color32::from_rgb(0, 128, 0));
+        assert_eq!(numfmt_color(F::Indexed(46)), Color32::from_rgb(255, 102, 0));
+        assert_eq!(numfmt_color(F::Indexed(56)), Color32::from_rgb(51, 51, 51));
+        for index in [0, 57, 255] {
+            assert_eq!(numfmt_color(F::Indexed(index)), Color32::BLACK);
+        }
     }
 
     #[test]
