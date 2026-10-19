@@ -64,6 +64,7 @@ this logic, with one undo step.
 | Quick Analysis (Ctrl+Q) | missing |
 | Smooth scrolling, scrollbars | done; vertical scrollbar added 10-09 (#73); horizontal scrollbar in the tab bar (60/40 split, drag, track click pages) 10-13 (#176, #840); the tabs/scrollbar split can't be dragged yet |
 | Text overflow into empty neighbours, wrap, rotation, shrink to fit | done |
+| Vertical alignment insets (top, middle, bottom; wrapped too) | done (10-14): the line box puts the font's leading above the text and sits on the bottom gridline, as measured in Excel (Calibri/Aptos Narrow 11 and 20 pt, 15-60 pt rows): top aligned baseline about 1.0 em below the top edge, bottom aligned about 0.3 em above the bottom edge, so a tall row shows text where a standard row does. Rotated text unchanged |
 
 ## Keyboard
 
@@ -173,6 +174,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-15 | major | Scenario Manager UI opens from Data and its key tip, with Add/Edit/Show/Delete/Summary and a separate values step (#1445) |
 | 2026-10-16 | minor | Desktop startup restores main-window size, position, and maximized state from a `window` entry in `prefs.json`. Normal bounds survive maximized/minimized frames and interface scaling; malformed values keep defaults, and `GRIDCRAFT_NO_PREFS` disables reading and writing the geometry (#1431). Native Windows resize/restart, 200% interface scale, and no-prefs behavior verified; other platforms unverified |
 | 2026-10-16 | minor | With the active cell in a Table whose header row is scrolled out of view, the column headings show the header names and their filter buttons in place of the letters (#1423) |
+| 2026-10-14 | minor | Cell text keeps Excel's top and bottom insets: top aligned text no longer touches the top border, bottom aligned text no longer floats above the bottom one, wrapped text follows the same rule |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
 | 2026-10-12 | minor | Ctrl+wheel zoom steps along a ladder of percentages about 20% apart that never skips 100%, gliding to each step with animations on, so a notch out undoes a notch in (it drifted: 100 → 122 → 101); Excel steps 15 points, see decisions.md |
