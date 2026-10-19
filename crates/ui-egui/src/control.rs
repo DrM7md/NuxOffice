@@ -29,12 +29,37 @@ pub struct ControlRequest {
     pub method: String,
     pub params: Json,
     pub reply: Sender<ControlResponse>,
+    /// Set when the client stopped waiting for the reply; `poll` then skips the request.
+    cancelled: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+/// The client's end of a [`ControlRequest`]. Dropping it (or timing out) withdraws the request.
+pub struct ControlReply {
+    rx: std::sync::mpsc::Receiver<ControlResponse>,
+    cancelled: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl ControlReply {
+    pub fn recv_timeout(&self, timeout: std::time::Duration) -> Result<ControlResponse, std::sync::mpsc::RecvTimeoutError> {
+        let r = self.rx.recv_timeout(timeout);
+        if r.is_err() {
+            self.cancelled.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+        r
+    }
+}
+
+impl Drop for ControlReply {
+    fn drop(&mut self) {
+        self.cancelled.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
 }
 
 impl ControlRequest {
-    pub fn new(method: impl Into<String>, params: Json) -> (Self, std::sync::mpsc::Receiver<ControlResponse>) {
+    pub fn new(method: impl Into<String>, params: Json) -> (Self, ControlReply) {
         let (tx, rx) = std::sync::mpsc::channel();
-        (Self { method: method.into(), params, reply: tx }, rx)
+        let cancelled = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        (Self { method: method.into(), params, reply: tx, cancelled: cancelled.clone() }, ControlReply { rx, cancelled })
     }
 }
 
@@ -391,6 +416,9 @@ pub fn handle(app: &mut SheetApp, ctx: &egui::Context, method: &str, p: &Json) -
 pub fn poll(app: &mut SheetApp, ctx: &egui::Context) {
     let Some(rx) = app.control_rx.take() else { return };
     while let Ok(req) = rx.try_recv() {
+        if req.cancelled.load(std::sync::atomic::Ordering::SeqCst) {
+            continue;
+        }
         let outcome = handle(app, ctx, &req.method, &req.params);
         match outcome {
             Outcome::Done(v) => {
@@ -494,6 +522,32 @@ mod tests {
 
     fn ids(v: &[Json]) -> Vec<&str> {
         v.iter().filter_map(|c| c.get("id").and_then(Json::as_str)).collect()
+    }
+
+    #[test]
+    fn timed_out_request_is_not_run() {
+        let mut session = gridcraft_engine::Session::new();
+        session.new_workbook();
+        let mut app = SheetApp::new(session, crate::Services::default());
+        let (tx, rx) = std::sync::mpsc::channel();
+        app.control_rx = Some(rx);
+        let set = json!({"command":"cell.set","params":{"cell":"A1","input":"timed out"}});
+        let (req, reply) = ControlRequest::new("engine.execute", set.clone());
+        tx.send(req).unwrap();
+        drop(reply);
+        let (req, live) = ControlRequest::new("engine.execute", json!({"command":"cell.set","params":{"cell":"B1","input":"kept"}}));
+        tx.send(req).unwrap();
+        poll(&mut app, &egui::Context::default());
+        let get = |app: &mut SheetApp, cell: &str| {
+            let Outcome::Done(v) = handle(app, &egui::Context::default(), "engine.execute", &json!({"command":"cell.get","params":{"cell":cell}}))
+            else {
+                panic!()
+            };
+            v["result"]["input"].clone()
+        };
+        assert_ne!(get(&mut app, "A1"), json!("timed out"));
+        assert_eq!(live.recv_timeout(std::time::Duration::from_secs(1)).unwrap()["ok"], true);
+        assert_eq!(get(&mut app, "B1"), json!("kept"));
     }
 
     #[test]

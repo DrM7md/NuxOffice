@@ -41,7 +41,7 @@ use gridcraft_engine::{Session, UiRequest};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value as Json, json};
 
-pub use control::{ControlRequest, ControlResponse};
+pub use control::{ControlReply, ControlRequest, ControlResponse};
 pub mod desktop_theme;
 
 /// Persisted UI preferences.
