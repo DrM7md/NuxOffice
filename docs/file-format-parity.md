@@ -125,6 +125,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-19 | minor | `.xls` import reads WINDOW2: right-to-left sheets (common in older Arabic and Hebrew files) open right-to-left, and hidden gridlines, headings and zero values and Show Formulas carry over |
 | 2026-10-19 | minor | XLSX font charset and family values are preserved on save, retaining the character set and family used for substitute font selection |
 | 2026-10-19 | minor | .xls import skips dialog sheets (WsBool `fDialog`), which share the worksheet BOF type and were read as empty worksheets |
+| 2026-10-16 | trivial | XLSX charts: `[0]!Name` (a workbook-scoped defined name) in series references is read as the name, so the series resolve instead of showing `#NAME?`. Names in chart references are written qualified (`[0]!Name`, or `Sheet!Name` for a sheet-scoped name): Excel draws a chart with a bare name blank (#1686) |
 | 2026-10-14 | trivial | Formula parser: text longer than Excel's 8,192 characters, and postfix chains (`1%%%…`, `f(1)(1)…`) past the 256-level nesting limit, are parse errors (the cell keeps its formula text and cached value) instead of trees deep enough to overflow the stack when a hostile file is opened, saved or dropped |
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
 | 2026-10-15 | minor | XLSX saves keep imported ordinary formulas scalar and write rich-value metadata compatible with Excel, preventing defined-name repair for workbooks with in-cell images (#1429) |
