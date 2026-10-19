@@ -55,6 +55,7 @@ this logic, with one undo step.
 | Header resize and double-click AutoFit | done (#42, #88 for header dividers) |
 | Outline symbols for grouped rows / columns (band beside the headers, brackets, − / +, level buttons 1…n+1) | done (#373): clicks run `data.hideDetail` / `data.showDetail` / `data.showLevels`, frozen panes and right-to-left sheets included; summary rows/columns are always below/right (the "Summary rows below detail" setting isn't modelled), no "Show outline symbols" option yet, and a block of cells still groups rows without the Rows / Columns dialog |
 | Reorder selected whole columns by dragging their headers | done (10-11) |
+| Insert rows, columns and cells: the new cells take the formats of the row above or the column to the left (Format Same As Above) | done (10-12); inserts in row 1 or column A, with nothing before them, stay unformatted (not compared with Excel); no Insert Options button (Format Same As Below, Clear Formatting); the cap counts only newly stored styles; an insert needing more than 1,000,000 stored cells keeps only the row or column format and returns `formattingSkipped: true` and `formattingCellLimit` |
 | Freeze panes, split panes | freeze done; split to verify |
 | A Table's header names and filter buttons in the column headings once its header row scrolls away | done (#1423): with the active cell in the Table, as in Excel; the button opens the column's filter menu, the rest of the heading still selects the column. Plain AutoFilter ranges keep their letters (Excel does the same) |
 | Copy as HTML table for other apps | done (#36, 10-10) |
@@ -177,7 +178,9 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-14 | minor | Cell text keeps Excel's top and bottom insets: top aligned text no longer touches the top border, bottom aligned text no longer floats above the bottom one, wrapped text follows the same rule |
 | 2026-10-14 | minor | Spill-child formula bar uses the anchor formula with disabled theme text and blocks formula-bar edit entry; selection and recalculation restore ordinary behavior |
 | 2026-10-17 | minor | Calculated table-column creation and consistent updates, exception preservation, Options switch and XLSX master-formula reuse (#934) |
+| 2026-10-12 | minor | Inserted rows, columns and cells take the formats of the cells above or to the left, like Excel's default Format Same As Above |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
+| 2026-10-13 | minor | Insert formatting cap counts only styles differing from inherited row/column formats; skipped formatting is observable in the command result |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
 | 2026-10-14 | minor | Increase/Decrease Font Size step one point at a time from 1 to 8 (Decrease jumped from 8 to 1, Increase from 1 to 8), then the Font Size list including 22 and 26, stopping at 72 (it went on to 96 and 409); Excel stops Decrease at 8, see decisions.md |
 | 2026-10-12 | minor | Ctrl+wheel zoom steps along a ladder of percentages about 20% apart that never skips 100%, gliding to each step with animations on, so a notch out undoes a notch in (it drifted: 100 → 122 → 101); Excel steps 15 points, see decisions.md |
