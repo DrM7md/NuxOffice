@@ -114,6 +114,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
 | 2026-10-15 | minor | XLSX saves keep imported ordinary formulas scalar and write rich-value metadata compatible with Excel, preventing defined-name repair for workbooks with in-cell images (#1429) |
 | 2026-10-15 | minor | XLSX: `#SPILL!`/`#CALC!` saved and read as `_error` rich values like Excel (they reopened as `#VALUE!`); typed `#SPILL!`/`#CALC!` stay text; rich-value metadata Excel accepts (`coerce`, lower-case URIs) |
+| 2026-10-15 | minor | XLSX text preserves CR and CRLF across save/reopen; shared strings use `_x000D_` and other XML text uses `&#13;` (#1488) |
 | 2026-10-12 | trivial | XLSX chart sheets are kept on save (#727) |
 | 2026-10-12 | trivial | CSV and TSV export is capped at 512 MiB and refuses a larger used range with an error (#528) |
 | 2026-10-12 | minor | `.xls` import reads the calculation settings (CalcMode, CalcIter, CalcCount, CalcDelta, CalcPrecision), so circular models calculate instead of showing `#CIRC!` (#724) |
