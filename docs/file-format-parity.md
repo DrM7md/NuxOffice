@@ -113,6 +113,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-16 | minor | Scenario review fixes: whole-number input text, literal JSON-like text and schema-default unlocked scenarios (#1444) |
 | 2026-10-15 | major | XLSX worksheet scenarios, including values, metadata, current/shown indices and result ranges, round-trip; legacy GridCraft hidden-name scenarios migrate on edit (#1444) |
 | 2026-10-18 | trivial | XLSX PivotTables: `rowGrandTotals` is the Grand Total row and `colGrandTotals` the Grand Total column. Both were read and written the other way round, which a GridCraft round trip hid, so an Excel file with only one grand total opened showing the other |
+| 2026-10-17 | minor | Calculated table-column creation and consistent updates, exception preservation, Options switch and XLSX master-formula reuse (#934) |
 | 2026-10-14 | trivial | Formula parser: text longer than Excel's 8,192 characters, and postfix chains (`1%%%…`, `f(1)(1)…`) past the 256-level nesting limit, are parse errors (the cell keeps its formula text and cached value) instead of trees deep enough to overflow the stack when a hostile file is opened, saved or dropped |
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
 | 2026-10-15 | minor | XLSX saves keep imported ordinary formulas scalar and write rich-value metadata compatible with Excel, preventing defined-name repair for workbooks with in-cell images (#1429) |
@@ -136,3 +137,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-11 | minor | XLSX: Allow Edit Ranges (`protectedRanges`) read and written with their password hashes (#307) |
 | 2026-10-10 | minor | Encrypted and `.xls` files are now recognised and refused with a message (#17) |
 | 2026-10-10 | major | Created: every Excel format with our read/write support; XLSB and ODS values-only imports recorded; `.xls`, encryption and large files flagged as beta gates |
+
+## Calculated table columns (#934)
+
+Single-cell formula entry creates a calculated column in an otherwise empty table data column. Editing a consistent calculated column updates its formulas together; existing constants, blanks or differing formulas make subsequent edits individual exceptions. Relative references shift by row; structured and absolute formulas share their parsed representation. Headers, totals and destination styles are preserved. The setting in File > Options is persisted in engine preferences and defaults on for older preference files. Bulk writes do not trigger automatic fills. Existing XLSX `calculatedColumnFormula` storage is reused; table growth and query-refresh behavior remain separate work. See [calculated-columns.md](calculated-columns.md).
