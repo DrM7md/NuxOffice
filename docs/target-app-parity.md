@@ -77,6 +77,11 @@ performance 8, stability 8, localization 4, hardware 2, platforms 2, ecosystem 2
 
 ## Feature areas
 
+**Intentional interaction difference (#939):** GridCraft keeps a copied cell snapshot after an
+edit elsewhere, while the issue's Windows Excel observation says Excel ends copy mode after any
+cell edit. Editing a cell in the copied source ends GridCraft's copy mode, because the displayed
+source would otherwise disagree with the saved snapshot.
+
 | Area | Weight | Breadth | Ready | Hours | Evidence |
 |---|---|---|---|---|---|
 | Formula language and calculation | 18 | ~92% | ~72% | 20–30 | A1/R1C1 parser, reference adjustment, dependency-graph recalc, dynamic arrays and `#SPILL!`, `A1#`, LET/LAMBDA and helpers, structured references, names, 3-D references. Open correctness bugs: 15-digit equality (#57), stale spills after structural edits and cleared blockers (#133, #139), 3-D span endpoint deletion (#140), sheet rename and qualified names (#134). Single-threaded |
@@ -334,6 +339,7 @@ The inventory carried over from the 2026-10-07 ROADMAP.md, updated for what land
 |---|---|---|
 | 2026-10-14 | minor | MCP remote calls never replay uncertain operations; complete bounded replies and request IDs are validated, with failed streams discarded (#1006, #1045) |
 | 2026-10-18 | minor | Conditional formatting: a colour-scale stop keeps its kind when its value is a formula, and thresholds stored out of order draw in ascending order with the colours in stop order (#1848); no score change |
+| 2026-10-13 | minor | Copy mode: a changed source cell ends the copy snapshot; edits outside that source deliberately keep it (#939), unlike the Excel behavior reported in the issue |
 | 2026-10-12 | minor | Essentials AutoFit evidence: rows auto-fit oversized fonts on open and row formatting (#833) |
 | 2026-10-12 | minor | Sheet tabs: reveal the selected tab on navigation and resize while preserving manual scrolling (#681); no score change |
 | 2026-10-12 | minor | PivotTables: values on rows (Σ Values in Rows at any position, all three layouts; `pivot.moveField` and the field pane move it; `dataOnRows` round-trips) (no score change) |
