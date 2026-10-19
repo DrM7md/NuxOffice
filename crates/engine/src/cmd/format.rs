@@ -1058,15 +1058,49 @@ pub fn approx_text_width(text: &str, size: f32, bold: bool) -> f32 {
             c if c.is_ascii_uppercase() => 0.65,
             c if c.is_ascii_digit() => 0.56,
             c if c.is_ascii() => 0.52,
-            // Arabic letters join and are narrow (about half an em); combining marks take none.
-            '\u{064B}'..='\u{065F}' | '\u{0670}' | '\u{06D6}'..='\u{06ED}' => 0.0,
-            '\u{0600}'..='\u{06FF}' | '\u{0750}'..='\u{077F}' | '\u{08A0}'..='\u{08FF}' | '\u{FB50}'..='\u{FDFF}' | '\u{FE70}'..='\u{FEFF}' => 0.45,
-            // Hebrew, accented Latin, Greek and Cyrillic are about as wide as ASCII letters.
-            '\u{0590}'..='\u{05FF}' | '\u{00C0}'..='\u{04FF}' => 0.55,
-            _ => 1.0,
+            c if is_zero_width(c) => 0.0,
+            c => arabic_em(c).unwrap_or(match c {
+                // Hebrew, accented Latin, Greek and Cyrillic are about as wide as ASCII letters.
+                '\u{0590}'..='\u{05FF}' | '\u{00C0}'..='\u{04FF}' => 0.55,
+                _ => 1.0,
+            }),
         };
     }
     w * size * if bold { 1.07 } else { 1.0 } * 96.0 / 72.0
+}
+
+/// Arabic vowel and Quranic marks, which sit on the previous letter, and invisible format
+/// characters such as direction marks and zero-width joiners.
+fn is_zero_width(c: char) -> bool {
+    matches!(
+        c,
+        '\u{0610}'..='\u{061A}'
+            | '\u{061C}'
+            | '\u{064B}'..='\u{065F}'
+            | '\u{0670}'
+            | '\u{06D6}'..='\u{06DC}'
+            | '\u{06DF}'..='\u{06E4}'
+            | '\u{06E7}'..='\u{06E8}'
+            | '\u{06EA}'..='\u{06ED}'
+            | '\u{08CA}'..='\u{08FF}'
+            | '\u{200B}'..='\u{200F}'
+            | '\u{202A}'..='\u{202E}'
+            | '\u{2060}'..='\u{2069}'
+            | '\u{FE20}'..='\u{FE2F}'
+            | '\u{FEFF}'
+    )
+}
+
+/// Width in ems of an Arabic-script character, measured from shaped Noto Sans Arabic, Noto Naskh
+/// Arabic and DejaVu Sans: joined letters average about half an em, word ligatures such as ﷺ and the
+/// rial sign about 1.2 em, and the bismillah ligature about 11 em.
+fn arabic_em(c: char) -> Option<f32> {
+    match c {
+        '\u{FDFD}' => Some(11.0),
+        '\u{FDF0}'..='\u{FDFC}' => Some(1.2),
+        '\u{0600}'..='\u{06FF}' | '\u{0750}'..='\u{077F}' | '\u{0870}'..='\u{08FF}' | '\u{FB50}'..='\u{FDFF}' | '\u{FE70}'..='\u{FEFC}' => Some(0.48),
+        _ => None,
+    }
 }
 
 fn autofit_cols(s: &mut Session, p: &Json) -> Result<Json> {
@@ -1218,7 +1252,7 @@ mod tests {
         assert_eq!(sh.row_height(2), sh.default_row_height);
         assert!(!sh.rows.get(&1).is_some_and(|r| r.custom), "a fitted row is automatic again");
         // Joined Arabic letters are about half an em; harakat take no width.
-        let latin = approx_text_width("abcdefghij", 11.0, false);
+        let latin = approx_text_width("ABCDEFGHIJ", 11.0, false);
         let arabic = approx_text_width("لاتلاتاتله", 11.0, false);
         assert!(arabic < latin, "{arabic} < {latin}");
         assert_eq!(approx_text_width("بَ", 11.0, false), approx_text_width("ب", 11.0, false));
@@ -1252,6 +1286,38 @@ mod tests {
         assert_eq!(adjust_decimals("0.0", &v, -1), "0");
         assert_eq!(adjust_decimals("#,##0.00;[Red]-#,##0.00", &v, 1), "#,##0.000;[Red]-#,##0.000");
         assert_eq!(adjust_decimals("0%", &v, 1), "0.0%");
+    }
+
+    #[test]
+    fn arabic_vowel_and_direction_marks_add_no_width() {
+        let plain = approx_text_width("محمد يدرس في المدرسة", 11.0, false);
+        assert_eq!(approx_text_width("مُحَمَّد يَدْرُسُ فِي الْمَدْرَسَةِ", 11.0, false), plain);
+        assert_eq!(approx_text_width("\u{200F}محمد يدرس في المدرسة\u{200C}", 11.0, false), plain);
+    }
+
+    #[test]
+    fn arabic_text_fits_a_column_about_as_wide_as_latin_text_of_the_same_length() {
+        let mut s = crate::Session::new();
+        s.new_workbook();
+        s.execute("range.setValues", json!({"range": "A1", "values": [["مُحَمَّد يَدْرُسُ فِي الْمَدْرَسَةِ", "Hello there in school"]]})).unwrap();
+        s.execute("home.autofitColumnWidth", json!({"cols": "A:B"})).unwrap();
+        let doc = s.doc().unwrap();
+        let width = |c: u32| doc.wb.active().and_then(|sh| sh.cols.get(&c)).and_then(|e| e.size).unwrap();
+        let ratio = width(0) / width(1);
+        assert!((0.75..=1.15).contains(&ratio), "Arabic {} vs Latin {}", width(0), width(1));
+    }
+
+    #[test]
+    fn arabic_word_ligatures_are_wider_than_letters() {
+        let em = |t: &str| approx_text_width(t, 72.0, false) / 96.0;
+        assert!(em("\u{FDFD}") > 8.0);
+        assert!(em("\u{FDFA}") > 1.0);
+        assert!(em("ب") < 0.6);
+    }
+
+    #[test]
+    fn cjk_text_keeps_a_full_em_per_character() {
+        assert_eq!(approx_text_width("中文", 12.0, false), 2.0 * 12.0 * 96.0 / 72.0);
     }
 
     #[test]
