@@ -445,7 +445,8 @@ mod tests {
             },
             priority: 1,
             stop_if_true: false,
-        }];
+        }]
+        .into();
         let fill = |a: &str| {
             let d = s.doc().unwrap();
             CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
@@ -475,7 +476,8 @@ mod tests {
             },
             priority: 1,
             stop_if_true: false,
-        }];
+        }]
+        .into();
         let fill = |a: &str| {
             let d = s.doc().unwrap();
             CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
@@ -502,7 +504,8 @@ mod tests {
             },
             priority: 1,
             stop_if_true: false,
-        }];
+        }]
+        .into();
         let fill = |a: &str| {
             let d = s.doc().unwrap();
             CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
@@ -535,7 +538,8 @@ mod tests {
             },
             priority: 1,
             stop_if_true: false,
-        }];
+        }]
+        .into();
         let fill = |a: &str| {
             let d = s.doc().unwrap();
             CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)
@@ -569,7 +573,8 @@ mod tests {
             },
             priority: 1,
             stop_if_true: false,
-        }];
+        }]
+        .into();
         let fill = |a: &str| {
             let d = s.doc().unwrap();
             CfCache::new().look(&d.wb, 0, CellRef::parse(a).unwrap()).and_then(|l| l.scale_fill)

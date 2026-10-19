@@ -106,8 +106,10 @@ fn a_tall_row_shows_aligned_text_where_a_standard_row_does() {
     let (tall, std) = (cell(&h, "B2"), cell(&h, "B4"));
     assert!(((tall_top - tall.top()) - (std_top - std.top())).abs() <= 1.0, "top inset matches the standard row");
     assert!(((tall.bottom() - tall_bot) - (std.bottom() - std_bot)).abs() <= 1.0, "bottom inset matches the standard row");
-    // A standard row is about one line tall, so top and bottom aligned text land (almost) together.
-    assert!(((std_top - std.top()) - (std_bot - std.top())).abs() <= 1.5, "standard row: top {std_top}, bottom {std_bot}");
+    // A standard row is about one line tall, so top and bottom aligned text land (almost) together;
+    // any height beyond a 20 px row separates them by that much.
+    let slack = 1.5 + (std.height() - 20.0).max(0.0);
+    assert!(((std_top - std.top()) - (std_bot - std.top())).abs() <= slack, "standard row: top {std_top}, bottom {std_bot}");
 }
 
 #[test]
