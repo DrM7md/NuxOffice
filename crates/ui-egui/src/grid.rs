@@ -1031,7 +1031,10 @@ pub(crate) fn cell_text_lead(galley: &egui::Galley, font_size: f32) -> f32 {
 /// where a standard row does.
 pub(crate) fn cell_text_y(valign: VAlign, rect: Rect, gh: f32, lead: f32, z: f32) -> f32 {
     let y_top = rect.top() + 0.5 * z;
-    let y_bottom = (rect.bottom() - GRIDLINE_W - gh).max(y_top);
+    // Not clamped to `y_top`: text taller than the row overflows upward (Bottom) or both ways
+    // (Middle) and the cell's clip rect trims it, so Middle and Bottom stay distinct from Top, as
+    // in Excel.
+    let y_bottom = rect.bottom() - GRIDLINE_W - gh;
     let y = match valign {
         VAlign::Top => y_top,
         VAlign::Center | VAlign::Justify | VAlign::Distributed => (y_top + y_bottom) / 2.0,
@@ -3917,10 +3920,23 @@ mod tests {
         assert!(y_top < y_center);
         assert!(y_center < y_bottom);
 
-        // Overflow case: gh exceeds rect height
+        // Overflow case: gh exceeds rect height; Top still starts inside the cell.
         let gh_overflow = 60.0;
-        let y_bottom_ovf = cell_text_y(VAlign::Bottom, rect, gh_overflow, 0.0, z);
-        assert!(y_bottom_ovf >= rect.top());
+        let y_top_ovf = cell_text_y(VAlign::Top, rect, gh_overflow, 0.0, z);
+        assert!(y_top_ovf >= rect.top());
+    }
+
+    #[test]
+    fn wrapped_text_taller_than_its_row_keeps_its_vertical_alignment() {
+        // Upstream #1371: Middle and Bottom used to collapse onto Top once the text outgrew the row.
+        let rect = Rect::from_min_max(pos2(0.0, 0.0), pos2(100.0, 20.0));
+        let (gh, z) = (60.0, 1.0);
+        let y_top = cell_text_y(VAlign::Top, rect, gh, 0.0, z);
+        let y_center = cell_text_y(VAlign::Center, rect, gh, 0.0, z);
+        let y_bottom = cell_text_y(VAlign::Bottom, rect, gh, 0.0, z);
+        assert!(y_top > y_center && y_center > y_bottom, "{y_top} > {y_center} > {y_bottom}");
+        // Bottom aligned text ends on the bottom gridline; the overflow is above the row.
+        assert!((y_bottom + gh - (rect.bottom() - 1.0)).abs() < 1e-3);
     }
 
     /// The screen box of a galley of `size` drawn at `pos` turned by `angle` about `pos`, as egui
