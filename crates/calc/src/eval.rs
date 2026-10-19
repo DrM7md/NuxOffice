@@ -1534,10 +1534,9 @@ impl<'h> Evaluator<'h> {
                     } else {
                         CellRef::new(area.range.start.row.saturating_add(index), area.range.start.col.saturating_add(offset))
                     };
-                    match self.host.cell_value(area.sheet, cell) {
-                        Value::Empty => Value::Number(0.0),
-                        v => v,
-                    }
+                    // An empty target stays blank, as the function library returns it (#374):
+                    // ISBLANK sees it as blank and `&` as ""; only a formula's final result shows 0.
+                    self.host.cell_value(area.sheet, cell)
                 }
                 v => v,
             }

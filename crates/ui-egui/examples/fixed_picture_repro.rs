@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Arc::make_mut(wb.sheets.first_mut().ok_or("no sheet")?).images.push(Image {
         id: 1,
         anchor: Anchor { cell: CellRef::new(9, 1), width: 320.0, height: 160.0, mode: AnchorMode::Absolute, ..Default::default() },
-        data: encoded.into_inner(),
+        data: encoded.into_inner().into(),
         mime: "image/png".into(),
         alt: "Original synthetic 320 by 160 pixel rectangle".into(),
     });

@@ -1562,7 +1562,14 @@ fn reference_lookups_match_array_lookup_semantics() {
         let (key, rest) = arguments.split_once(',').unwrap();
         let reference = format!("=VLOOKUP({key},A1:C3,{rest})");
         let array = format!("=VLOOKUP({key},{{1,10,\"one\";3,30,\"three\";5,0,\"five\"}},{rest})");
-        assert_eq!(crate::evaluate(&t.wb, 0, c("E1"), &reference), crate::evaluate(&t.wb, 0, c("E1"), &array), "{reference}");
+        // An empty target cell stays blank inside a formula (#374) and shows 0 as a cell's result,
+        // which is what the array literal (no empty elements) gives: compare them as results.
+        let zero = |v: &Value| if *v == Value::Empty { Value::Number(0.0) } else { v.clone() };
+        let as_result = |v: Value| match &v {
+            Value::Array(a) => gridcraft_core::Array::new(a.rows, a.cols, a.data.iter().map(zero).collect()).map(Value::from).unwrap_or(v),
+            _ => zero(&v),
+        };
+        assert_eq!(as_result(crate::evaluate(&t.wb, 0, c("E1"), &reference)), crate::evaluate(&t.wb, 0, c("E1"), &array), "{reference}");
     }
     t.set("E1", "=VLOOKUP(3,A:C,2,FALSE)");
     assert_eq!(t.num("E1"), 30.0);

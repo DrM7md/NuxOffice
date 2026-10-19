@@ -11,7 +11,7 @@ fn fixed_picture_extents_survive_different_column_metrics() {
         sheet.images.push(Image {
             id: 1,
             anchor: Anchor { cell: CellRef::new(2, 1), dx: 5.0, dy: 3.0, width: 320.0, height: 160.0, mode },
-            data: vec![1, 2, 3],
+            data: vec![1, 2, 3].into(),
             mime: "image/png".into(),
             alt: "synthetic extent".into(),
         });
