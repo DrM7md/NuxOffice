@@ -1004,16 +1004,19 @@ impl<'h> Evaluator<'h> {
     }
 
     /// The function argument of a LAMBDA helper; a function given by name takes `arity`
-    /// arguments.
-    fn lambda_arg(&mut self, e: Option<&Expr>, arity: usize) -> Option<Arc<Lambda>> {
+    /// arguments. An argument that evaluates to an error passes that error on (a recursion that
+    /// runs out of stack while evaluating it is `#NUM!`); anything else that isn't a function is
+    /// `#VALUE!`.
+    fn lambda_arg(&mut self, e: Option<&Expr>, arity: usize) -> Result<Arc<Lambda>, CellError> {
         if let Some(f) = e.and_then(|x| self.function_by_name(x)) {
             let params: Vec<String> = (0..arity).map(|i| format!("_xleta.{i}")).collect();
             let body = Expr::Call(f, params.iter().map(|p| Expr::Name(p.clone())).collect());
-            return Some(Arc::new(Lambda { params, body, env: Vec::new() }));
+            return Ok(Arc::new(Lambda { params, body, env: Vec::new() }));
         }
         match e.map(|x| self.eval(x)) {
-            Some(Ev::L(l)) => Some(l),
-            _ => None,
+            Some(Ev::L(l)) => Ok(l),
+            Some(Ev::V(Value::Error(x))) => Err(x),
+            _ => Err(CellError::Value),
         }
     }
 
@@ -1029,7 +1032,10 @@ impl<'h> Evaluator<'h> {
                 if args.len() < 2 {
                     return err(CellError::Value);
                 }
-                let Some(l) = self.lambda_arg(args.last(), args.len() - 1) else { return err(CellError::Value) };
+                let l = match self.lambda_arg(args.last(), args.len() - 1) {
+                    Ok(l) => l,
+                    Err(e) => return err(e),
+                };
                 let arrays: Vec<Arc<Array>> = args[..args.len() - 1].iter().map(|a| as_array(self.value(a))).collect();
                 let rows = arrays.iter().map(|a| a.rows).max().unwrap_or(1);
                 let cols = arrays.iter().map(|a| a.cols).max().unwrap_or(1);
@@ -1052,7 +1058,10 @@ impl<'h> Evaluator<'h> {
                 }
                 let mut acc = self.value(&args[0]);
                 let arr = as_array(self.value(&args[1]));
-                let Some(l) = self.lambda_arg(args.get(2), 2) else { return err(CellError::Value) };
+                let l = match self.lambda_arg(args.get(2), 2) {
+                    Ok(l) => l,
+                    Err(e) => return err(e),
+                };
                 if l.params.len() != 2 {
                     return err(CellError::Value);
                 }
@@ -1076,7 +1085,10 @@ impl<'h> Evaluator<'h> {
                     return err(CellError::Value);
                 }
                 let arr = as_array(self.value(&args[0]));
-                let Some(l) = self.lambda_arg(args.get(1), 1) else { return err(CellError::Value) };
+                let l = match self.lambda_arg(args.get(1), 1) {
+                    Ok(l) => l,
+                    Err(e) => return err(e),
+                };
                 let Some(p) = l.params.first().cloned() else { return err(CellError::Value) };
                 let by_row = name == "BYROW";
                 let n = if by_row { arr.rows } else { arr.cols };
@@ -1105,7 +1117,10 @@ impl<'h> Evaluator<'h> {
                 if rows < 1.0 || cols < 1.0 || rows * cols > MAX_CELLS as f64 {
                     return err(CellError::Value);
                 }
-                let Some(l) = self.lambda_arg(args.get(2), 2) else { return err(CellError::Value) };
+                let l = match self.lambda_arg(args.get(2), 2) {
+                    Ok(l) => l,
+                    Err(e) => return err(e),
+                };
                 if l.params.len() != 2 {
                     return err(CellError::Value);
                 }
