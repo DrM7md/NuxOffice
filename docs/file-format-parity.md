@@ -119,6 +119,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-17 | minor | Calculated table-column creation and consistent updates, exception preservation, Options switch and XLSX master-formula reuse (#934) |
 | 2026-10-18 | minor | PDF honors cell Context/LTR/RTL, preserves paragraph direction across wrapping, and mirrors RTL sheet geometry without reversing glyphs |
 | 2026-10-18 | minor | Arabic PDF export embeds licensed glyph outlines, joins letters and marks, preserves logical text and reports unsupported glyphs before writing |
+| 2026-10-19 | trivial | XLSX text boxes and shapes keep right-to-left paragraph direction (`a:pPr rtl`, ECMA-376 Part 1 §21.1.2.2.7): read from the first paragraph and written on every paragraph; output without it is unchanged |
 | 2026-10-14 | trivial | Formula parser: text longer than Excel's 8,192 characters, and postfix chains (`1%%%…`, `f(1)(1)…`) past the 256-level nesting limit, are parse errors (the cell keeps its formula text and cached value) instead of trees deep enough to overflow the stack when a hostile file is opened, saved or dropped |
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
 | 2026-10-15 | minor | XLSX saves keep imported ordinary formulas scalar and write rich-value metadata compatible with Excel, preventing defined-name repair for workbooks with in-cell images (#1429) |

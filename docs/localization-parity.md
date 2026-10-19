@@ -63,6 +63,9 @@ Arabic PDF output uses harfrust shaping, Unicode bidi and licensed Noto Arabic g
   column A and the row headers on the right, the vertical scrollbar on the left; hit-testing,
   arrow keys, editor, popups and floating objects follow; General-aligned text stays left-aligned
   in its box, and the sheet tabs, horizontal scrollbar and printing/PDF are not mirrored yet. IME input goes
+  (no bidi), and the sheet tabs, horizontal scrollbar and printing/PDF are not mirrored yet.
+  Text boxes and shapes keep their paragraphs' right-to-left direction (`a:pPr rtl`) through XLSX
+  save, though GridCraft still draws that text left to right. IME input goes
   through egui/winit and is unverified for Chinese, Japanese and Korean.
 - **PDF export** shapes Arabic with embedded Noto Arabic glyph outlines; other non-Latin scripts
   (CJK, Devanagari, Thai) cannot export yet, because the rest uses only the 14 standard PDF fonts.
@@ -126,6 +129,7 @@ language (none so far) and of localized function names.
 | 2026-10-18 | minor | Arabic PDF cells inherit explicit or contextual direction; wrapped lines retain paragraph direction, and RTL pages mirror cell and object geometry |
 | 2026-10-18 | minor | Arabic PDF cells, headers and chart labels support joined letters, combining marks, digits, bold/italic, rotation and grapheme wrapping |
 | 2026-10-19 | minor | Defined-name length counts characters, not bytes: Arabic names up to 255 letters are accepted, and Create from Selection keeps long Arabic headers |
+| 2026-10-19 | trivial | Text boxes and shapes keep right-to-left paragraph direction (`a:pPr rtl`) on XLSX save, so Excel-authored Arabic and Hebrew text boxes reopen right to left |
 | 2026-10-12 | minor | Format Cells looks up its tabs, labels, options and note through `Language::tr` (Fill tab keyed `Format Cells\|Fill`); dialog titles and OK/Cancel too. Labels already in a table (Number, Currency, Fill…) show translated; the rest fall back to English until the tables add them |
 | 2026-10-12 | minor | Brazilian Portuguese catalog (`i18n/pt.rs`) grows from 377 to 923 entries: every key the other catalogs translate, including the dialog strings #669 starts looking up (~42%) |
 | 2026-10-12 | minor | French (`i18n/fr.rs`, 377 labels): the backstage, print, header/footer and options block (84 labels) had its translations paired with the wrong keys; retranslated, two missing header/footer labels added, spot-check tests |
