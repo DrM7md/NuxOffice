@@ -296,7 +296,11 @@ fn underline(s: &mut Session, p: &Json) -> Result<Json> {
 
 fn font_name(s: &mut Session, p: &Json) -> Result<Json> {
     let Some(name) = str_param(p, "name").map(str::to_string) else { return Err(bad("home.fontName", "missing `name`")) };
-    apply_style(s, p, |st| st.font.name = name.clone())
+    apply_style(s, p, |st| {
+        st.font.name = name.clone();
+        st.font.charset = None;
+        st.font.family = None;
+    })
 }
 
 fn font_size(s: &mut Session, p: &Json) -> Result<Json> {

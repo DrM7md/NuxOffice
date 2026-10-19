@@ -1127,6 +1127,55 @@ fn default_font_survives_a_round_trip() {
     assert_eq!(font0(&saved), (Some("12".into()), Some("Calibri".into()), Some("2".into()), Some("minor".into())));
 }
 
+fn one_font_workbook(font: &str) -> Vec<u8> {
+    let styles = format!(
+        r#"<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font>{font}</font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>"#
+    );
+    let rels = r#"<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>"#;
+    super::minimal("<sheetData/>", &[("xl/styles.xml", &styles)], rels, "")
+}
+
+#[test]
+fn font_charset_and_family_roundtrip() {
+    let file = one_font_workbook(r#"<name val="Traditional Arabic"/><family val="1"/><charset val="178"/>"#);
+    let (wb, _) = read_xlsx(&file).unwrap();
+    let saved = write_xlsx(&wb).unwrap();
+    let mut pkg = Package::open(&saved).unwrap();
+    let xml = String::from_utf8(pkg.read("xl/styles.xml").unwrap().unwrap()).unwrap();
+    assert!(xml.contains("<name val=\"Traditional Arabic\"/><family val=\"1\"/><charset val=\"178\"/>"), "{xml}");
+
+    let (back, _) = read_xlsx(&saved).unwrap();
+    let font = &back.styles.get(StyleId::DEFAULT).font;
+    let back_saved = write_xlsx(&back).unwrap();
+    let mut pkg = Package::open(&back_saved).unwrap();
+    let xml = String::from_utf8(pkg.read("xl/styles.xml").unwrap().unwrap()).unwrap();
+    assert!(xml.contains("<name val=\"Traditional Arabic\"/><family val=\"1\"/><charset val=\"178\"/>"), "{xml}");
+    assert_eq!(font.name, "Traditional Arabic");
+    assert_eq!(font.family, Some(1));
+    assert_eq!(font.charset, Some(178));
+}
+
+#[test]
+fn fonts_without_charset_write_unchanged() {
+    let file = one_font_workbook(r#"<name val="Arial"/>"#);
+    let saved = write_xlsx(&read_xlsx(&file).unwrap().0).unwrap();
+    let mut pkg = Package::open(&saved).unwrap();
+    let xml = String::from_utf8(pkg.read("xl/styles.xml").unwrap().unwrap()).unwrap();
+    assert!(xml.contains("<name val=\"Arial\"/><family val=\"2\"/>"), "{xml}");
+    assert!(!xml.contains("<charset"), "{xml}");
+}
+
+#[test]
+fn out_of_range_family_is_ignored() {
+    let file = one_font_workbook(r#"<name val="Arial"/><family val="15"/>"#);
+    let (wb, _) = read_xlsx(&file).unwrap();
+    assert_eq!(wb.styles.get(StyleId::DEFAULT).font.family, None);
+    let saved = write_xlsx(&wb).unwrap();
+    let mut pkg = Package::open(&saved).unwrap();
+    let xml = String::from_utf8(pkg.read("xl/styles.xml").unwrap().unwrap()).unwrap();
+    assert!(xml.contains("<name val=\"Arial\"/><family val=\"2\"/>"), "{xml}");
+}
+
 #[test]
 fn solid_data_bar_survives_with_sparklines_and_gradient_neighbours() {
     let mut wb = Workbook::new();

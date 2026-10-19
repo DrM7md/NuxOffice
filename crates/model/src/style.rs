@@ -161,6 +161,12 @@ pub struct Font {
     pub strike: bool,
     pub color: Color,
     pub vert: VertAlign,
+    /// Windows character set the font was chosen for (178 = Arabic); kept so Excel substitutes a font for the same script.
+    #[serde(default)]
+    pub charset: Option<u8>,
+    /// Font family class (1 roman, 2 swiss, 3 modern…); `None` is swiss, the default.
+    #[serde(default)]
+    pub family: Option<u8>,
 }
 
 impl Eq for Font {}
@@ -168,7 +174,7 @@ impl Hash for Font {
     fn hash<H: Hasher>(&self, h: &mut H) {
         self.name.hash(h);
         self.size.to_bits().hash(h);
-        (self.bold, self.italic, self.underline, self.strike, self.color, self.vert).hash(h);
+        (self.bold, self.italic, self.underline, self.strike, self.color, self.vert, self.charset, self.family).hash(h);
     }
 }
 
@@ -183,6 +189,8 @@ impl Default for Font {
             strike: false,
             color: Color::Auto,
             vert: VertAlign::Baseline,
+            charset: None,
+            family: None,
         }
     }
 }
