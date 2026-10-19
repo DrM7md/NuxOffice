@@ -13,6 +13,7 @@ The hardware Excel uses, per platform, against GridCraft. Part of
 | Trackpad and mouse | Smooth scrolling, pinch zoom, horizontal scroll, Magic Mouse | Smooth scrolling and zoom via egui | Verify pinch zoom on each platform: 1–2 h |
 | Multiple windows and monitors | One window per workbook, New Window for the same workbook, per-monitor DPI | One window; multiple workbooks switch inside it (#162; PR #171) | Native window per workbook, New Window, Arrange All across monitors: 6–8 h |
 | High-DPI and display scaling | yes | yes (display scale matched to desktop density; View › Interface size 75–200 % on top, #230; Ctrl/Cmd+Shift+F8 restores Auto even if controls are offscreen, #1584) | — |
+| High-DPI and display scaling | yes | yes (display scale matched to desktop density; View › Interface size 75–200 % on top, #230; Windows 11 drags across monitors with different scales keep the window's size, via winit pinned to the rust-windowing/winit#4694 backport; surfaces up to the GPU's largest texture, 16384 px on DirectX 12 and Metal, not 8192) | — |
 | Accessibility hardware (screen readers, braille displays, switch control) | Narrator, JAWS, NVDA, VoiceOver | AccessKit enabled in eframe; grid cells and ribbon not yet exposed as an accessible tree | Counted under UI ([ui-parity.md](ui-parity.md)) |
 | Printers | System print with driver options | Desktop submits through craft-print with printer choice, copies, duplex and grayscale; web browser printing | Counted under print |
 
@@ -22,6 +23,7 @@ The hardware Excel uses, per platform, against GridCraft. Part of
 |---|---|---|
 | 2026-10-16 | minor | Interface-size recovery: Ctrl/Cmd+Shift+F8 restores Auto through the existing preference command, including with editors, dialogs and Backstage open (#1584). |
 | 2026-10-12 | minor | Desktop File > Print now discovers printers and submits PDF jobs through pinned craft-print with printer choice, copies, duplex and grayscale; browser printing and PDF export remain available. Remaining print parity includes page ranges and driver-specific tray/options UI; physical printer fidelity needs hardware validation. |
+| 2026-10-12 | trivial | Windows: dragging across monitors with different display scales no longer grows the window and crashes (winit pinned to the rust-windowing/winit#4694 backport); windows wider or taller than 8192 px (several monitors) keep their surface |
 | 2026-10-11 | trivial | Windows: DirectX 12 shaders compiled with FXC, no DXC runtime needed (#339, #354) |
 | 2026-10-11 | trivial | Windows: OpenGL fallback when DirectX 12 has no GPU or fails to start; Vulkan never by default (#120) |
 | 2026-10-10 | major | Created: single-threaded calc, wgpu rendering, no pen pressure, single window |

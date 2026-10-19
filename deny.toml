@@ -51,4 +51,4 @@ allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 # Mouhand-Kaddo/egui: egui 0.36.2 plus the word-navigation fix of egui #8698, pinned to a7ffc95 by
 # upstream PR #922 (verified against egui's 0.36.2 tag: two files, +70 -3). Drop it when an egui
 # release includes the fix.
-allow-git = ["https://github.com/storytold/craft-libs", "https://github.com/Mouhand-Kaddo/egui"]
+allow-git = ["https://github.com/storytold/craft-libs", "https://github.com/Mouhand-Kaddo/egui", "https://github.com/rust-windowing/winit"]
