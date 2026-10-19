@@ -1,7 +1,9 @@
 //! A tiny, self-contained PDF 1.7 writer for GridCraft's print and PDF export.
 //!
 //! - The 14 standard fonts (no embedding) with WinAnsiEncoding, plus approximate width tables
-//!   ([`text_width`]) so callers can measure, align and wrap text.
+//!   ([`text_width`]) so callers can measure, align and wrap text. Characters outside
+//!   WinAnsiEncoding (CJK and other scripts) are set in a predefined, non-embedded Adobe-GB1 CID
+//!   font with the `UniGB-UTF16-H` CMap instead of being replaced by `?`.
 //! - Vector drawing: rectangles, lines (solid or dashed), polygons, circles (Bézier), clipping.
 //! - RGBA images as RGB image XObjects with a soft mask for alpha (run-length encoded).
 //! - Coordinates are points with a **top-left origin** (y grows down); text `y` is the baseline.
@@ -125,6 +127,9 @@ impl Font {
             Font::TimesBold | Font::TimesBoldItalic => Some(&metrics::TIMES_BOLD),
             _ => None,
         };
+        if needs_cid(c) {
+            return CID_WIDTH;
+        }
         let Some(table) = table else { return 600 };
         let ascii = |c: char| -> Option<u16> {
             let i = (c as u32).checked_sub(32)? as usize;
@@ -187,6 +192,31 @@ pub fn win_ansi(c: char) -> u8 {
         '\t' => b' ',
         _ => b'?',
     }
+}
+
+/// Index of the CID font in a page's font flags (after the [`Font::ALL`] faces).
+const CID_FONT: usize = Font::ALL.len();
+/// Number of font resources a page can use.
+const FONT_SLOTS: usize = CID_FONT + 1;
+/// Base font of the CID font used for characters WinAnsiEncoding lacks.
+const CID_BASE_FONT: &str = "STSong-Light";
+/// Default glyph width of the CID font (full-width), in 1/1000 em.
+const CID_WIDTH: u16 = 1000;
+
+/// True when `c` has no WinAnsiEncoding byte and is drawn with the CID font.
+fn needs_cid(c: char) -> bool {
+    !c.is_control() && c != '?' && win_ansi(c) == b'?'
+}
+
+/// A PDF hex string `< … >` of `text` in UTF-16BE (the `UniGB-UTF16-H` encoding).
+fn pdf_utf16_string(text: &str) -> String {
+    let mut s = String::with_capacity(text.len() * 4 + 2);
+    s.push('<');
+    for unit in text.encode_utf16() {
+        let _ = write!(s, "{unit:04X}");
+    }
+    s.push('>');
+    s
 }
 
 /// A PDF literal string `( … )` for `text` in WinAnsiEncoding.
@@ -265,7 +295,7 @@ pub struct Page {
     width: f32,
     height: f32,
     content: String,
-    fonts: [bool; 12],
+    fonts: [bool; FONT_SLOTS],
     images: Vec<ImageData>,
     depth: u32,
 }
@@ -460,24 +490,25 @@ impl Page {
             return;
         }
         let fi = font.index();
-        if let Some(f) = self.fonts.get_mut(fi) {
-            *f = true;
-        }
+        let size = n(size.min(10_000.0));
         let (sn, cs) = if angle.is_finite() { angle.sin_cos() } else { (0.0, 1.0) };
         // Clockwise in y-down = counter-clockwise negated in PDF's y-up space.
-        let s = format!(
-            "BT\n{}\n/F{} {} Tf\n{} {} {} {} {} {} Tm\n{} Tj\nET",
-            rgb_op(color, false),
-            fi + 1,
-            n(size.min(10_000.0)),
-            n(cs),
-            n(-sn),
-            n(sn),
-            n(cs),
-            n(x),
-            n(self.y(y)),
-            pdf_string(text)
-        );
+        let mut s = format!("BT\n{}\n{} {} {} {} {} {} Tm\n", rgb_op(color, false), n(cs), n(-sn), n(sn), n(cs), n(x), n(self.y(y)));
+        // Runs of WinAnsi text use `font`; runs it cannot encode use the CID font. Each `Tj`
+        // advances the text position, so the runs follow each other on the baseline.
+        let mut rest = text;
+        while let Some(first) = rest.chars().next() {
+            let cid = needs_cid(first);
+            let end = rest.char_indices().find(|(_, c)| needs_cid(*c) != cid).map_or(rest.len(), |(i, _)| i);
+            let (run, tail) = rest.split_at(end);
+            let (slot, string) = if cid { (CID_FONT, pdf_utf16_string(run)) } else { (fi, pdf_string(run)) };
+            if let Some(f) = self.fonts.get_mut(slot) {
+                *f = true;
+            }
+            let _ = writeln!(s, "/F{} {} Tf\n{} Tj", slot + 1, size, string);
+            rest = tail;
+        }
+        s.push_str("ET");
         self.op(&s);
     }
 
@@ -583,7 +614,7 @@ impl PdfDoc {
     pub fn add_page(&mut self, width_pt: f32, height_pt: f32) -> &mut Page {
         let width = if width_pt.is_finite() { width_pt.clamp(3.0, 14_400.0) } else { 612.0 };
         let height = if height_pt.is_finite() { height_pt.clamp(3.0, 14_400.0) } else { 792.0 };
-        self.pages.push(Page { width, height, content: String::new(), fonts: [false; 12], images: Vec::new(), depth: 0 });
+        self.pages.push(Page { width, height, content: String::new(), fonts: [false; FONT_SLOTS], images: Vec::new(), depth: 0 });
         let i = self.pages.len() - 1;
         &mut self.pages[i]
     }
@@ -603,18 +634,19 @@ impl PdfDoc {
             self.add_page(612.0, 792.0);
         }
         // Object numbering: 1 catalog, 2 page tree, 3 info, then fonts, then per page.
-        let mut used = [false; 12];
+        let mut used = [false; FONT_SLOTS];
         for p in &self.pages {
             for (u, f) in used.iter_mut().zip(p.fonts.iter()) {
                 *u |= *f;
             }
         }
         let mut next = 4u32;
-        let mut font_ids = [0u32; 12];
+        let mut font_ids = [0u32; FONT_SLOTS];
         for (i, u) in used.iter().enumerate() {
             if *u {
                 font_ids[i] = next;
-                next += 1;
+                // The CID font also needs its descendant font and font descriptor.
+                next += if i == CID_FONT { 3 } else { 1 };
             }
         }
         let mut objects: Vec<(u32, Vec<u8>)> = Vec::new();
@@ -623,6 +655,31 @@ impl PdfDoc {
         for (i, id) in font_ids.iter().enumerate() {
             if *id != 0 {
                 let _ = write!(font_dict, "/F{} {} 0 R ", i + 1, id);
+                if i == CID_FONT {
+                    let (cid_id, desc_id) = (id + 1, id + 2);
+                    objects.push((
+                        *id,
+                        format!(
+                            "<< /Type /Font /Subtype /Type0 /BaseFont /{CID_BASE_FONT} /Encoding /UniGB-UTF16-H /DescendantFonts [{cid_id} 0 R] >>"
+                        )
+                        .into_bytes(),
+                    ));
+                    objects.push((
+                        cid_id,
+                        format!(
+                            "<< /Type /Font /Subtype /CIDFontType0 /BaseFont /{CID_BASE_FONT} /CIDSystemInfo << /Registry (Adobe) /Ordering (GB1) /Supplement 4 >> /FontDescriptor {desc_id} 0 R /DW {CID_WIDTH} >>"
+                        )
+                        .into_bytes(),
+                    ));
+                    objects.push((
+                        desc_id,
+                        format!(
+                            "<< /Type /FontDescriptor /FontName /{CID_BASE_FONT} /Flags 6 /FontBBox [-25 -254 1000 880] /ItalicAngle 0 /Ascent 880 /Descent -120 /CapHeight 880 /StemV 93 >>"
+                        )
+                        .into_bytes(),
+                    ));
+                    continue;
+                }
                 let name = Font::ALL.get(i).copied().unwrap_or_default().base_name();
                 let enc = if name.starts_with("Symbol") { "" } else { " /Encoding /WinAnsiEncoding" };
                 objects.push((*id, format!("<< /Type /Font /Subtype /Type1 /BaseFont /{name}{enc} >>").into_bytes()));

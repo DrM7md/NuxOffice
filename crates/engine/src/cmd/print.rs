@@ -1906,6 +1906,16 @@ mod tests {
     }
 
     #[test]
+    fn pdf_prints_cjk_text_instead_of_question_marks() {
+        let mut s = s();
+        s.execute("range.setValues", json!({"range": "A1", "values": [["签字清单", 2]]})).unwrap();
+        let (pdf, _) = pdf_of(&mut s, json!({}));
+        assert!(!contains(&pdf, "(????) Tj"), "CJK cell printed as (????) Tj");
+        assert!(contains(&pdf, "<7B7E5B576E055355> Tj"));
+        assert!(contains(&pdf, "(2) Tj"));
+    }
+
+    #[test]
     fn pdf_contains_text_and_header_codes_expand() {
         let mut s = s();
         s.execute("range.setValues", json!({"range": "A1", "values": [["Quarterly Report", null], ["Total", 1234.5]]})).unwrap();
