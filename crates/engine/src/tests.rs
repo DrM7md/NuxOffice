@@ -3051,10 +3051,7 @@ fn sort_and_remove_duplicates_move_the_rows_notes_and_links() {
     let notes_and_links = |s: &Session| {
         let sh = s.doc().unwrap().wb.active().unwrap().clone();
         let cells = ["B2", "B3", "B4", "B5"].map(|c| CellRef::parse(c).unwrap());
-        (
-            cells.map(|c| sh.comments.get(&c).map(|m| m.text.clone())),
-            cells.map(|c| sh.hyperlinks.get(&c).map(|h| h.target.clone())),
-        )
+        (cells.map(|c| sh.comments.get(&c).map(|m| m.text.clone())), cells.map(|c| sh.hyperlinks.get(&c).map(|h| h.target.clone())))
     };
 
     // Sort ascending with unique keys d,a,e,b,c: the order becomes a(2), b(4), c(5), d(1), e(3).
