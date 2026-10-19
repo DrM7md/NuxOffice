@@ -32,7 +32,7 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 log = "0.4"
 rayon = "1"
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }
-quick-xml = "0.41"
+quick-xml = "0.42"
 zip = { version = "3", default-features = false, features = ["deflate"] }
 sha2 = { version = "0.11", default-features = false }
 # Decrypting password-protected workbooks ([MS-OFFCRYPTO]): AES, SHA-1 and MD5 (.xls RC4), pure Rust (wasm-safe).
