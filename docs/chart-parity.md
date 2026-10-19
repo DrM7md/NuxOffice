@@ -25,7 +25,7 @@ open PRs #158, #161, and issue #190.
 | Radar | radar, with markers, filled | 1 of 3 | |
 | Treemap, Sunburst | 1 each | 2 of 2 | lose their kind in XLSX (PR #161) |
 | Histogram, Pareto | 2 | 1 of 2 | no Pareto |
-| Box & Whisker | 1 | 1 of 1 | loses its kind in XLSX (PR #161) |
+| Box & Whisker | 1 | 1 of 1 | exclusive (default) and inclusive quartiles per series; XLSX round-trip; `chart.set {quartiles}` changes all series |
 | Waterfall, Funnel | 2 | 2 of 2 | lose their kind in XLSX (PR #161) |
 | Filled map | 1 | 0 | needs geographic boundary data (licensing decision) |
 | Combo | custom combinations, secondary axis | yes (line on secondary axis) | |
@@ -88,6 +88,7 @@ are (#1686). Such series get no `numCache`/`strCache` on save (#1690).
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-16 | trivial | Series that refer to defined names (`[0]!Name`, `Sheet!Name`) resolve instead of showing `#NAME?`, and are saved qualified, as Excel needs (#1686) |
+| 2026-10-16 | minor | Box & whisker quartiles default to exclusive, honor each series on draw and XLSX round-trip; `chart.set {quartiles}` changes the method (#1453) |
 | 2026-10-12 | trivial | chart sheets are kept on save, still not editable (#727) |
 | 2026-10-11 | minor | Trendlines: all six types modelled, round-tripped through `c:trendline`, drawn with forecast and equation/R² labels; `chart.addElement` `trendline` |
 | 2026-10-11 | minor | PivotCharts (`insert.pivotChart`) |
