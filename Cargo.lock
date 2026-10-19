@@ -922,7 +922,8 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 [[package]]
 name = "ecolor"
 version = "0.36.2"
-source = "git+https://github.com/Mouhand-Kaddo/egui?rev=a7ffc95638712fd71d9431f6511a10a9529aa18a#a7ffc95638712fd71d9431f6511a10a9529aa18a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0656a7530b9e2841ee7a5f983965bdd9840c32f4012f759cfd44b912cced6b34"
 dependencies = [
  "bytemuck",
  "emath",
@@ -966,7 +967,8 @@ dependencies = [
 [[package]]
 name = "egui"
 version = "0.36.2"
-source = "git+https://github.com/Mouhand-Kaddo/egui?rev=a7ffc95638712fd71d9431f6511a10a9529aa18a#a7ffc95638712fd71d9431f6511a10a9529aa18a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc938cc27cd911415e1e4d151bc56ff9df063d8db081374e87aeb805ea74b2ba"
 dependencies = [
  "accesskit",
  "ahash",
@@ -1067,7 +1069,8 @@ checksum = "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be"
 [[package]]
 name = "emath"
 version = "0.36.2"
-source = "git+https://github.com/Mouhand-Kaddo/egui?rev=a7ffc95638712fd71d9431f6511a10a9529aa18a#a7ffc95638712fd71d9431f6511a10a9529aa18a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52c8d4141cf0f60fb2f7aefaf352d3ffa5171ef0ab09731c64391801e95e48f1"
 dependencies = [
  "bytemuck",
 ]
@@ -1102,7 +1105,8 @@ dependencies = [
 [[package]]
 name = "epaint"
 version = "0.36.2"
-source = "git+https://github.com/Mouhand-Kaddo/egui?rev=a7ffc95638712fd71d9431f6511a10a9529aa18a#a7ffc95638712fd71d9431f6511a10a9529aa18a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0ec0308dc23130fc1a7d4623a8534c2ed069c6dc84e258ee4f3de99615aa1a3"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1126,7 +1130,8 @@ dependencies = [
 [[package]]
 name = "epaint_default_fonts"
 version = "0.36.2"
-source = "git+https://github.com/Mouhand-Kaddo/egui?rev=a7ffc95638712fd71d9431f6511a10a9529aa18a#a7ffc95638712fd71d9431f6511a10a9529aa18a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "773fa9c96dd0dbef887e39d0ed6177f141cce4d68e6041df77570aa3702dfa13"
 
 [[package]]
 name = "equivalent"
