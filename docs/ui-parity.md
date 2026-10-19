@@ -55,6 +55,7 @@ this logic, with one undo step.
 | Point mode (click/drag/arrow references), reference colouring, F4 | done |
 | AutoComplete in columns, function autocomplete and argument tips | done; cell helpers clip to the worksheet and hide when the editor scrolls out (#200) |
 | Header resize and double-click AutoFit | done (#42, #88 for header dividers) |
+| Sort from an AutoFilter header | targets the clicked filter/table even when another region is selected; preserves its header, summary rows above it and table totals. Command sorting recognizes ordinary AutoFilter bounds and honors explicit range/header overrides (#1097) |
 | Outline symbols for grouped rows / columns (band beside the headers, brackets, − / +, level buttons 1…n+1) | done (#373): clicks run `data.hideDetail` / `data.showDetail` / `data.showLevels`, frozen panes and right-to-left sheets included; summary rows/columns are always below/right (the "Summary rows below detail" setting isn't modelled), no "Show outline symbols" option yet, and a block of cells still groups rows without the Rows / Columns dialog |
 | Reorder selected whole columns by dragging their headers | done (10-11) |
 | Insert rows, columns and cells: the new cells take the formats of the row above or the column to the left (Format Same As Above) | done (10-12); inserts in row 1 or column A, with nothing before them, stay unformatted (not compared with Excel); no Insert Options button (Format Same As Below, Clear Formatting); the cap counts only newly stored styles; an insert needing more than 1,000,000 stored cells keeps only the row or column format and returns `formattingSkipped: true` and `formattingCellLimit` |
@@ -194,6 +195,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-16 | minor | Remove Duplicates shows an editable Range field initialized from the selection and passes it to the engine on OK (#1388). Live range-picking outside the dialog remains unsupported |
 | 2026-10-16 | minor | Added global interface-scale recovery and an Auto-menu shortcut hint; existing sheet zoom, hide/unhide column shortcuts and keytips retained (#1584). |
 | 2026-10-15 | minor | Number-format named colors use their RGB values; indexed `[Color1]`–`[Color56]` resolve through the shared legacy palette in grid and PDF (#1452) |
+| 2026-10-13 | minor | Filter-menu sorting targets the clicked range, keeps headers and table totals fixed, and command sorting recognizes ordinary AutoFilter bounds (#1097) |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Insert formatting cap counts only styles differing from inherited row/column formats; skipped formatting is observable in the command result |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |

@@ -13,10 +13,12 @@ use crate::selection::current_region;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        cmd!("data.sortAscending", "Sort A to Z", ["Data", "Sort & Filter"], None, "{range?, column?: \"B\"}", has_doc, |s, p| quick_sort(
-            s, p, true
+        cmd!("data.sortAscending", "Sort A to Z", ["Data", "Sort & Filter"], None, "{range?, column?: \"B\", header?: bool}", has_doc, |s, p| {
+            quick_sort(s, p, true)
+        }),
+        cmd!("data.sortDescending", "Sort Z to A", ["Data", "Sort & Filter"], None, "{range?, column?, header?: bool}", has_doc, |s, p| quick_sort(
+            s, p, false
         )),
-        cmd!("data.sortDescending", "Sort Z to A", ["Data", "Sort & Filter"], None, "{range?, column?}", has_doc, |s, p| quick_sort(s, p, false)),
         cmd!(
             "data.sort",
             "Sort…",
@@ -164,6 +166,14 @@ fn data_target(s: &Session, p: &Json, cmd: &str) -> Result<(usize, RangeRef)> {
     Ok((sheet, data_range(s, p)?))
 }
 
+fn sort_header(wb: &Workbook, sh: &Sheet, r: RangeRef, p: &Json) -> bool {
+    bool_param(p, "header").unwrap_or_else(|| {
+        (str_param(p, "orientation") != Some("columns")
+            && sh.autofilter.as_ref().is_some_and(|filter| filter.range.start.row == r.start.row && filter.range.contains_range(&r)))
+            || guess_header(wb, sh, r)
+    })
+}
+
 /// Excel's header guess: the first row is text over a column of numbers, or is bold.
 fn guess_header(wb: &Workbook, sh: &Sheet, r: RangeRef) -> bool {
     if let Some(t) = sh.table_at(r.start) {
@@ -229,7 +239,20 @@ fn sort_target(s: &Session, p: &Json) -> Result<(usize, RangeRef)> {
     if sheet != d.wb.active_sheet && p.get("range").is_none() {
         return Err(bad("data.sort", "missing `range`: the selection is on the active sheet"));
     }
-    Ok((sheet, data_range(s, p)?))
+    let r = data_range(s, p)?;
+    // A known AutoFilter bounds a row sort more precisely than the surrounding current region,
+    // which may also contain a summary above its header. Explicit ranges and block selections win.
+    let sh = d.wb.sheet(sheet).ok_or(EngineError::NoDocument)?;
+    if p.get("range").is_none()
+        && str_param(p, "orientation") != Some("columns")
+        && d.selection.current().is_single()
+        && sh.table_at(d.selection.active).is_none()
+        && let Some(filter) = &sh.autofilter
+        && (filter.range.contains(d.selection.active) || r.contains_range(&filter.range))
+    {
+        return Ok((sheet, filter.range));
+    }
+    Ok((sheet, r))
 }
 
 fn quick_sort(s: &mut Session, p: &Json, asc: bool) -> Result<Json> {
@@ -238,7 +261,7 @@ fn quick_sort(s: &mut Session, p: &Json, asc: bool) -> Result<Json> {
     let col = col_param(p.get("column"), r.start.col).unwrap_or(s.doc()?.selection.active.col).clamp(r.start.col, r.end.col);
     let d = s.doc()?;
     let sh = d.wb.sheet(sheet).ok_or(EngineError::NoDocument)?;
-    let header = guess_header(&d.wb, sh, r);
+    let header = sort_header(&d.wb, sh, r, p);
     do_sort(s, sheet, r, header, vec![SortKey { col, desc: !asc, by: "values".into(), list: None }], false, false)
 }
 
@@ -248,7 +271,7 @@ fn sort(s: &mut Session, p: &Json) -> Result<Json> {
     let r = if by_cols { r } else { expand_sort_range(s, p, r)? };
     let d = s.doc()?;
     let sh = d.wb.sheet(sheet).ok_or(EngineError::NoDocument)?;
-    let header = bool_param(p, "header").unwrap_or_else(|| guess_header(&d.wb, sh, r));
+    let header = sort_header(&d.wb, sh, r, p);
     let case = bool_param(p, "matchCase").unwrap_or(false);
     let mut keys: Vec<SortKey> = Vec::new();
     for k in p.get("keys").and_then(Json::as_array).map(Vec::as_slice).unwrap_or_default() {
