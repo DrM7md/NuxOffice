@@ -56,6 +56,9 @@ No alpha blockers: every core workflow passes the [alpha gate](roadmap.md#alpha-
   (Chinese text) awaits confirmation; #54 (symbols as boxes on Fedora). egui 0.36.2 includes
   harfrust shaping; a pinned backport fixes Arabic previous-word underflow, with full-app
   regressions. Bidi and font coverage remain incomplete; PDF uses standard fonts only.
+- **Missing:** CJK font fallback, complex shaping (Arabic, Devanagari, Thai), bidi in the UI, non-Latin PDF outside Arabic.
+  (Chinese text) awaits confirmation; #54 (symbols as boxes on Fedora); no shaping for Arabic or
+  Devanagari in the UI. PDF now shapes Arabic with licensed glyph outlines, preserves cell reading direction, and mirrors RTL sheets.
 - **Impact:** blocks most of the world's users even with an English UI.
 - **Estimate:** 12–20 h. [localization-parity.md](localization-parity.md)
 
@@ -170,6 +173,7 @@ No alpha blockers: every core workflow passes the [alpha gate](roadmap.md#alpha-
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-13 | minor | Arabic word-navigation safety backport. Shaping exists in egui 0.36.2; bidi, font coverage and PDF remain gaps |
+| 2026-10-13 | minor | §5: Arabic PDF output preserves cell direction, joined glyphs and RTL sheet geometry. Other script and UI gaps remain. |
 | 2026-10-12 | minor | rows auto-fit oversized fonts on open and whole-row/column formatting (#833) |
 | 2026-10-12 | minor | Page Layout view: dragging margins on the rulers (#792) removed from the §14 remainder |
 | 2026-10-12 | minor | §13: Forecast Sheet Forecast Start (hindcast) landed (#785) |

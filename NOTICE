@@ -52,3 +52,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Arabic PDF fonts
+----------------
+Arabic PDF glyph outlines use the separately supplied Noto Sans Arabic font, licensed under the SIL Open Font License 1.1. Bundled builds carry its OFL notice through the existing craft-fonts package licence copying. No font binary is stored in this repository.

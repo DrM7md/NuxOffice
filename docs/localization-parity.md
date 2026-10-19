@@ -7,6 +7,8 @@ packs cover 100+), with localized function names, argument separators, number an
 right-to-left sheets and full complex-script support. Part of
 [target-app-parity.md](target-app-parity.md). **Localization: ~10% ready, 100–165 h** (estimated).
 
+Arabic PDF output uses harfrust shaping, Unicode bidi and licensed Noto Arabic glyph outlines with ToUnicode and logical ActualText. Cells, headers and chart labels support marks, digits, rotation and style. Bundled builds use the optional `CRAFT_FONTS_DIR` input; unbundled native builds look for Noto Sans Arabic. Unsupported text fails export before writing the destination. Cell Context/LTR/RTL direction is carried through measurement, wrapping and drawing. RTL sheet geometry mirrors while text stays readable. Latin-only RTL text uses bidi ordering without requiring an Arabic font.
+
 ## Where we are (measured from source on `main`, after the 2026-10-10 merges)
 
 - **A first catalog exists, for the ribbon only.** `crates/ui-egui/src/i18n.rs` (merged 10-10 in
@@ -38,12 +40,17 @@ right-to-left sheets and full complex-script support. Part of
   [egui #8698](https://github.com/emilk/egui/pull/8698) fixes excess RTL continuation entries and
   previous-word underflow. Full-app tests cover cell Ctrl+Left/Ctrl+Backspace and formula-bar
   Ctrl+Backspace. This is an editing-safety repair, not complete bidi editing. **Sheet Right-to-Left**
+  #142 is still open pending confirmation). The grid and editors have no complex-text shaping:
+  Arabic and Devanagari don't join or reorder there, and there is no bidirectional layout. Arabic
+  PDF export is the exception: it is shaped, bidi-ordered and follows cell direction (see above). **Sheet Right-to-Left**
   (`view.rightToLeft`, Page Layout › Sheet Options, XLSX `rightToLeft`) mirrors the grid (#146):
   column A and the row headers on the right, the vertical scrollbar on the left; hit-testing,
   arrow keys, editor, popups and floating objects follow; text stays left-to-right inside its box
-  (no bidi), and the sheet tabs, horizontal scrollbar and printing/PDF are not mirrored yet. IME input goes
+  (no bidi), and the sheet tabs and horizontal scrollbar are not mirrored yet; PDF export mirrors
+  RTL sheets. IME input goes
   through egui/winit and is unverified for Chinese, Japanese and Korean.
-- **PDF export** uses only the 14 standard PDF fonts: non-Latin text cannot export.
+- **PDF export** shapes Arabic with embedded Noto Arabic glyph outlines; other non-Latin scripts
+  (CJK, Devanagari, Thai) cannot export yet, because the rest uses only the 14 standard PDF fonts.
 
 ## Languages
 
@@ -58,6 +65,7 @@ separators, number/date formats, machine translation with agent review, and scri
 | Spanish | es | 0 (0%) | no | Latin: yes | no | none | 6–10 h |
 | Hindi | hi | 0 (0%) | no | Devanagari: **no shaping** | no | none | 12–18 h |
 | Arabic | ar | 0 (0%) | no | Font coverage and bidi incomplete; word-navigation safety backported; no RTL UI; Sheet RTL mirrors the grid (#146) | no | none | 25–35 h |
+| Arabic | ar | 0 (0%) | no | grid and editor: **no shaping, no RTL UI**; PDF export: shaped and joined, follows cell direction, mirrors RTL sheets; Sheet Right-to-Left mirrors the grid (#146) | no | none | 25–35 h |
 | French | fr | 0 (0%) | no | Latin: yes | no | none | 6–10 h |
 | Portuguese | pt-BR | 923 (~42%) | dialogs and tooltips (dialogs take effect with #669) | Latin: yes | no | menus, File view, dialogs | 2–4 h |
 | Indonesian | id | 0 (0%) | no | Latin: yes | no | none | 5–8 h |
@@ -92,6 +100,8 @@ language (none so far) and of localized function names.
 | 2026-10-14 | minor | CJK fallback probes the read-only Flatpak host font mounts with the existing distribution layouts and TTC locale indices; no new sandbox permissions or bundled fonts |
 | 2026-10-13 | minor | Pinned egui 0.36.2 word-navigation safety backport; full-app Arabic cell/formula-bar regressions. Corrected stale no-shaping claim; bidi, font coverage and PDF still incomplete |
 | 2026-10-19 | minor | Number formats honour the `B1`/`B2` calendar prefixes: never shown; `B2` renders year, month, day and Arabic month names in the tabular Hijri calendar (1 Jan 2001 = 6 Shawwal 1421) |
+| 2026-10-18 | minor | Arabic PDF cells inherit explicit or contextual direction; wrapped lines retain paragraph direction, and RTL pages mirror cell and object geometry |
+| 2026-10-18 | minor | Arabic PDF cells, headers and chart labels support joined letters, combining marks, digits, bold/italic, rotation and grapheme wrapping |
 | 2026-10-12 | minor | Format Cells looks up its tabs, labels, options and note through `Language::tr` (Fill tab keyed `Format Cells\|Fill`); dialog titles and OK/Cancel too. Labels already in a table (Number, Currency, Fill…) show translated; the rest fall back to English until the tables add them |
 | 2026-10-12 | minor | Brazilian Portuguese catalog (`i18n/pt.rs`) grows from 377 to 923 entries: every key the other catalogs translate, including the dialog strings #669 starts looking up (~42%) |
 | 2026-10-11 | minor | German ribbon catalog (`i18n/de.rs`, 266 labels, ~12%); `de` locale tags (de-DE, de-AT, de-CH…) resolve to German. PR #163 (localized German formulas/numbers) still open |

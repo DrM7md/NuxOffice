@@ -146,6 +146,8 @@ full GTK theme parity is not claimed.
 | 2026-10-16 | Memory: undo steps share a sheet's picture bytes and the workbook's VBA project instead of copying them: 50 edits on a sheet with a 20 MB picture keep 22 MB instead of 992 MB |
 | 2026-10-14 | Cell text keeps Excel's vertical insets: top aligned text sits a little below the top border (it touched it), bottom aligned text sits on the bottom gridline (it floated above it), wrapped and single-line text alike |
 | 2026-10-13 | Arabic Ctrl+Left/Ctrl+Backspace safety backport, with cell and formula-bar regressions. Full bidi editing remains open |
+| 2026-10-18 | PDF preserves Context/LTR/RTL reading direction through wrapping and drawing; RTL sheet cells, borders, headings, objects and sparklines mirror consistently |
+| 2026-10-18 | Arabic PDF export shapes licensed glyph outlines and preserves searchable logical text; missing or unsupported glyphs return an error before overwriting output |
 | 2026-10-12 | Rows auto-fit oversized fonts: opening a file and whole-row/column formatting grow non-custom rows to their tallest font (#833) |
 | 2026-10-18 | Conditional formatting: a colour-scale stop whose value is a formula keeps its kind (percent, percentile or number) through save and open, and a scale stored with its thresholds out of order draws in ascending order with the colours kept in stop order (#1848) |
 | 2026-10-12 | Number formats: parsing a format code is linear in its length (long runs of `[`, `,` or `/` no longer take quadratic time), and an unclosed `[` is a literal when splitting sections as well as when tokenizing (#810) |
@@ -217,6 +219,8 @@ full GTK theme parity is not claimed.
 | 2026-10-16 | minor | Progress log: undo steps share picture and macro bytes |
 | 2026-10-14 | minor | Progress log: cell text vertical insets match Excel |
 | 2026-10-13 | minor | Arabic word-navigation safety backport and cell/formula-bar regressions; progress log row |
+| 2026-10-18 | minor | PDF preserves Context/LTR/RTL reading direction through wrapping and drawing; RTL sheet cells, borders, headings, objects and sparklines mirror consistently |
+| 2026-10-18 | minor | Arabic PDF export shapes licensed glyph outlines and preserves searchable logical text; missing or unsupported glyphs return an error before overwriting output |
 | 2026-10-12 | minor | Rows auto-fit oversized fonts on open and whole-row/column formatting (#833); progress log row |
 | 2026-10-12 | minor | Progress log: multi-area row/column delete (#758) |
 | 2026-10-12 | trivial | Progress log: XLSX chart sheets kept on save (#727) |
