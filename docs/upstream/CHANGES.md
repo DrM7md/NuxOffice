@@ -45,3 +45,17 @@ Every NuxOffice edit inside a file that comes from GridCraft is listed here, so 
 | `crates/ui-egui/src/tabs.rs` | Desktop tab strip: grouped tabs, Shift/Ctrl+click grouping, drag with a drop marker and Ctrl+drag to copy, rename selects the whole name, New Sheet beside the tabs, a splitter before the scrollbar; right-click menu in new `sheet_tab_menu.rs` (MPL-2.0) | Matches Excel | Maybe |
 | `crates/ui-egui/src/dialogs.rs` | Insert/Delete cells and Move or Copy drawn by new `sheet_dialogs.rs` (MPL-2.0) | Desktop dialogs | Maybe |
 | `crates/ui-egui/src/ribbon.rs` (title) | "[Group]" in the title while sheets are grouped | Matches Excel | Maybe |
+| `crates/calc/src/eval.rs` (`lambda_arg`) | MAP, REDUCE, SCAN, BYROW, BYCOL and MAKEARRAY pass on the error their function argument evaluates to | Merged upstream PR #1809 answers #NUM! for a recursion that runs out of stack; the helpers turned it into #VALUE!, so #1809's own test failed in debug builds on Windows | Yes |
+| `crates/ui-egui/src/fonts.rs`, `theme.rs` (tests) | The Flatpak/XDG folder test runs on Unix only; the bad-font test holds the font test lock | Tests from merged #1078 and #974 failed on Windows or raced in parallel | Yes |
+
+## Upstream pull requests merged into NuxOffice
+
+Open GridCraft pull requests adopted after review ([triage-2026-10-18.md](triage-2026-10-18.md)).
+Each is a merge commit that keeps its author's commits.
+
+| Group | Pull requests | Notes |
+|---|---|---|
+| A (sync) | upstream `main` at 0.8.0 | Clean merge |
+| B (data loss) | #1182, #1520, #1809, #1340, #1422, #1175, #1308, #1108, #1534, #1535, #1844, #1802, #1395, #972 | #1422 and #1175 added the same `filtered_rows` helper (one kept); #1395 and #972 both rewrote the temporary-file save (#1395's kept, #972's AutoSave feedback taken) |
+| C (file fidelity) | #1666, #1434, #1595, #1533, #1814, #1680–#1685, #1571, #1531, #1615, #1495, #1660, #1463, #1599 | #1666 and #1434 both added an R1C1 name check (#1666's kept, shared with #1434's table names) |
+| F (Linux) | #1705, #1323, #1078, #1236, #974, #1576 | #1816 skipped: an alternative to #1576 (#1576 needs no title font). Wayland decorations not tested on Linux yet |
