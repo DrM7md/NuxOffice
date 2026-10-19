@@ -869,6 +869,24 @@ fn clearing_a_filtered_selection_leaves_the_rows_the_filter_hides() {
     assert_eq!(v(&s, "A5"), Value::Empty);
 }
 
+/// Sorting a selected column (or the whole column) keeps the neighbouring columns' rows together,
+/// from Sort Z to A and from the Custom Sort dialog alike.
+#[test]
+fn sorting_a_selected_column_expands_to_the_adjacent_data() {
+    let custom = json!({"header": true, "keys": [{"column": "B", "order": "desc"}]});
+    for (cmd, params) in [("data.sortDescending", json!({})), ("data.sort", custom)] {
+        for sel in ["B2:B4", "B:B"] {
+            let mut s = s();
+            s.execute("range.setValues", json!({"range": "A1", "values": [["Name", "Score"], ["b", 2], ["c", 3], ["a", 1]]})).unwrap();
+            s.execute("selection.set", json!({"range": sel})).unwrap();
+            s.execute(cmd, params.clone()).unwrap();
+            assert_eq!(v(&s, "B2"), Value::Number(3.0), "{cmd} {sel}");
+            assert_eq!(v(&s, "A2"), Value::from("c"), "{cmd} {sel}");
+            assert_eq!(v(&s, "A4"), Value::from("a"), "{cmd} {sel}");
+        }
+    }
+}
+
 /// Top 10 keeps the top or bottom N items or percent, ties at the threshold included.
 #[test]
 fn filter_top10_items_and_percent() {
