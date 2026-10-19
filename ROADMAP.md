@@ -161,6 +161,7 @@ full GTK theme parity is not claimed.
 | 2026-10-13 | Grid: resizing several selected columns or rows previews on the dragged one and applies the size to all on release; Esc cancels (#1082) |
 | 2026-10-16 | Selected-cell IME entry preserves composition and focus; synthetic Korean regression tests pass, native OS/browser input remains unverified (#1627) |
 | 2026-10-13 | XLSX: `[Content_Types].xml`, `_rels/.rels`, the workbook rels and `xl/workbook.xml` are the first zip entries (document properties last), so libmagic and PHP `finfo` detect the file type even with large properties (#1090) |
+| 2026-10-16 | Ctrl/Cmd+Shift+F8 restores interface size to Auto even when controls are offscreen, preserving sheet zoom and unfinished edits (#1584) |
 | 2026-10-12 | Rows auto-fit oversized fonts: opening a file and whole-row/column formatting grow non-custom rows to their tallest font (#833) |
 | 2026-10-18 | Conditional formatting: a colour-scale stop whose value is a formula keeps its kind (percent, percentile or number) through save and open, and a scale stored with its thresholds out of order draws in ascending order with the colours kept in stop order (#1848) |
 | 2026-10-12 | Number formats: parsing a format code is linear in its length (long runs of `[`, `,` or `/` no longer take quadratic time), and an unclosed `[` is a literal when splitting sections as well as when tokenizing (#810) |
@@ -243,6 +244,7 @@ Performance measurements and cache contracts: [large-workbook-performance.md](do
 | 2026-10-14 | minor | Large-workbook navigation caches, conditional-format statistics and filtering performance; reproducible benchmarks and measured limitations. |
 | 2026-10-14 | minor | Date text with a month name and no separator, or a month name and a year (#1342); progress log row |
 | 2026-10-16 | minor | Selected-cell Korean IME entry and synthetic regression coverage (#1627); localization status retains native/browser verification limits. |
+| 2026-10-16 | minor | Progress log: keyboard interface-size recovery (#1584) |
 | 2026-10-12 | minor | Rows auto-fit oversized fonts on open and whole-row/column formatting (#833); progress log row |
 | 2026-10-12 | minor | Progress log: multi-area row/column delete (#758) |
 | 2026-10-12 | trivial | Progress log: XLSX chart sheets kept on save (#727) |

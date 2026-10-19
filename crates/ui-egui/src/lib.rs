@@ -1144,6 +1144,7 @@ impl SheetApp {
         if ctx.os() != egui::os::OperatingSystem::Mac && ctx.options(|o| !o.quit_shortcuts.is_empty()) {
             ctx.options_mut(|o| o.quit_shortcuts.clear());
         }
+        keymap::reset_interface_scale(self, ctx);
         let zoom = self.ui.zoom_factor();
         if (ctx.zoom_factor() - zoom).abs() > 0.001 {
             ctx.set_zoom_factor(zoom);

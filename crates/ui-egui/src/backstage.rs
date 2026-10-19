@@ -959,13 +959,25 @@ fn options(app: &mut SheetApp, ui: &mut Ui) {
         ui.label(lang.tr("Interface size"));
         let current = app.ui.interface_scale;
         let text = |v: u16| if v == 100 { lang.tr("Auto").to_string() } else { format!("{v}%") };
-        egui::ComboBox::from_id_salt("backstage_interface_size").width(160.0).selected_text(text(current)).show_ui(ui, |ui| {
-            for v in [100, 75, 90, 110, 125, 150, 175, 200] {
-                if ui.selectable_label(v == current, text(v)).clicked() {
-                    app.run_or_alert("view.interfaceScale", json!({"percent": v}));
+        // Ctrl+Shift+F8 (Cmd+Shift+F8) brings the size back to Auto from anywhere, even when an
+        // oversized interface hides this control (#1584).
+        let reset_shortcut = ui.ctx().format_shortcut(&crate::keymap::RESET_INTERFACE_SCALE);
+        egui::ComboBox::from_id_salt("backstage_interface_size")
+            .width(160.0)
+            .selected_text(text(current))
+            .show_ui(ui, |ui| {
+                for v in [100, 75, 90, 110, 125, 150, 175, 200] {
+                    let mut button = egui::Button::selectable(v == current, text(v));
+                    if v == 100 {
+                        button = button.shortcut_text(&reset_shortcut);
+                    }
+                    if ui.add(button).clicked() {
+                        app.run_or_alert("view.interfaceScale", json!({"percent": v}));
+                    }
                 }
-            }
-        });
+            })
+            .response
+            .on_hover_text(format!("{}: {} ({reset_shortcut})", lang.tr("Interface size"), lang.tr("Auto")));
         ui.end_row();
     });
     ui.add_space(6.0);
