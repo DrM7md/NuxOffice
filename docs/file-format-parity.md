@@ -8,6 +8,11 @@ Every format Excel opens or saves, with GridCraft's read and write support, fide
 Part of [target-app-parity.md](target-app-parity.md). **File formats: ~50% ready, 80–120 h**
 (estimated).
 
+Imported ordinary formulas keep their scalar/implicit-intersection representation on XLSX save,
+even when an equivalent newly entered formula would be exported as a dynamic array. Rich-value
+metadata uses Excel-compatible flags and extension identifiers, so workbooks with in-cell images
+and range-backed defined names can reopen without discarding names (#1429).
+
 Excel's list comes from Microsoft's public "File formats that are supported in Excel"
 documentation (the Office bundle is off limits under this repo's clean-room rule). GridCraft's
 support comes from `crates/engine/src/io.rs` (`FileKind`), `crates/xlsx/src` and the tests in
@@ -90,6 +95,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-18 | maintenance | Refreshed save safety and AutoSave error feedback onto 0.8.0/main; preserve the upstream parser-limit documentation. No scope or readiness change. |
 | 2026-10-14 | trivial | Formula parser: text longer than Excel's 8,192 characters, and postfix chains (`1%%%…`, `f(1)(1)…`) past the 256-level nesting limit, are parse errors (the cell keeps its formula text and cached value) instead of trees deep enough to overflow the stack when a hostile file is opened, saved or dropped |
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
+| 2026-10-15 | minor | XLSX saves keep imported ordinary formulas scalar and write rich-value metadata compatible with Excel, preventing defined-name repair for workbooks with in-cell images (#1429) |
 | 2026-10-12 | trivial | XLSX chart sheets are kept on save (#727) |
 | 2026-10-12 | trivial | CSV and TSV export is capped at 512 MiB and refuses a larger used range with an error (#528) |
 | 2026-10-12 | minor | `.xls` import reads the calculation settings (CalcMode, CalcIter, CalcCount, CalcDelta, CalcPrecision), so circular models calculate instead of showing `#CIRC!` (#724) |
