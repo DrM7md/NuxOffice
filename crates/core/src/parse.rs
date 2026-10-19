@@ -195,7 +195,7 @@ fn parse_time(t: &str) -> Option<(f64, bool, bool)> {
     if parts.len() == 1 && ampm.is_none() {
         return None;
     }
-    if parts.len() > 3 || parts.iter().any(|p| p.is_empty()) {
+    if parts.len() > 3 || parts.iter().any(|p| p.is_empty() || p.starts_with('+')) {
         return None;
     }
     let mut h: f64 = parts.first()?.parse().ok()?;
@@ -334,7 +334,13 @@ fn parse_date(t: &str, sys: DateSystem) -> Option<(f64, &'static str)> {
     {
         return Some(r);
     }
-    let num = |s: &str| s.trim().parse::<i64>().ok();
+    let num = |s: &str| {
+        let s = s.trim();
+        if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) {
+            return None;
+        }
+        s.parse::<i64>().ok()
+    };
     // ISO yyyy-mm-dd or yyyy/mm/dd
     let seps: &[char] = &['/', '-', '.'];
     let parts: Vec<&str> = t.split(seps).collect();
@@ -438,6 +444,14 @@ mod tests {
         }
         assert_eq!(parse_fraction("1 1/2"), Some(1.5));
         assert_eq!(parse_fraction("-1 1/2"), Some(-1.5));
+    }
+
+    #[test]
+    fn signed_date_parts_stay_text() {
+        for s in ["+3/4/2026", "3/+4/2026", "3/4/+2026", "1/1/2020 +5:00"] {
+            assert_eq!(p(s).value, Value::text(s), "{s}");
+        }
+        assert_eq!(p("3/4/2026").value, Value::Number(46085.0));
     }
 
     #[test]
