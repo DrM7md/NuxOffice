@@ -1300,14 +1300,7 @@ fn a_table_filter_criteria_survive_a_round_trip() {
         range: rr("A1:A4"),
         header_row: true,
         totals_row: false,
-        columns: vec![TableColumn {
-            name: "Region".into(),
-            totals: TotalsFn::None,
-            totals_label: None,
-            formula: None,
-            unique_name: None,
-            xml: None,
-        }],
+        columns: vec![TableColumn { name: "Region".into(), totals: TotalsFn::None, totals_label: None, formula: None, unique_name: None, xml: None }],
         style: "TableStyleMedium2".into(),
         banded_rows: true,
         banded_cols: false,
@@ -1320,10 +1313,8 @@ fn a_table_filter_criteria_survive_a_round_trip() {
     });
     // The dropdown of a table's header cell installs the sheet AutoFilter over the table's
     // range, and `data.filterBy` stores its criteria there.
-    s.autofilter = Some(AutoFilter {
-        range: rr("A1:A4"),
-        criteria: vec![(0, FilterCriterion::Values { values: vec!["East".into()], blanks: false })],
-    });
+    s.autofilter =
+        Some(AutoFilter { range: rr("A1:A4"), criteria: vec![(0, FilterCriterion::Values { values: vec!["East".into()], blanks: false })] });
     s.rows.entry(1).or_default().hidden = true;
 
     let (back, rep) = read_xlsx(&write_xlsx(&wb).unwrap()).unwrap();
@@ -1331,11 +1322,7 @@ fn a_table_filter_criteria_survive_a_round_trip() {
     let b = back.sheet(0).unwrap();
     let t = b.tables.first().expect("the table survived");
     let (_, crit) = t.filter.first().expect("the table's filter criteria were kept on save");
-    assert!(
-        matches!(crit, FilterCriterion::Values { values, .. } if values == &["East".to_string()]),
-        "the criteria were dropped: {:?}",
-        t.filter
-    );
+    assert!(matches!(crit, FilterCriterion::Values { values, .. } if values == &["East".to_string()]), "the criteria were dropped: {:?}", t.filter);
     assert!(b.is_row_hidden(1), "the row the filter hid is still hidden");
     assert!(b.autofilter.is_none(), "a table's filter belongs to the table part, not the sheet");
 }
