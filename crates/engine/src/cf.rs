@@ -26,7 +26,7 @@ pub struct CfCache {
     stats: HashMap<usize, RuleStats>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 struct RuleStats {
     sorted: Vec<f64>,
     avg: f64,
@@ -462,6 +462,43 @@ mod tests {
         let mut cache = CfCache::new();
         let _ = cache.look(&d.wb, 0, CellRef::parse("B1").unwrap());
         assert_eq!(cache.stats.len(), 1);
+    }
+
+    #[test]
+    fn cell_rules_do_not_scan_ranges_for_unused_statistics() {
+        let mut wb = Workbook::new();
+        let sh = wb.sheet_mut(0).unwrap();
+        sh.set_cell(CellRef::new(0, 0), Cell::value(10.0.into()));
+        sh.cond_formats.push(CondFormat {
+            ranges: vec![RangeRef::parse("A1:A100000").unwrap()],
+            rule: CfRule::CellIs { op: CfOperator::Greater, a: "5".into(), b: None, style: Box::default() },
+            priority: 1,
+            stop_if_true: false,
+        });
+        let mut cache = CfCache::new();
+        assert!(cache.look(&wb, 0, CellRef::new(0, 0)).is_some());
+        assert!(cache.stats.is_empty(), "cell-local rule needs no range statistics");
+    }
+
+    #[test]
+    fn statistical_rules_share_stats_and_preserve_duplicate_matching() {
+        let mut wb = Workbook::new();
+        let sh = wb.sheet_mut(0).unwrap();
+        for (row, value) in ["X", "x", "Y"].into_iter().enumerate() {
+            sh.set_cell(CellRef::new(row as u32, 0), Cell::value(value.into()));
+        }
+        sh.cond_formats.push(CondFormat {
+            ranges: vec![RangeRef::parse("A1:A3").unwrap()],
+            rule: CfRule::Duplicate { style: Box::default() },
+            priority: 1,
+            stop_if_true: false,
+        });
+        let mut cache = CfCache::new();
+        for (row, expected) in [(0, true), (1, true), (2, false)] {
+            assert_eq!(cache.look(&wb, 0, CellRef::new(row, 0)).is_some(), expected);
+            assert_eq!(cache.stats.len(), 1);
+        }
+        assert_eq!(cache.stats.get(&0).unwrap().counts.get("x"), Some(&2));
     }
 
     #[test]

@@ -152,6 +152,7 @@ full GTK theme parity is not claimed.
 | 2026-10-16 | Memory: the interface and script fallback fonts are read once per run and shared with egui instead of copied into it: an empty workbook settles at 158 MB instead of 258 MB on macOS |
 | 2026-10-13 | Conditional formatting: a rule gathers range statistics only when it reads them (top/bottom, above average, duplicates, scales, bars, icons) and borrows them instead of copying them per cell, so the per-frame lookup of an expression or cell-value rule no longer visits its whole range (#1098, part 1) |
 | 2026-10-14 | Recalc: defined names are static precedents (a range name contributes its range, a LAMBDA name the references in its body; parameters and LET variables are bound names), so a column of LAMBDA calls is no longer re-evaluated on every edit; a recalc pass parses each name once; `TEXT(n,"0")` on an integer skips the general renderer; conditional-format statistics are computed only for the rule kinds that read them and never cloned per cell. A real 1M-cell, 49K-formula workbook: open 447 s → 109 s, an unrelated edit ~10 s → ~1 s, a row-wide expression rule 1.8 s → 2 ms per frame |
+| 2026-10-14 | Large-workbook performance: bounded navigation caches, prepared filter predicates, borrowed conditional-format statistics and reuse of unchanged dependencies during filters. [Measurements and limitations](docs/large-workbook-performance.md). |
 | 2026-10-12 | Rows auto-fit oversized fonts: opening a file and whole-row/column formatting grow non-custom rows to their tallest font (#833) |
 | 2026-10-18 | Conditional formatting: a colour-scale stop whose value is a formula keeps its kind (percent, percentile or number) through save and open, and a scale stored with its thresholds out of order draws in ascending order with the colours kept in stop order (#1848) |
 | 2026-10-12 | Number formats: parsing a format code is linear in its length (long runs of `[`, `,` or `/` no longer take quadratic time), and an unclosed `[` is a literal when splitting sections as well as when tokenizing (#810) |
@@ -212,6 +213,8 @@ full GTK theme parity is not claimed.
 
 ## Revision history
 
+Performance measurements and cache contracts: [large-workbook-performance.md](docs/large-workbook-performance.md).
+
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
@@ -228,6 +231,7 @@ full GTK theme parity is not claimed.
 | 2026-10-14 | minor | Progress log: SUMIF/SUMIFS family false circular references fixed |
 | 2026-10-16 | minor | Progress log: interface fonts held once instead of twice |
 | 2026-10-13 | minor | Progress log: conditional-format lookups no longer scan the range for rules without statistics (#1098) |
+| 2026-10-14 | minor | Large-workbook navigation caches, conditional-format statistics and filtering performance; reproducible benchmarks and measured limitations. |
 | 2026-10-12 | minor | Rows auto-fit oversized fonts on open and whole-row/column formatting (#833); progress log row |
 | 2026-10-12 | minor | Progress log: multi-area row/column delete (#758) |
 | 2026-10-12 | trivial | Progress log: XLSX chart sheets kept on save (#727) |

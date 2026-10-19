@@ -175,11 +175,17 @@ No alpha blockers: every core workflow passes the [alpha gate](roadmap.md#alpha-
 
 ## Revision history
 
+Large-workbook navigation and filter optimizations, including tests up to one million rows,
+are documented in [large-workbook-performance.md](large-workbook-performance.md). They do
+not establish GPU FPS or multi-core recalculation parity; full formula evaluation and
+whole-workbook XLSX import remain relevant costs.
+
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-13 | minor | Arabic word-navigation safety backport. Shaping exists in egui 0.36.2; bidi, font coverage and PDF remain gaps |
 | 2026-10-13 | minor | §5: Arabic PDF output preserves cell direction, joined glyphs and RTL sheet geometry. Other script and UI gaps remain. |
 | 2026-10-14 | minor | §2: names as static precedents, per-pass name parse cache, TEXT fast path, CF statistics on demand; measured 447 s → 109 s open, ~10 s → ~1 s edit on a 1M-cell workbook |
+| 2026-10-14 | minor | Added measured large-workbook performance work and remaining GPU/import/recalc limitations; readiness estimates are unchanged. |
 | 2026-10-12 | minor | rows auto-fit oversized fonts on open and whole-row/column formatting (#833) |
 | 2026-10-12 | minor | Page Layout view: dragging margins on the rulers (#792) removed from the §14 remainder |
 | 2026-10-12 | minor | §13: Forecast Sheet Forecast Start (hindcast) landed (#785) |
