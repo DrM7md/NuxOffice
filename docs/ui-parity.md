@@ -170,6 +170,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
 | 2026-10-16 | minor | Scenario Manager review fixes: values-step title, right-hand actions, German labels and exact keytip routing (#1445) |
 | 2026-10-15 | major | Scenario Manager UI opens from Data and its key tip, with Add/Edit/Show/Delete/Summary and a separate values step (#1445) |
+| 2026-10-16 | minor | Desktop startup restores main-window size, position, and maximized state from a `window` entry in `prefs.json`. Normal bounds survive maximized/minimized frames and interface scaling; malformed values keep defaults, and `GRIDCRAFT_NO_PREFS` disables reading and writing the geometry (#1431). Native Windows resize/restart, 200% interface scale, and no-prefs behavior verified; other platforms unverified |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
 | 2026-10-12 | minor | Ctrl+wheel zoom steps along a ladder of percentages about 20% apart that never skips 100%, gliding to each step with animations on, so a notch out undoes a notch in (it drifted: 100 → 122 → 101); Excel steps 15 points, see decisions.md |
