@@ -13,6 +13,7 @@ pub fn show(app: &mut SheetApp, ui: &mut egui::Ui) {
     let expanded = app.ui.formula_bar_expanded;
     let h = if expanded { 72.0 } else { 30.0 };
     egui::Panel::top("formula_bar")
+        .show_separator_line(false)
         .exact_size(h)
         .frame(egui::Frame::NONE.fill(t.window).inner_margin(egui::Margin { left: 8, right: 8, top: 3, bottom: 3 }))
         .show(ui, |ui| {

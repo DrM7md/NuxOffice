@@ -77,6 +77,12 @@ pub(crate) enum RibIcon {
     Width,
     Height,
     Scale,
+    /// "A" with a small up caret (Increase Font Size).
+    GrowFont,
+    /// "A" with a small down caret (Decrease Font Size).
+    ShrinkFont,
+    /// A pilcrow with a left-right arrow (Text Direction).
+    TextDirection,
 }
 
 pub(crate) fn paint(p: &Painter, r: Rect, icon: RibIcon, ink: Color32) {
@@ -84,6 +90,33 @@ pub(crate) fn paint(p: &Painter, r: Rect, icon: RibIcon, ink: Color32) {
     let amber = Color32::from_rgb(250, 196, 120);
     let blue = Color32::from_rgb(91, 155, 213);
     match icon {
+        RibIcon::GrowFont | RibIcon::ShrinkFont => {
+            let font = egui::FontId::proportional(r.height() * 0.95);
+            p.text(pos2(r.left() + r.width() * 0.38, r.center().y + 1.0), Align2::CENTER_CENTER, "A", font, ink);
+            let c = pos2(r.right() - r.width() * 0.16, r.top() + r.height() * 0.28);
+            let w = r.width() * 0.16;
+            let pts = if icon == RibIcon::GrowFont {
+                vec![pos2(c.x - w, c.y + w * 0.6), pos2(c.x, c.y - w * 0.6), pos2(c.x + w, c.y + w * 0.6)]
+            } else {
+                vec![pos2(c.x - w, c.y - w * 0.6), pos2(c.x, c.y + w * 0.6), pos2(c.x + w, c.y - w * 0.6)]
+            };
+            p.add(egui::Shape::line(pts, Stroke::new(1.2, ink)));
+        }
+        RibIcon::TextDirection => {
+            // Pilcrow: a filled bowl and two stems, with a double arrow underneath.
+            let top = r.top() + 1.0;
+            let x0 = r.left() + r.width() * 0.3;
+            p.circle_filled(pos2(x0, top + 3.5), 3.2, ink);
+            p.vline(x0 + 2.5, top..=(top + 10.0), s);
+            p.vline(x0 + 5.5, top..=(top + 10.0), s);
+            p.hline((x0 - 1.0)..=(x0 + 7.0), top, s);
+            let y = r.bottom() - 2.5;
+            p.hline((r.left() + 2.0)..=(r.right() - 2.0), y, s);
+            for (tip, dir) in [(r.left() + 2.0, 1.0), (r.right() - 2.0, -1.0)] {
+                p.line_segment([pos2(tip, y), pos2(tip + 3.0 * dir, y - 2.5)], s);
+                p.line_segment([pos2(tip, y), pos2(tip + 3.0 * dir, y + 2.5)], s);
+            }
+        }
         RibIcon::ThemeColors => {
             let q = r.width() / 2.0;
             for (i, c) in
@@ -353,4 +386,30 @@ pub(crate) fn app_mark(p: &Painter, r: Rect) {
     p.rect_stroke(g, CornerRadius::same(1), s, StrokeKind::Middle);
     p.hline(g.x_range(), g.center().y, s);
     p.vline(g.center().x, g.y_range(), s);
+}
+
+/// A small labelled ribbon button that can show a pressed (on) state, such as Format Painter or
+/// Wrap Text: a 16-point icon drawn by `icon`, then the label.
+pub(crate) fn small_toggle(ui: &mut Ui, icon: impl FnOnce(&Painter, Rect, Color32), label: &str, tip: &str, on: bool, dropdown: bool) -> Response {
+    let t = Tokens::get(ui.ctx());
+    let lang = crate::i18n::current(ui.ctx());
+    let font = theme::ui_font(12.5);
+    let label = lang.tr(label).to_string();
+    let tw = ui.painter().layout_no_wrap(label.clone(), font.clone(), t.text).size().x;
+    let (rect, resp) = ui.allocate_exact_size(vec2(28.0 + tw + if dropdown { 14.0 } else { 6.0 }, 24.0), Sense::click());
+    if on {
+        ui.painter().rect_filled(rect, CornerRadius::same(4), t.pressed);
+        ui.painter().rect_stroke(rect, CornerRadius::same(4), Stroke::new(1.0, t.separator), StrokeKind::Inside);
+    } else if resp.is_pointer_button_down_on() {
+        ui.painter().rect_filled(rect, CornerRadius::same(4), t.pressed);
+    } else if resp.hovered() {
+        ui.painter().rect_filled(rect, CornerRadius::same(4), t.hover);
+    }
+    icon(ui.painter(), Rect::from_center_size(pos2(rect.left() + 13.0, rect.center().y), vec2(16.0, 16.0)), t.text);
+    ui.painter().text(pos2(rect.left() + 26.0, rect.center().y), Align2::LEFT_CENTER, &label, font, t.text);
+    if dropdown {
+        chevron(ui.painter(), pos2(rect.right() - 7.0, rect.center().y + 1.0), &t);
+    }
+    resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, on, &label));
+    resp.on_hover_text(lang.tr(tip))
 }
