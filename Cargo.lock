@@ -600,7 +600,7 @@ dependencies = [
 
 [[package]]
 name = "cellnux-vba"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "gridcraft-core",
  "gridcraft-engine",

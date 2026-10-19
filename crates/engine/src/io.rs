@@ -579,12 +579,12 @@ mod tests {
         let blocked = dir.join("Book1.xlsx");
         std::fs::create_dir(&blocked).unwrap();
         assert!(write_file(blocked.to_str().unwrap(), b"workbook").is_err());
-        assert!(!dir.join("Book1.xlsx.sctmp").exists(), "the temporary file is removed");
+        assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 1, "the temporary file is removed");
         // An ordinary save still works and leaves only the workbook.
         let ok = dir.join("Book2.xlsx");
         write_file(ok.to_str().unwrap(), b"workbook").unwrap();
         assert_eq!(std::fs::read(&ok).unwrap(), b"workbook");
-        assert!(!dir.join("Book2.xlsx.sctmp").exists());
+        assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 2);
         let _ = std::fs::remove_dir_all(&dir);
     }
 
