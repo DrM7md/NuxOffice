@@ -33,6 +33,11 @@ right-to-left sheets and full complex-script support. Part of
   Noto CJK and WenQuanYi faces can render Chinese without a broad filesystem grant. This does
   not change the installed-font catalogue or add bundled fonts. There is no complex-text shaping:
   Arabic and Devanagari don't join or reorder, and there is no bidirectional layout. **Sheet Right-to-Left**
+  #142 is still open pending confirmation). egui 0.36.2 shapes text with harfrust; Arabic font
+  coverage and bidirectional layout remain incomplete. A pinned 0.36.2 backport of
+  [egui #8698](https://github.com/emilk/egui/pull/8698) fixes excess RTL continuation entries and
+  previous-word underflow. Full-app tests cover cell Ctrl+Left/Ctrl+Backspace and formula-bar
+  Ctrl+Backspace. This is an editing-safety repair, not complete bidi editing. **Sheet Right-to-Left**
   (`view.rightToLeft`, Page Layout › Sheet Options, XLSX `rightToLeft`) mirrors the grid (#146):
   column A and the row headers on the right, the vertical scrollbar on the left; hit-testing,
   arrow keys, editor, popups and floating objects follow; text stays left-to-right inside its box
@@ -52,7 +57,7 @@ separators, number/date formats, machine translation with agent review, and scri
 | Simplified Chinese (Mandarin) | zh-Hans | 266 (~12%) | no | CJK system-font fallback (#38); IME unverified; PDF can't export | no | menus only | 8–13 h |
 | Spanish | es | 0 (0%) | no | Latin: yes | no | none | 6–10 h |
 | Hindi | hi | 0 (0%) | no | Devanagari: **no shaping** | no | none | 12–18 h |
-| Arabic | ar | 0 (0%) | no | **no shaping, no RTL UI**; Sheet Right-to-Left mirrors the grid (#146) | no | none | 25–35 h |
+| Arabic | ar | 0 (0%) | no | Font coverage and bidi incomplete; word-navigation safety backported; no RTL UI; Sheet RTL mirrors the grid (#146) | no | none | 25–35 h |
 | French | fr | 0 (0%) | no | Latin: yes | no | none | 6–10 h |
 | Portuguese | pt-BR | 923 (~42%) | dialogs and tooltips (dialogs take effect with #669) | Latin: yes | no | menus, File view, dialogs | 2–4 h |
 | Indonesian | id | 0 (0%) | no | Latin: yes | no | none | 5–8 h |
@@ -85,6 +90,7 @@ language (none so far) and of localized function names.
 |---|---|---|
 | 2026-10-16 | minor | Add 22 German Scenario Manager labels and validation messages (420 unique catalog entries); scenario names and values remain document text (#1445) |
 | 2026-10-14 | minor | CJK fallback probes the read-only Flatpak host font mounts with the existing distribution layouts and TTC locale indices; no new sandbox permissions or bundled fonts |
+| 2026-10-13 | minor | Pinned egui 0.36.2 word-navigation safety backport; full-app Arabic cell/formula-bar regressions. Corrected stale no-shaping claim; bidi, font coverage and PDF still incomplete |
 | 2026-10-19 | minor | Number formats honour the `B1`/`B2` calendar prefixes: never shown; `B2` renders year, month, day and Arabic month names in the tabular Hijri calendar (1 Jan 2001 = 6 Shawwal 1421) |
 | 2026-10-12 | minor | Format Cells looks up its tabs, labels, options and note through `Language::tr` (Fill tab keyed `Format Cells\|Fill`); dialog titles and OK/Cancel too. Labels already in a table (Number, Currency, Fill…) show translated; the rest fall back to English until the tables add them |
 | 2026-10-12 | minor | Brazilian Portuguese catalog (`i18n/pt.rs`) grows from 377 to 923 entries: every key the other catalogs translate, including the dialog strings #669 starts looking up (~42%) |
