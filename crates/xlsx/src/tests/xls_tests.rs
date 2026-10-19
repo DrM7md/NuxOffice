@@ -455,6 +455,20 @@ fn hostile_xls_input_never_panics_or_hangs() {
 }
 
 #[test]
+fn dialog_sheets_are_skipped_not_read_as_worksheets() {
+    let boundsheet = |pos: u32, name: &str| rec(0x0085, &cat(&[&pos.to_le_bytes(), &[0, 0, name.len() as u8, 0], name.as_bytes()]));
+    let globals = |positions: [u32; 2]| cat(&[&bof(0x0005), &boundsheet(positions[0], "Dialog1"), &boundsheet(positions[1], "Sheet1"), &eof()]);
+    let dialog = cat(&[&bof(0x0010), &rec(0x0081, &[0x10, 0x00]), &rec(0x0203, &cat(&[&cell(0, 0, 0), &1.0f64.to_le_bytes()])), &eof()]);
+    let worksheet = cat(&[&bof(0x0010), &rec(0x0081, &[0x01, 0x04]), &rec(0x0203, &cat(&[&cell(0, 0, 0), &7.0f64.to_le_bytes()])), &eof()]);
+    let first = globals([0; 2]).len() as u32;
+    let stream = cat(&[&globals([first, first + dialog.len() as u32]), &dialog, &worksheet]);
+    let (wb, report) = read_xls(&compound("Workbook", &stream)).unwrap();
+    assert_eq!(wb.sheets.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["Sheet1"]);
+    assert_eq!(v(&wb, 0, "A1"), Value::Number(7.0));
+    assert!(report.warnings.iter().any(|w| w.contains("Dialog sheets")), "{:?}", report.warnings);
+}
+
+#[test]
 fn sheets_share_one_record_budget() {
     // Many BoundSheet records point into one long substream (at successive nested BOFs), so each
     // sheet would read the whole tail. The record allowance is shared, not per sheet.
