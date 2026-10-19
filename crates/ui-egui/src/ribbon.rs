@@ -1085,6 +1085,7 @@ fn home(app: &mut SheetApp, ui: &mut Ui) {
         if format_keys {
             format_popup = format_popup.open_memory(egui::SetOpenCommand::Bool(true));
         }
+        let protect_label = if app.active_sheet_protected() { "Unprotect Sheet…" } else { "Protect Sheet…" };
         format_popup.show(|ui| {
             menu_items(
                 app,
@@ -1106,7 +1107,7 @@ fn home(app: &mut SheetApp, ui: &mut Ui) {
                     ("Rename Sheet", "dialog:renameSheet", json!({})),
                     ("Move or Copy Sheet…", "dialog:moveSheet", json!({})),
                     ("-", "", json!(null)),
-                    ("Protect Sheet…", "dialog:protectSheet", json!({})),
+                    (protect_label, "dialog:protectSheet", json!({})),
                     ("Lock Cell", "home.lockCell", json!({})),
                     ("Format Cells…", "dialog:formatCells", json!({})),
                 ],
