@@ -718,7 +718,7 @@ impl Host for PassHost<'_> {
         if let Some(hit) = self.names.get(&key) {
             return hit.clone();
         }
-        let found = self.wb.name(name, scope_sheet).map(|def| (gridcraft_formula::parse(&def.formula).ok().map(std::sync::Arc::new), def.scope));
+        let found = self.wb.name(name, scope_sheet).map(|def| (gridcraft_formula::parse_name(&def.formula).ok().map(std::sync::Arc::new), def.scope));
         self.names.insert(key, found.clone());
         found
     }

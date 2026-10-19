@@ -85,7 +85,7 @@ pub trait Host {
     /// formula column calling a LAMBDA name re-parses that name once per cell otherwise.
     fn name_expr(&mut self, name: &str, scope_sheet: usize) -> Option<(Option<Arc<Expr>>, Option<usize>)> {
         let def = self.workbook().name(name, scope_sheet)?;
-        Some((gridcraft_formula::parse(&def.formula).ok().map(Arc::new), def.scope))
+        Some((gridcraft_formula::parse_name(&def.formula).ok().map(Arc::new), def.scope))
     }
     /// The sheet's used range (`Sheet::used_range`, which walks every stored row). Hosts that
     /// keep the workbook unchanged while evaluating can remember it.
@@ -2092,7 +2092,7 @@ fn name_precedents(wb: &Workbook, sheet: usize, n: &str, out: &mut Vec<Area>, dy
     if seen.contains(&key) {
         return; // a cycle adds nothing new; evaluation reports it
     }
-    let Ok(expr) = gridcraft_formula::parse(&def.formula) else {
+    let Ok(expr) = gridcraft_formula::parse_name(&def.formula) else {
         *dynamic = true;
         return;
     };
