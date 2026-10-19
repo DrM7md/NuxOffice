@@ -22,7 +22,7 @@ Sources: `crates/ui-egui/src` (ribbon, grid, editor, formula bar, dialogs, panes
 | Ribbon: tabs, groups, split buttons, galleries, contextual tabs | yes | yes (Table Design, Chart Design, Format, PivotTable tabs) | done; missing contextual tabs for pictures, shapes, sparklines, header/footer, slicers |
 | Ribbon collapse, simplified ribbon, customize ribbon/QAT | yes | partial | customization missing |
 | Key tips (Alt / F10 then letters) | yes, every ribbon control | **initial** (#43, 10-10): Alt or F10 shows key tips on Home for alignment, Paste Special and AutoFit plus legacy Alt sequences; other tabs and controls not yet (#33, #49) | 3–5 h |
-| Formula bar with Name Box, expand, function hints | yes | yes | done |
+| Formula bar with Name Box, expand, function hints | yes | yes | done; dynamic-array spill children show the source formula muted and read-only, using current spill ownership |
 | Sheet tabs: rename, reorder, colour, hide, scroll | yes | yes | active tab revealed on navigation and resize (#681); manual wheel/trackpad browsing preserved; rename focus bug on macOS (#145) |
 | Status bar: Sum/Count/Average and more, view buttons, zoom | yes | yes | customizable statistics partial |
 | Task panes (Format Chart, Comments, Watch, Selection, PivotTable fields) | yes | yes | element-level Format pane for shapes and pictures missing |
@@ -175,6 +175,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-16 | minor | Desktop startup restores main-window size, position, and maximized state from a `window` entry in `prefs.json`. Normal bounds survive maximized/minimized frames and interface scaling; malformed values keep defaults, and `GRIDCRAFT_NO_PREFS` disables reading and writing the geometry (#1431). Native Windows resize/restart, 200% interface scale, and no-prefs behavior verified; other platforms unverified |
 | 2026-10-16 | minor | With the active cell in a Table whose header row is scrolled out of view, the column headings show the header names and their filter buttons in place of the letters (#1423) |
 | 2026-10-14 | minor | Cell text keeps Excel's top and bottom insets: top aligned text no longer touches the top border, bottom aligned text no longer floats above the bottom one, wrapped text follows the same rule |
+| 2026-10-14 | minor | Spill-child formula bar uses the anchor formula with disabled theme text and blocks formula-bar edit entry; selection and recalculation restore ordinary behavior |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
 | 2026-10-14 | minor | Increase/Decrease Font Size step one point at a time from 1 to 8 (Decrease jumped from 8 to 1, Increase from 1 to 8), then the Font Size list including 22 and 26, stopping at 72 (it went on to 96 and 409); Excel stops Decrease at 8, see decisions.md |
