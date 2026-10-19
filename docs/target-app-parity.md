@@ -324,6 +324,8 @@ The inventory carried over from the 2026-10-07 ROADMAP.md, updated for what land
 - Agents: every action is an engine command; JSON control channel in the desktop app (pointer,
   keyboard, dialogs, screenshots); MCP server (headless or bridged); CLI (`info`, `convert`,
   `eval`, `cat`, `run`, `commands`, `functions`, `mcp`, `send`).
+  MCP `new_workbook` accepts an explicit `sample: "blank"` as well as omission; protocol tests
+  cover blank creation, existing samples, invalid arguments and remote forwarding (#1616).
 - Platforms: macOS, Windows, Linux, FreeBSD; web (WASM via trunk). Release workflows for
   signed/notarized macOS universal DMG, signed Windows x64/x86 MSI + zip, Linux AppImage/deb/rpm/
   tar.gz + Flatpak manifest, FreeBSD tarball and a web zip.
@@ -343,6 +345,7 @@ The inventory carried over from the 2026-10-07 ROADMAP.md, updated for what land
 | 2026-10-18 | minor | Conditional formatting: a colour-scale stop keeps its kind when its value is a formula, and thresholds stored out of order draw in ascending order with the colours in stop order (#1848); no score change |
 | 2026-10-13 | minor | Copy mode: a changed source cell ends the copy snapshot; edits outside that source deliberately keep it (#939), unlike the Excel behavior reported in the issue |
 | 2026-10-14 | minor | Performance: defined names are static precedents (formulas calling LAMBDA names no longer recalculate on every edit), parsed names cached per pass, `TEXT(n,"0")` integer fast path, conditional-format statistics only for rule kinds that read them; measured on a 1M-cell workbook (no score change) |
+| 2026-10-16 | minor | MCP explicit blank-workbook option and protocol regressions (#1616); scores and hours unchanged |
 | 2026-10-12 | minor | Essentials AutoFit evidence: rows auto-fit oversized fonts on open and row formatting (#833) |
 | 2026-10-12 | minor | Sheet tabs: reveal the selected tab on navigation and resize while preserving manual scrolling (#681); no score change |
 | 2026-10-12 | minor | PivotTables: values on rows (Σ Values in Rows at any position, all three layouts; `pivot.moveField` and the field pane move it; `dataOnRows` round-trips) (no score change) |
