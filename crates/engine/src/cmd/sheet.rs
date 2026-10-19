@@ -254,7 +254,7 @@ fn insert_lines(s: &mut Session, p: &Json, axis: Axis) -> Result<Json> {
         let cmd = if axis == Axis::Rows { "home.insertRows" } else { "home.insertColumns" };
         return Err(bad(cmd, "the inserted lines would extend past the end of the worksheet"));
     }
-    check_lines_protection(s, p, axis, at, count, true)?;
+    check_lines_protection(s, p, axis, true)?;
     let sheet = target_sheet(s, p)?;
     // Refuse to push data off the sheet.
     if let Some(u) = s.doc()?.wb.sheet(sheet).and_then(|sh| sh.used_range()) {
@@ -327,9 +327,7 @@ fn delete_areas(s: &Session, p: &Json, axis: Axis) -> Result<Vec<(u32, u32)>> {
 
 fn delete_lines(s: &mut Session, p: &Json, axis: Axis) -> Result<Json> {
     let areas = delete_areas(s, p, axis)?;
-    for &(at, count) in &areas {
-        check_lines_protection(s, p, axis, at, count, false)?;
-    }
+    check_lines_protection(s, p, axis, false)?;
     let sheet = target_sheet(s, p)?;
     let out = edit(s, |cx| {
         let name = cx.wb.sheet(sheet).map(|s| s.name.clone()).unwrap_or_default();
@@ -378,8 +376,8 @@ fn move_columns(s: &mut Session, p: &Json) -> Result<Json> {
     {
         return Err(EngineError::Other("To prevent possible loss of data, columns cannot be shifted off of the worksheet.".into()));
     }
-    check_lines_protection(s, &json!({"cols": RangeRef::cols(before, before).a1()}), Axis::Cols, before, count, true)?;
-    check_lines_protection(s, &json!({"cols": RangeRef::cols(from, end - 1).a1()}), Axis::Cols, from, count, false)?;
+    check_lines_protection(s, &json!({"cols": RangeRef::cols(before, before).a1()}), Axis::Cols, true)?;
+    check_lines_protection(s, &json!({"cols": RangeRef::cols(from, end - 1).a1()}), Axis::Cols, false)?;
 
     let moved_from = if before <= from { from + count } else { from };
     if moved_from.checked_add(count).is_none_or(|end| end > MAX_COLS) {
@@ -678,9 +676,10 @@ fn edit_doc<R>(d: &mut crate::DocState, f: impl FnOnce(&mut Ctx) -> Result<R>) -
     super::commit(d, f)
 }
 
-/// Sheet protection for inserting or deleting rows/columns: the protection must allow it, and
-/// deleted lines must not hold locked cells.
-fn check_lines_protection(s: &Session, p: &Json, axis: Axis, at: u32, count: u32, insert: bool) -> Result<()> {
+/// Sheet protection for inserting or deleting rows/columns: the protection must allow it. Deleting
+/// removes the locked cells it covers, which is exactly what Excel's "Delete rows"/"Delete
+/// columns" permission grants, so their contents aren't checked.
+fn check_lines_protection(s: &Session, p: &Json, axis: Axis, insert: bool) -> Result<()> {
     let sheet = target_sheet(s, p)?;
     let wb = &s.doc()?.wb;
     let Some(sh) = wb.sheet(sheet) else { return Ok(()) };
@@ -691,22 +690,8 @@ fn check_lines_protection(s: &Session, p: &Json, axis: Axis, at: u32, count: u32
         (Axis::Cols, true) => pr.insert_columns,
         (Axis::Cols, false) => pr.delete_columns,
     };
-    let locked = |st: gridcraft_model::StyleId| wb.styles.get(st).protection.locked;
-    let refuse = || EngineError::Other(PROTECTED.into());
     if !allowed {
-        return Err(refuse());
-    }
-    if insert {
-        return Ok(());
-    }
-    let end = at.saturating_add(count - 1).min(if axis == Axis::Rows { MAX_ROWS - 1 } else { MAX_COLS - 1 });
-    let infos = if axis == Axis::Rows { &sh.rows } else { &sh.cols };
-    if (at..=end).any(|i| locked(infos.get(&i).and_then(|x| x.style).unwrap_or_default())) {
-        return Err(refuse());
-    }
-    let block = if axis == Axis::Rows { RangeRef::rows(at, end) } else { RangeRef::cols(at, end) };
-    if sh.cells.iter_range(block).any(|(_, cell)| locked(cell.style)) {
-        return Err(refuse());
+        return Err(EngineError::Other(PROTECTED.into()));
     }
     Ok(())
 }
