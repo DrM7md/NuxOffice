@@ -66,6 +66,10 @@ Arabic PDF output uses harfrust shaping, Unicode bidi and licensed Noto Arabic g
   through egui/winit and is unverified for Chinese, Japanese and Korean.
 - **PDF export** shapes Arabic with embedded Noto Arabic glyph outlines; other non-Latin scripts
   (CJK, Devanagari, Thai) cannot export yet, because the rest uses only the 14 standard PDF fonts.
+- **Names in any script.** Defined names (Define Name, Create from Selection) are limited to
+  255 characters, counted as characters rather than UTF-8 bytes, so a 255-letter Arabic name is
+  accepted as in Excel. Sheet names already counted characters (31).
+- **PDF export** uses only the 14 standard PDF fonts: non-Latin text cannot export.
 
 ## Languages
 
@@ -121,6 +125,7 @@ language (none so far) and of localized function names.
 | 2026-10-19 | minor | Number formats honour the `B1`/`B2` calendar prefixes: never shown; `B2` renders year, month, day and Arabic month names in the tabular Hijri calendar (1 Jan 2001 = 6 Shawwal 1421) |
 | 2026-10-18 | minor | Arabic PDF cells inherit explicit or contextual direction; wrapped lines retain paragraph direction, and RTL pages mirror cell and object geometry |
 | 2026-10-18 | minor | Arabic PDF cells, headers and chart labels support joined letters, combining marks, digits, bold/italic, rotation and grapheme wrapping |
+| 2026-10-19 | minor | Defined-name length counts characters, not bytes: Arabic names up to 255 letters are accepted, and Create from Selection keeps long Arabic headers |
 | 2026-10-12 | minor | Format Cells looks up its tabs, labels, options and note through `Language::tr` (Fill tab keyed `Format Cells\|Fill`); dialog titles and OK/Cancel too. Labels already in a table (Number, Currency, Fill…) show translated; the rest fall back to English until the tables add them |
 | 2026-10-12 | minor | Brazilian Portuguese catalog (`i18n/pt.rs`) grows from 377 to 923 entries: every key the other catalogs translate, including the dialog strings #669 starts looking up (~42%) |
 | 2026-10-12 | minor | French (`i18n/fr.rs`, 377 labels): the backstage, print, header/footer and options block (84 labels) had its translations paired with the wrong keys; retranslated, two missing header/footer labels added, spot-check tests |
