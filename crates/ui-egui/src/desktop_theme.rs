@@ -16,7 +16,7 @@ const POLL: Duration = Duration::from_secs(4);
 /// there is no session bus or no portal to ask (a bare X server, a container), so the caller
 /// keeps whatever it chose itself.
 pub fn prefers_dark() -> Option<bool> {
-    read()
+    read(&mut Link::default())
 }
 
 /// Watches the desktop and reports its choice when it changes. [`prefers_dark`] covers the
@@ -33,13 +33,14 @@ impl DesktopTheme {
     pub fn start() -> Self {
         let (tx, rx) = channel();
         let started = std::thread::Builder::new().name("gridcraft-desktop-theme".into()).spawn(move || {
-            let mut last = read();
+            let mut link = Link::default();
+            let mut last = read(&mut link);
             if tx.send(last).is_err() {
                 return;
             }
             loop {
                 std::thread::sleep(POLL);
-                let now = read();
+                let now = read(&mut link);
                 if now != last {
                     last = now;
                     if tx.send(now).is_err() {
@@ -66,17 +67,32 @@ impl DesktopTheme {
     }
 }
 
-/// Ask the portal once. D-Bus calls block, so this belongs off the UI thread: the watcher's
-/// thread is its only caller.
+/// The session-bus connection the watcher keeps between reads, opened on first use.
 #[cfg(target_os = "linux")]
-fn read() -> Option<bool> {
+type Link = Option<zbus::blocking::Connection>;
+#[cfg(not(target_os = "linux"))]
+type Link = ();
+
+/// Ask the portal once, over `link`'s connection (opened if absent, dropped if the bus went
+/// away). D-Bus calls block, so this belongs off the UI thread: the watcher's thread is its
+/// only repeated caller.
+#[cfg(target_os = "linux")]
+fn read(link: &mut Link) -> Option<bool> {
     const PORTAL: &str = "org.freedesktop.portal.Desktop";
     const SETTINGS: &str = "org.freedesktop.portal.Settings";
     const SCHEMAS: [(&str, &str); 2] = [("org.gnome.desktop.interface", "color-scheme"), ("org.freedesktop.interface.color-scheme", "color-scheme")];
-    let connection = zbus::blocking::Connection::session().ok()?;
+    if link.is_none() {
+        *link = Some(zbus::blocking::Connection::session().ok()?);
+    }
+    let connection = link.as_ref()?;
     for (schema, key) in SCHEMAS {
-        let Ok(reply) = connection.call_method(Some(PORTAL), "/org/freedesktop/portal/desktop", Some(SETTINGS), "ReadOne", &(schema, key)) else {
-            continue;
+        let reply = match connection.call_method(Some(PORTAL), "/org/freedesktop/portal/desktop", Some(SETTINGS), "ReadOne", &(schema, key)) {
+            Ok(reply) => reply,
+            Err(zbus::Error::InputOutput(_)) => {
+                *link = None;
+                return None;
+            }
+            Err(_) => continue,
         };
         let Ok((answer,)) = reply.body().deserialize::<(zbus::zvariant::OwnedValue,)>() else { continue };
         if let Ok(scheme) = String::try_from(&*answer) {
@@ -99,7 +115,7 @@ fn parse(scheme: &str) -> Option<bool> {
 
 /// macOS and Windows answer through winit, which the caller already has.
 #[cfg(not(target_os = "linux"))]
-fn read() -> Option<bool> {
+fn read(_: &mut Link) -> Option<bool> {
     None
 }
 
@@ -122,6 +138,36 @@ mod tests {
     #[cfg(not(target_os = "linux"))]
     fn other_platforms_answer_through_winit() {
         assert_eq!(prefers_dark(), None);
+    }
+
+    /// The watcher keeps one session-bus connection instead of opening one per poll. Runs the
+    /// check in a child process under a private `dbus-run-session` bus, so bus names are ours.
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn the_watcher_reuses_one_bus_connection() {
+        const INNER: &str = "GRIDCRAFT_THEME_INNER";
+        let unique = |c: &zbus::blocking::Connection| {
+            c.unique_name().map(|n| n.as_str().rsplit('.').next().and_then(|s| s.parse::<u32>().ok()).unwrap_or(0)).unwrap_or(0)
+        };
+        if std::env::var_os(INNER).is_none() {
+            let exe = std::env::current_exe().expect("cannot locate the test executable to re-run it under dbus-run-session");
+            let out = std::process::Command::new("dbus-run-session")
+                .arg("--")
+                .arg(exe)
+                .args(["--exact", "desktop_theme::tests::the_watcher_reuses_one_bus_connection", "--nocapture"])
+                .env(INNER, "1")
+                .output()
+                .expect("dbus-run-session is required to run this test (install dbus-daemon / dbus-x11)");
+            assert!(out.status.success(), "{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+            return;
+        }
+        let probe = zbus::blocking::Connection::session().expect("no session bus under dbus-run-session");
+        let before = unique(&probe);
+        let _watcher = DesktopTheme::start();
+        std::thread::sleep(POLL * 2 + Duration::from_secs(1));
+        let after_probe = zbus::blocking::Connection::session().expect("no session bus under dbus-run-session");
+        let made = unique(&after_probe) - before - 1;
+        assert!(made <= 1, "the watcher opened {made} bus connections in three reads");
     }
 
     /// A watcher that was never started is inert rather than a panic.
