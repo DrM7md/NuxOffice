@@ -125,7 +125,7 @@ fn workbook() -> Workbook {
         source: "SalesTbl".into(),
         anchor: at("K4"),
         rows: vec![
-            PivotField { source_col: "Date".into(), date_group: PivotDateGroup::Years, sort: PivotSort::None, collapsed_items: vec!["2024".into()] },
+            PivotField { source_col: "Date".into(), date_group: PivotDateGroup::Years, sort: PivotSort::Asc, collapsed_items: vec!["2024".into()] },
             PivotField { source_col: "Date".into(), date_group: PivotDateGroup::Months, sort: PivotSort::Asc, collapsed_items: vec![] },
         ],
         columns: vec![PivotField { sort: PivotSort::Desc, ..field("Product") }],
@@ -713,4 +713,17 @@ fn date_group_flags_with_and_without_a_blank() {
         assert!(tag.contains("containsNonDate=\"0\" containsDate=\"1\" containsString=\"0\""), "{tag}");
         assert_eq!(tag.contains("containsBlank=\"1\""), blank, "{tag}");
     }
+}
+
+/// #1447: Excel applies `sortType` to a date group's labels as text, so a date group is written
+/// without it and read back ascending.
+#[test]
+fn date_groups_are_written_without_sort_type() {
+    let d = vec![Value::number(date(2023, 1, 15)), Value::number(date(2023, 2, 1)), Value::number(date(2023, 8, 1))];
+    let sales: Vec<Value> = (0..d.len()).map(|i| Value::number(i as f64 + 1.0)).collect();
+    let parts = small_pivot(&[("Date", d), ("Sales", sales)], |p| {
+        p.rows = vec![PivotField { source_col: "Date".into(), date_group: PivotDateGroup::Days, sort: PivotSort::Asc, ..PivotField::default() }];
+        p.values = vec![PivotValue { source_col: "Sales".into(), name: "Sum of Sales".into(), ..PivotValue::default() }];
+    });
+    assert!(!parts["xl/pivotTables/pivotTable1.xml"].contains("sortType="));
 }
