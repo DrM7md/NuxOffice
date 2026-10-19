@@ -727,3 +727,28 @@ fn date_groups_are_written_without_sort_type() {
     });
     assert!(!parts["xl/pivotTables/pivotTable1.xml"].contains("sortType="));
 }
+
+/// #1447: two value fields and no column field: Excel 365 adds a `Values` row unless told not to.
+#[test]
+fn two_value_fields_without_columns_hide_the_values_row() {
+    let cols = [
+        ("Region", vec![Value::text("East"), Value::text("West"), Value::text("East")]),
+        ("Sales", vec![Value::number(10.0), Value::number(20.0), Value::number(5.0)]),
+        ("Qty", vec![Value::number(1.0), Value::number(2.0), Value::number(3.0)]),
+    ];
+    let value = |c: &str| PivotValue { source_col: c.into(), name: format!("Sum of {c}"), ..PivotValue::default() };
+    let two = small_pivot(&cols, |p| {
+        p.rows = vec![field("Region")];
+        p.values = vec![value("Sales"), value("Qty")];
+    });
+    let t = &two["xl/pivotTables/pivotTable1.xml"];
+    assert!(t.contains("firstHeaderRow=\"0\" firstDataRow=\"1\""), "{t}");
+    assert!(t.contains("<x14:pivotTableDefinition hideValuesRow=\"1\"/>"), "{t}");
+    let one = small_pivot(&cols, |p| {
+        p.rows = vec![field("Region")];
+        p.values = vec![value("Sales")];
+    });
+    let t = &one["xl/pivotTables/pivotTable1.xml"];
+    assert!(t.contains("firstHeaderRow=\"1\""), "{t}");
+    assert!(!t.contains("hideValuesRow"), "{t}");
+}
