@@ -594,6 +594,8 @@ fn custom_ok(v: &Value, text: &str, op: &str, crit: &str) -> bool {
     let num = gridcraft_core::parse::parse_number_text(crit);
     let cmp = match (v.as_f64(), num) {
         (Some(a), Some(b)) => a.partial_cmp(&b),
+        // A numeric ordering comparison only matches numbers; blanks and text never do.
+        (None, Some(_)) if matches!(op, "<" | "<=" | ">" | ">=") => None,
         _ => Some(gridcraft_core::compare_text(text, crit)),
     };
     let wild = || super::edit::wildcard(&text.to_lowercase(), &crit.to_lowercase());
