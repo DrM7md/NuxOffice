@@ -436,6 +436,35 @@ mod tests {
     }
 
     #[test]
+    fn expression_rules_do_not_scan_their_range() {
+        // An Expression (or CellIs) rule needs no statistics over its range. Computing them
+        // anyway - a pass over every cell building a value histogram, then cloned per cell -
+        // made a row-wide rule on a large sheet cost seconds per frame (2026-10-14). Only the
+        // rule kinds that read statistics (Duplicate, Top10, ColorScale, ...) may populate them.
+        let mut s = crate::Session::new();
+        s.new_workbook();
+        s.execute("range.setValues", json!({"range": "A1", "values": [[1, 2], [3, 4], [3, 6]]})).unwrap();
+        s.execute(
+            "home.conditionalFormat",
+            json!({"range": "A1:B20000", "rule": {"type": "expression", "formula": "=$A1=3", "preset": "lightRedFill"}}),
+        )
+        .unwrap();
+        {
+            let d = s.doc().unwrap();
+            let mut cache = CfCache::new();
+            assert!(cache.look(&d.wb, 0, CellRef::parse("A2").unwrap()).and_then(|l| l.style).is_some());
+            assert!(cache.look(&d.wb, 0, CellRef::parse("A1").unwrap()).and_then(|l| l.style).is_none());
+            assert!(cache.stats.is_empty(), "an expression rule must not compute range statistics");
+        }
+        // A Duplicate rule on the same sheet still does, for its own range only.
+        s.execute("home.conditionalFormat", json!({"range": "B1:B3", "rule": {"type": "duplicate", "preset": "lightRedFill"}})).unwrap();
+        let d = s.doc().unwrap();
+        let mut cache = CfCache::new();
+        let _ = cache.look(&d.wb, 0, CellRef::parse("B1").unwrap());
+        assert_eq!(cache.stats.len(), 1);
+    }
+
+    #[test]
     fn every_matching_rule_applies() {
         let mut s = crate::Session::new();
         s.new_workbook();
