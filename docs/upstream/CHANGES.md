@@ -67,3 +67,7 @@ Each is a merge commit that keeps its author's commits.
 | `crates/ui-egui/src/ribbon.rs`, `formula_bar.rs` | No separator line under the title bar, ribbon and formula bar | The line read as a heavy rule | Maybe |
 | `crates/ui-egui/src/ribbon.rs` (Home) | Labelled Cut, Copy (with options) and Format Painter; A▲/A▼ font size buttons; no Strikethrough button (in Format Cells); Text Direction shown disabled; labelled Wrap Text and AutoSum, Fill, Clear; large Insert, Delete, Format | Desktop Home tab layout | Maybe |
 | `crates/ui-egui/tests/popup_dismissal.rs` | Clicks the header menu's Copy, not the ribbon's | The ribbon gained a labelled Copy | No |
+| `crates/ui-egui/src/ribbon.rs` (tabs) | Insert, Draw, Formulas, Data, Review, View and Automate moved to the new `ribbon_tabs.rs` (MPL-2.0) in the desktop layout, with original artwork in `ribbon_art.rs` (MPL-2.0); new Developer and Help tabs; controls the app lacks say "Coming soon" (listed in `docs/roadmap/ribbon-coming-soon.md`) | Desktop ribbon parity | Maybe |
+| `crates/ui-egui/src/ribbon_extra.rs` | `small_toggle`; a large button with no label gives its artwork the full height | Labelled toggles; Draw pens | Maybe |
+| `crates/ui-egui/src/backstage.rs` | Options gains Interface size and Animations; the View tab no longer carries theme, size and language | The desktop app keeps these in Options | Maybe |
+| `crates/ui-egui/tests/system_theme.rs`, `selection_glide.rs` | The theme and Animations switches are reached through File › Options | Follows the move | No |

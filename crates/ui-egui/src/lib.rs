@@ -32,6 +32,7 @@ pub mod paper_view;
 pub mod pivot_pane;
 pub mod printing;
 pub mod ribbon;
+pub mod ribbon_art;
 pub mod ribbon_extra;
 pub mod selection_glide;
 pub mod sheet_dialogs;

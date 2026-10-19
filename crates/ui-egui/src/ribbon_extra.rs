@@ -263,7 +263,13 @@ pub(crate) fn big(
     } else if enabled && resp.hovered() {
         ui.painter().rect_filled(rect, CornerRadius::same(4), t.hover);
     }
-    icon(ui.painter(), Rect::from_center_size(pos2(rect.center().x, rect.top() + 20.0), vec2(30.0, 30.0)), ink);
+    // A button with no label (the Draw tab's pens) gives its artwork the whole height.
+    let art = if label.is_empty() {
+        Rect::from_center_size(pos2(rect.center().x, rect.top() + 32.0), vec2(34.0, 54.0))
+    } else {
+        Rect::from_center_size(pos2(rect.center().x, rect.top() + 20.0), vec2(30.0, 30.0))
+    };
+    icon(ui.painter(), art, ink);
     for (i, line) in lines.iter().enumerate() {
         let arrow = dropdown && i + 1 == lines.len();
         let lw = widths[i] + if arrow { 14.0 } else { 0.0 };
