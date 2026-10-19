@@ -86,6 +86,7 @@ pictures, reopen with the same errors (`ERROR.TYPE` 9 and 14).
 | Format | Excel | GridCraft | Notes |
 |---|---|---|---|
 | PDF | Save As / Export | yes (own PDF 1.7 writer) | Standard Latin fonts plus licensed shaped Arabic outlines, logical Unicode mappings, cell reading direction and RTL sheet geometry; CJK/Devanagari/Thai remain unsupported; web build exports without a file prompt (#141) |
+| PDF | Save As / Export | yes (own PDF 1.7 writer; CLI `convert` output) | Printed cell hyperlinks export as clickable HTTP(S)/mailto links or destinations within printed pages (#954); unsafe schemes and destinations outside the print range are omitted. Only the 14 standard PDF fonts, no embedding: **non-Latin text (CJK, Arabic, Devanagari, Thai) does not export**; web build exports without a file prompt (#141) |
 | XPS | Windows | no | Low priority |
 | Print | yes | yes (via PDF, system dialog on desktop; PR #143 for web) | |
 | Images of ranges/charts (Copy as Picture) | yes | chart raster in `crates/chart` | No range-to-image command |
@@ -145,6 +146,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-15 | minor | XLSX save keeps legacy `INDEX`/`MATCH` formulas scalar instead of marking them as dynamic arrays (#1505) |
 | 2026-10-13 | minor | PivotTable filter display order survives XLSX save/reopen using optional metadata; standard page and axis filters remain readable without it (#553) |
 | 2026-10-13 | minor | Encrypted workbooks try Excel's default password (`VelvetSweatshop`) before asking; RC4-encrypted `.xls` files open (#725) |
+| 2026-10-14 | minor | PDF export writes clickable annotations for safe cell URLs and destinations on printed pages; CLI `convert` accepts `.pdf` output (#954) |
 | 2026-10-12 | trivial | XLSX chart sheets are kept on save (#727) |
 | 2026-10-12 | trivial | CSV and TSV export is capped at 512 MiB and refuses a larger used range with an error (#528) |
 | 2026-10-12 | minor | `.xls` import reads the calculation settings (CalcMode, CalcIter, CalcCount, CalcDelta, CalcPrecision), so circular models calculate instead of showing `#CIRC!` (#724) |
