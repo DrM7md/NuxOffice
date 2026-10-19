@@ -355,6 +355,10 @@ fn pivot_xml_details() {
     let t2 = String::from_utf8(parts.get("xl/pivotTables/pivotTable2.xml").unwrap().clone()).unwrap();
     assert!(t2.contains("pivotShowAs=\"rankDescending\""));
     assert!(t2.contains("showDataAs=\"runTotal\""));
+    // Pivot 1 has no Grand Total column (`colGrandTotals`), pivot 2 no Grand Total row
+    // (`rowGrandTotals`).
+    assert!(t1.contains(" colGrandTotals=\"0\"") && !t1.contains("rowGrandTotals"), "{t1}");
+    assert!(t2.contains(" rowGrandTotals=\"0\"") && !t2.contains("colGrandTotals"), "{t2}");
     // The custom value format is registered in the styles part.
     let styles = String::from_utf8(parts.get("xl/styles.xml").unwrap().clone()).unwrap();
     assert!(styles.contains("formatCode=\"0.0&quot; u&quot;\""));
@@ -638,6 +642,25 @@ fn values_ahead_of_column_fields_read_last() {
     assert_eq!((pt.columns.len(), pt.values.len()), (1, 2));
     assert!(!pt.values_on_rows);
     assert_eq!(pt.values_position, None);
+}
+
+// As Excel saves them: `rowGrandTotals="0"` drops the Grand Total row under the report (leaving
+// Excel's "On for Rows Only"), `colGrandTotals="0"` the Grand Total column at its right ("On for
+// Columns Only"). LibreOffice's Pivot2_Row_Subtotals.xlsx (`rowGrandTotals="0"`) shows no Grand
+// Total row; ClosedXML's TemplateWithTableSourcePivotTables.xlsx pivotTable5 (`colGrandTotals="0"`,
+// row and column fields) shows a Grand Total row and no Grand Total column.
+#[test]
+fn grand_totals_read_in_excel_direction() {
+    let table = |attr: &str| {
+        format!(
+            r#"<pivotTableDefinition name="GT" cacheId="1" {attr}><location ref="C1:F4"/><pivotFields><pivotField axis="axisRow"><items><item x="0"/><item x="1"/><item t="default"/></items></pivotField><pivotField dataField="1"/></pivotFields><rowFields><field x="0"/></rowFields><dataFields><dataField name="Sum of V" fld="1"/></dataFields></pivotTableDefinition>"#
+        )
+    };
+    for (attr, rows, cols) in [("rowGrandTotals=\"0\"", true, false), ("colGrandTotals=\"0\"", false, true), ("", true, true)] {
+        let (wb, _) = read_xlsx(&with_pivot(&table(attr), Some(GOOD_CACHE))).unwrap();
+        let pt = &wb.sheet(0).unwrap().pivots[0];
+        assert_eq!((pt.grand_totals_rows, pt.grand_totals_cols), (rows, cols), "{attr}");
+    }
 }
 
 #[test]
