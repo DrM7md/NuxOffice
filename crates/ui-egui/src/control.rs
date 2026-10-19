@@ -642,7 +642,7 @@ mod tests {
         assert_eq!(app.synthetic.len(), 2);
         assert_eq!(app.synthetic.iter().map(Vec::len).sum::<usize>(), 5);
         // Already queued input counts toward the budget.
-        assert!(push_click(&mut app, p, btn, MAX_QUEUED_POINTER_EVENTS / 2, m).is_err());
+        assert!(push_click(&mut app, p, btn, (MAX_QUEUED_POINTER_EVENTS / 2) as u32, m).is_err());
         assert_eq!(app.synthetic.len(), 2);
         // Normal requests still queue in full.
         assert!(push_drag(&mut app, p, p + egui::vec2(40.0, 40.0), 3, m).is_ok());
