@@ -160,6 +160,7 @@ full GTK theme parity is not claimed.
 | 2026-10-14 | Date text with a month name reads like Excel: `1Jan`, `Jan1`, `Mar 15`, `Jan 2021`, `Jan2021`, `1Jan21` and `15Mar2024` are dates in DATEVALUE, VALUE, MONTH, arithmetic (`MONTH(1&"Feb")`) and cell entry; `Jan-21` is 21 January of the current year, not January 2021 (#1342) |
 | 2026-10-13 | Grid: resizing several selected columns or rows previews on the dragged one and applies the size to all on release; Esc cancels (#1082) |
 | 2026-10-16 | Selected-cell IME entry preserves composition and focus; synthetic Korean regression tests pass, native OS/browser input remains unverified (#1627) |
+| 2026-10-13 | XLSX: `[Content_Types].xml`, `_rels/.rels`, the workbook rels and `xl/workbook.xml` are the first zip entries (document properties last), so libmagic and PHP `finfo` detect the file type even with large properties (#1090) |
 | 2026-10-12 | Rows auto-fit oversized fonts: opening a file and whole-row/column formatting grow non-custom rows to their tallest font (#833) |
 | 2026-10-18 | Conditional formatting: a colour-scale stop whose value is a formula keeps its kind (percent, percentile or number) through save and open, and a scale stored with its thresholds out of order draws in ascending order with the colours kept in stop order (#1848) |
 | 2026-10-12 | Number formats: parsing a format code is linear in its length (long runs of `[`, `,` or `/` no longer take quadratic time), and an unclosed `[` is a literal when splitting sections as well as when tokenizing (#810) |
