@@ -71,3 +71,13 @@ Each is a merge commit that keeps its author's commits.
 | `crates/ui-egui/src/ribbon_extra.rs` | `small_toggle`; a large button with no label gives its artwork the full height | Labelled toggles; Draw pens | Maybe |
 | `crates/ui-egui/src/backstage.rs` | Options gains Interface size and Animations; the View tab no longer carries theme, size and language | The desktop app keeps these in Options | Maybe |
 | `crates/ui-egui/tests/system_theme.rs`, `selection_glide.rs` | The theme and Animations switches are reached through File › Options | Follows the move | No |
+
+### Round 2 — 2026-10-19 ([triage-2026-10-19-round2.md](triage-2026-10-19-round2.md))
+
+| Group | Pull requests | Notes |
+|---|---|---|
+| R1 (correctness) | #1526, #1711, #1738, #1661, #1527, #1145, #1879, #1909, #1922, #1929, #1882, #1885 | #1885's tests use `.into()` for the `Shared` conditional formats of #1643 |
+| R2 (security, robustness) | #1461, #1262, #1917, #1916 | #1916: `#[allow(clippy::let_unit_value)]` where `Link` is `()` (Windows, macOS) |
+| R3 (memory) | #1643, #1263, #1629 | |
+| R4 (Excel behaviour) | #1890, #1905, #1921, #1370, #1618, #1672, #1612, #1333, #1306, #1748, #1100, #1131, #1866, #1392, #1870, #1549, #1730, #1910 | #1370's standard-row test allows for NuxOffice's taller default row |
+| R5 (scripts) | #922, #1918, #1912 | |
