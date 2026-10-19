@@ -159,6 +159,7 @@ full GTK theme parity is not claimed.
 | 2026-10-14 | Large-workbook performance: bounded navigation caches, prepared filter predicates, borrowed conditional-format statistics and reuse of unchanged dependencies during filters. [Measurements and limitations](docs/large-workbook-performance.md). |
 | 2026-10-14 | Date text with a month name reads like Excel: `1Jan`, `Jan1`, `Mar 15`, `Jan 2021`, `Jan2021`, `1Jan21` and `15Mar2024` are dates in DATEVALUE, VALUE, MONTH, arithmetic (`MONTH(1&"Feb")`) and cell entry; `Jan-21` is 21 January of the current year, not January 2021 (#1342) |
 | 2026-10-13 | Grid: resizing several selected columns or rows previews on the dragged one and applies the size to all on release; Esc cancels (#1082) |
+| 2026-10-16 | Selected-cell IME entry preserves composition and focus; synthetic Korean regression tests pass, native OS/browser input remains unverified (#1627) |
 | 2026-10-12 | Rows auto-fit oversized fonts: opening a file and whole-row/column formatting grow non-custom rows to their tallest font (#833) |
 | 2026-10-18 | Conditional formatting: a colour-scale stop whose value is a formula keeps its kind (percent, percentile or number) through save and open, and a scale stored with its thresholds out of order draws in ascending order with the colours kept in stop order (#1848) |
 | 2026-10-12 | Number formats: parsing a format code is linear in its length (long runs of `[`, `,` or `/` no longer take quadratic time), and an unclosed `[` is a literal when splitting sections as well as when tokenizing (#810) |
@@ -240,6 +241,7 @@ Performance measurements and cache contracts: [large-workbook-performance.md](do
 | 2026-10-13 | minor | Progress log: conditional-format lookups no longer scan the range for rules without statistics (#1098) |
 | 2026-10-14 | minor | Large-workbook navigation caches, conditional-format statistics and filtering performance; reproducible benchmarks and measured limitations. |
 | 2026-10-14 | minor | Date text with a month name and no separator, or a month name and a year (#1342); progress log row |
+| 2026-10-16 | minor | Selected-cell Korean IME entry and synthetic regression coverage (#1627); localization status retains native/browser verification limits. |
 | 2026-10-12 | minor | Rows auto-fit oversized fonts on open and whole-row/column formatting (#833); progress log row |
 | 2026-10-12 | minor | Progress log: multi-area row/column delete (#758) |
 | 2026-10-12 | trivial | Progress log: XLSX chart sheets kept on save (#727) |

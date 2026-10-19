@@ -75,6 +75,11 @@ Arabic PDF output uses harfrust shaping, Unicode bidi and licensed Noto Arabic g
 - **Names in any script.** Defined names (Define Name, Create from Selection) are limited to
   255 characters, counted as characters rather than UTF-8 bytes, so a 255-letter Arabic name is
   accepted as in Excel. Sheet names already counted characters (31).
+- **IME cell entry (#1627).** The selected grid cell enables IME before an editor exists and
+  keeps the same focus ID when composition opens the editor. Synthetic egui tests cover Korean
+  preedit replacement, commit, cancellation and consecutive syllables without interrupting the
+  platform composition; an offscreen composition render was inspected. Native OS input methods
+  and browser composition still need manual verification, including Chinese and Japanese.
 - **PDF export** uses only the 14 standard PDF fonts: non-Latin text cannot export.
 
 ## Languages
@@ -101,6 +106,8 @@ separators, number/date formats, machine translation with agent review, and scri
 | Japanese | ja | 268 (~12%) | no | CJK system-font fallback; IME unverified; no furigana display | no | menus only | 8–12 h |
 | German | de | 420 entries | no | Latin: yes | no | menus, Scenario Manager | 4–8 h |
 | Korean | ko | 266 (~12%) | no | Hangul via the CJK fallback; IME unverified | no | menus only | 6–10 h |
+| German | de | 266 (~12%) | no | Latin: yes | no | menus only | 4–8 h |
+| Korean | ko | 266 (~12%) | no | Hangul via the CJK fallback; synthetic IME tests pass, native IME unverified | no | menus only | 6–10 h |
 | Vietnamese | vi | 0 (0%) | no | Latin with stacked diacritics: unverified | no | none | 6–10 h |
 
 German (de) now has 420 catalog entries, including the Scenario Manager and its validation messages. Russian (ru) remains at the previously recorded 266 labels (~12%).
@@ -136,6 +143,7 @@ language (none so far) and of localized function names.
 | 2026-10-19 | minor | Right-to-left sheets in legacy `.xls` files (common in older Arabic workbooks) open right-to-left |
 | 2026-10-19 | minor | Table names are limited to 255 Unicode characters |
 | 2026-10-19 | minor | XLSX fonts retain charset and family metadata so systems can select a substitute font with the intended script when the named font is unavailable |
+| 2026-10-16 | minor | Selected-cell IME entry preserves focus and preedit; synthetic Korean tests and offscreen rendering cover #1627, native/browser IME remains unverified. |
 | 2026-10-12 | minor | Format Cells looks up its tabs, labels, options and note through `Language::tr` (Fill tab keyed `Format Cells\|Fill`); dialog titles and OK/Cancel too. Labels already in a table (Number, Currency, Fill…) show translated; the rest fall back to English until the tables add them |
 | 2026-10-12 | minor | Brazilian Portuguese catalog (`i18n/pt.rs`) grows from 377 to 923 entries: every key the other catalogs translate, including the dialog strings #669 starts looking up (~42%) |
 | 2026-10-12 | minor | French (`i18n/fr.rs`, 377 labels): the backstage, print, header/footer and options block (84 labels) had its translations paired with the wrong keys; retranslated, two missing header/footer labels added, spot-check tests |
