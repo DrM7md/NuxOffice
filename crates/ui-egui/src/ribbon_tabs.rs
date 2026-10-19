@@ -204,11 +204,8 @@ pub(super) fn insert(app: &mut SheetApp, ui: &mut Ui) {
     let __k = abig(ui, Art::RecommendedCharts, "Recommended\nCharts", "Recommended Charts", false);
     control_keytip(app, ui, &__k, "insert.recommendedCharts");
     if __k.clicked() {
-        match app.run("insert.recommendedCharts", json!({})) {
-            // The new chart is selected, as after inserting any other object.
-            Ok(r) => app.selected_chart = r.get("chart").and_then(serde_json::Value::as_u64).and_then(|id| u32::try_from(id).ok()),
-            Err(e) => app.message = Some(("Cellnux".into(), crate::clean_error(&e))),
-        }
+        // With no chart type, run_or_alert opens the Insert Chart dialog (as in Excel).
+        app.run_or_alert("insert.recommendedCharts", json!({}));
     }
     stack(ui, |ui| {
         ui.horizontal(|ui| {
