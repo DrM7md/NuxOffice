@@ -673,7 +673,7 @@ fn font_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
     let t = Tokens::get(ui.ctx());
     let theme = app.session.active().map(|doc| doc.wb.theme.clone()).unwrap_or_default();
     let colors = theme.colors;
-    let families = crate::fonts::families();
+    let families = crate::fonts::families(lang);
     ui.horizontal_top(|ui| {
         ui.vertical(|ui| {
             ui.set_width(220.0);
