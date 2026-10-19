@@ -586,6 +586,8 @@ mod spill_tests {
     }
     #[test]
     fn formula_bar_click_and_theme_presentation() {
+        // Building font definitions rewrites the shared bound-family registry (see fonts::TEST_LOCK).
+        let _g = crate::fonts::TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         use egui_kittest::kittest::Queryable as _;
         for dark in [false, true] {
             let mut app = app();

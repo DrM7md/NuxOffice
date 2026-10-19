@@ -1373,7 +1373,11 @@ mod autosave_tests {
 
     fn frame(app: &mut SheetApp) {
         let ctx = egui::Context::default();
-        ctx.set_fonts(theme::font_definitions());
+        {
+            // Building font definitions rewrites the shared bound-family registry (see fonts::TEST_LOCK).
+            let _g = crate::fonts::TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+            ctx.set_fonts(theme::font_definitions());
+        }
         app.fonts_ready = true;
         let mut output = ctx.run_ui(Default::default(), |ui| app.ui(ui));
         output.textures_delta.clear();

@@ -860,6 +860,8 @@ mod tests {
 
     #[test]
     fn fallback_faces_are_appended_to_every_family() {
+        // Building font definitions rewrites the shared bound-family registry (see fonts::TEST_LOCK).
+        let _g = crate::fonts::TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // Structural: whatever loaded, the non-Latin fallback keys must sit at the end of each chain
         // (after the Latin/default fonts) so Latin still wins for Latin text, in the language's order.
         for han in [HanOrder::Chinese, HanOrder::Japanese] {
@@ -881,6 +883,8 @@ mod tests {
 
     #[test]
     fn interface_families_fall_back_to_the_cell_font() {
+        // Building font definitions rewrites the shared bound-family registry (see fonts::TEST_LOCK).
+        let _g = crate::fonts::TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // Structural (#349): the formula bar, name box and dialogs draw every script the cells can,
         // so each interface chain carries the cell face, ahead of the script fallback faces.
         let fonts = font_definitions_for_language(Language::En);
@@ -944,6 +948,8 @@ mod tests {
 
     #[test]
     fn fallback_faces_load_each_file_once() {
+        // Building font definitions rewrites the shared bound-family registry (see fonts::TEST_LOCK).
+        let _g = crate::fonts::TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // The region-merged Noto Sans CJK .ttc serves Japanese, Chinese and Hangul; it must be loaded
         // once, not once per script (tens of MB each).
         for language in [Language::En, Language::Ja] {
@@ -960,6 +966,8 @@ mod tests {
 
     #[test]
     fn fallback_covers_its_script() {
+        // Building font definitions rewrites the shared bound-family registry (see fonts::TEST_LOCK).
+        let _g = crate::fonts::TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // Real render check, per script: the proportional family (what cells and the UI use) must
         // resolve a sample string to a real glyph, not the tofu replacement char. Skips a script
         // whose face is absent (a minimal machine) and fails if a face is present but not wired in.
