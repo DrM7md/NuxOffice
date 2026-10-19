@@ -1670,11 +1670,15 @@ impl<'h> Evaluator<'h> {
             })),
             "sheetname" => Ev::V(Value::text(sheet.map(|s| s.name.clone()).unwrap_or_default())),
             "protect" => Ev::V(Value::number(if sheet.is_some_and(|s| wb.styles.get(s.style_id(c)).protection.locked) { 1.0 } else { 0.0 })),
-            "format" => {
+            "format" | "color" | "parentheses" => {
                 let code = sheet.map(|s| wb.styles.get(s.style_id(c)).num_fmt.as_str().to_string()).unwrap_or_default();
-                Ev::V(Value::text(cell_format_code(&code)))
+                let info = gridcraft_numfmt::NumberFormat::parse_cached(&code).cell_info();
+                Ev::V(match kind.as_str() {
+                    "format" => Value::text(info.code),
+                    "color" => Value::Number(if info.color { 1.0 } else { 0.0 }),
+                    _ => Value::Number(if info.parentheses { 1.0 } else { 0.0 }),
+                })
             }
-            "color" | "parentheses" => Ev::V(Value::Number(0.0)),
             "prefix" => Ev::V(Value::text("")),
             _ => err(CellError::Value),
         }
@@ -1765,7 +1769,6 @@ trait Pipe: Sized {
 }
 impl<T> Pipe for T {}
 
-/// CELL("format") code for a number format.
 /// The English name of an info type. Excel translates `CELL`'s function name but not its first
 /// argument, which is a string: a German Excel saves `ZELLE("Dateiname";A1)` as
 /// `CELL("Dateiname",A1)`, so the localized names have to be understood as they stand (#1489).
@@ -1785,36 +1788,6 @@ fn cell_info_type(kind: &str) -> &str {
         "präfix" => "prefix",
         other => other,
     }
-}
-
-fn cell_format_code(code: &str) -> String {
-    let c = code.to_ascii_lowercase();
-    if c == "general" {
-        return "G".into();
-    }
-    if c.contains('%') {
-        return format!("P{}", decimals(&c));
-    }
-    if c.contains('e') && c.contains('0') {
-        return format!("S{}", decimals(&c));
-    }
-    if c.contains('$') {
-        return format!("C{}", decimals(&c));
-    }
-    if c.contains('y') || c.contains('d') {
-        return "D1".into();
-    }
-    if c.contains('h') {
-        return "D9".into();
-    }
-    if c.contains(',') {
-        return format!(",{}", decimals(&c));
-    }
-    format!("F{}", decimals(&c))
-}
-
-fn decimals(c: &str) -> usize {
-    c.split_once('.').map_or(0, |(_, d)| d.chars().take_while(|ch| *ch == '0').count())
 }
 
 fn same_kind(a: &Value, b: &Value) -> bool {

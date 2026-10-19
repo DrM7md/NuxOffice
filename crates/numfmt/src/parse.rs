@@ -124,6 +124,8 @@ pub(crate) struct Section {
     pub currency: bool,
     pub fill: bool,
     pub calendar: Calendar,
+    /// An unquoted, unescaped `(` (CELL("parentheses")).
+    pub paren: bool,
 }
 
 /// Splits a code into sections at unquoted, unescaped, unbracketed semicolons.
@@ -254,6 +256,7 @@ struct Raw {
     cond: Option<Cond>,
     currency: bool,
     calendar: Calendar,
+    paren: bool,
 }
 
 /// Where a section's body starts: after its leading `[...]` tags, read as `tokenize` reads them.
@@ -270,7 +273,7 @@ fn after_leading_brackets(cs: &[char]) -> usize {
 
 fn tokenize(src: &str) -> Raw {
     let cs: Vec<char> = src.chars().collect();
-    let mut raw = Raw { toks: Vec::new(), color: None, cond: None, currency: false, calendar: Calendar::Gregorian };
+    let mut raw = Raw { toks: Vec::new(), color: None, cond: None, currency: false, calendar: Calendar::Gregorian, paren: false };
     let toks = &mut raw.toks;
     // With no `]` at or after a `[`, that `[` is a literal; checking this once keeps the scan linear.
     let last_close = cs.iter().rposition(|&c| c == ']');
@@ -399,6 +402,9 @@ fn tokenize(src: &str) -> Raw {
                 if is_currency_char(c) {
                     raw.currency = true;
                 }
+                if c == '(' {
+                    raw.paren = true;
+                }
                 push_lit(toks, c.encode_utf8(&mut [0; 4]));
             }
         }
@@ -459,7 +465,7 @@ fn date_part(t: &Tok) -> Option<DatePart> {
 }
 
 fn analyze(raw: Raw) -> Section {
-    let Raw { mut toks, color, cond, currency, calendar } = raw;
+    let Raw { mut toks, color, cond, currency, calendar, paren } = raw;
     let is_date = toks.iter().any(|t| matches!(t, Tok::Date(_)));
     let has_general = toks.iter().any(|t| matches!(t, Tok::General));
     let mut sec = Section {
@@ -477,6 +483,7 @@ fn analyze(raw: Raw) -> Section {
         currency,
         fill: toks.iter().any(|t| matches!(t, Tok::Fill(_))),
         calendar,
+        paren,
     };
     if is_date {
         sec.kind = SecKind::Date;
