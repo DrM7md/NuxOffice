@@ -927,3 +927,21 @@ fn undo_after_backspace_restores_the_cleared_cell() {
     assert_eq!(value(&h, "A1"), Value::Number(3200.0));
     assert_eq!(value(&h, "C5"), Value::Number(11750.0));
 }
+
+#[test]
+fn header_footer_dialog_opens_on_the_saved_header_and_footer() {
+    // #523: the dialog started from a fixed empty header and `&CPage &P of &N`, so OK replaced the sheet's text.
+    let mut s = blank();
+    s.execute("pageLayout.headerFooter", json!({"header": "&LLeft", "footer": "&CConfidential"})).unwrap();
+    let mut h = harness(s);
+    h.state_mut().open_dialog("headerFooter", json!({}));
+    h.run_steps(2);
+    let d = h.state_mut().dialog.as_mut().unwrap();
+    assert_eq!(d.values["header"], json!("&LLeft"));
+    assert_eq!(d.values["footer"], json!("&CConfidential"));
+    d.values.insert("header".into(), json!("&CNew"));
+    let vals = json!(d.values.clone());
+    h.state_mut().run("pageLayout.headerFooter", vals).unwrap();
+    let pr = &h.state().session.active().unwrap().wb.active().unwrap().print;
+    assert_eq!((pr.header.as_str(), pr.footer.as_str()), ("&CNew", "&CConfidential"));
+}
