@@ -58,6 +58,9 @@ fn bool_prop(e: &El, name: &str) -> bool {
     e.child(name).is_some_and(|c| c.flag("val", true))
 }
 
+const DEFAULT_FONT_FAMILY: u8 = 2;
+const MAX_FONT_FAMILY: u8 = 14;
+
 pub fn read_font(e: &El, palette: &[u32]) -> Font {
     let mut f = Font::default();
     if let Some(n) = e.child("name").or_else(|| e.child("rFont")).and_then(|n| n.attr("val")) {
@@ -85,6 +88,12 @@ pub fn read_font(e: &El, palette: &[u32]) -> Font {
             _ => VertAlign::Baseline,
         };
     }
+    f.charset = e.child("charset").and_then(|c| c.attr_u32("val")).and_then(|v| u8::try_from(v).ok());
+    f.family = e
+        .child("family")
+        .and_then(|c| c.attr_u32("val"))
+        .and_then(|v| u8::try_from(v).ok())
+        .filter(|v| *v <= MAX_FONT_FAMILY && *v != DEFAULT_FONT_FAMILY);
     f.color = opt_color(e.child("color"), palette);
     // Text 1 (dk1) is what "automatic" font colour means in practice.
     if f.color == Color::Theme(1, 0) {
@@ -436,7 +445,11 @@ fn font_xml(f: &Font, dxf: bool, minor: bool) -> String {
         s.push_str("<color theme=\"1\"/>");
     }
     if !dxf {
-        let _ = write!(s, "<name val=\"{}\"/><family val=\"2\"/>", esc_attr(&f.name));
+        let family = f.family.unwrap_or(DEFAULT_FONT_FAMILY);
+        let _ = write!(s, "<name val=\"{}\"/><family val=\"{family}\"/>", esc_attr(&f.name));
+        if let Some(charset) = f.charset {
+            let _ = write!(s, "<charset val=\"{charset}\"/>");
+        }
         if minor {
             s.push_str("<scheme val=\"minor\"/>");
         }

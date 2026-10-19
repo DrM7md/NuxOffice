@@ -1606,6 +1606,24 @@ fn structured_refs_to_columns_with_edge_spaces() {
 }
 
 #[test]
+fn changing_the_font_name_drops_the_old_fonts_charset_and_family() {
+    let mut s = s();
+    {
+        let wb = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().wb);
+        let arabic = wb.styles.derive(gridcraft_model::StyleId::DEFAULT, |st| {
+            st.font.name = "Traditional Arabic".into();
+            st.font.charset = Some(178);
+            st.font.family = Some(1);
+        });
+        wb.sheet_mut(0).unwrap().set_style(CellRef::parse("A1").unwrap(), arabic);
+    }
+    s.execute("home.fontName", json!({"range": "A1", "name": "Arial"})).unwrap();
+    let d = s.doc().unwrap();
+    let font = &d.wb.styles.get(d.wb.active().unwrap().style_id(CellRef::parse("A1").unwrap())).font;
+    assert_eq!((font.name.as_str(), font.charset, font.family), ("Arial", None, None));
+}
+
+#[test]
 fn table_rename_keeps_a_defined_name_with_the_same_name() {
     let mut s = s();
     s.execute("range.setValues", json!({"range": "A1", "values": [["Qty"], [7]]})).unwrap();
