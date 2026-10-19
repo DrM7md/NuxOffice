@@ -95,6 +95,9 @@ Checked against Microsoft's published "Keyboard shortcuts in Excel" (Windows and
 `keymap.rs` (everything added in #110, with a `lookup` table that tests cover) and
 `formula_bar.rs` (keys while editing). "Ctrl" means Cmd on a Mac unless the Mac column says
 otherwise. Number-format and border keys match the physical key (Ctrl+Shift+4, wherever `$` is).
+Punctuation keys go by the character the keyboard layout types, as in Excel: on a Croatian or German
+keyboard Ctrl+Shift+, types `;` and inserts the date, Ctrl+Shift+. (`:`) the time, Ctrl++ opens Insert.
+A character egui has no key for (`č`, `ö`, `<`) falls back to the key's position.
 
 | Shortcut (Windows) | Mac | Action | Status |
 |---|---|---|---|
@@ -183,6 +186,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-12 | minor | Inserted rows, columns and cells take the formats of the cells above or to the left, like Excel's default Format Same As Above |
 | 2026-10-13 | minor | Copied-range marquee stays visible over the selection with moving gaps inside its green border; changing copied source cells ends copy mode without pasting stale content, while edits elsewhere retain it (#939) |
 | 2026-10-19 | minor | Ctrl+Enter (`range.fill`) gives each cell what typing the input there gives: a General cell gets the automatic number format (`5%`, `$5`, `3/4/2026`, `=TODAY()`) even when it already held a value, and a cell with its own format, a formatted row or column, or Text keeps it. Cells that held a value used to keep General (`5%` showed 0.05), and empty cells took the active cell's format |
+| 2026-10-14 | minor | Punctuation shortcuts follow the character the keyboard layout types, digits keep their position: on a Croatian or German keyboard Ctrl+Shift+, (`;`) inserts the date instead of decreasing the font size, Ctrl+Shift+. (`:`) the time, Ctrl++ opens Insert, Ctrl+' copies the formula above, and Ctrl+Shift+0 (`=`) unhides columns instead of opening Insert |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Insert formatting cap counts only styles differing from inherited row/column formats; skipped formatting is observable in the command result |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
