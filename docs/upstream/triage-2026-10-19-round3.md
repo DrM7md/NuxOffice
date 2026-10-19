@@ -72,11 +72,11 @@ alignment), #1095 (stable cursor while dragging), #1373 (selectLockedCells/selec
 - **#1931:** our Format Cells uses the language-aware font list.
 - Tests updated for newer types and behaviour (#630, #1614, #1221, #1292, #956, #1167).
 
-## Not merged
+## Merged later, and not merged
 
-- **#761** (Windows: no crash when dragging across monitors with different scales). Ready, but it
-  pins `winit` to a commit of `rust-windowing/winit` (its official 0.30 backport, PR #4694), and
-  `deny.toml` must allow that source. **Waiting for the owner's approval.**
+- **#761** (Windows: no crash when dragging across monitors with different scales) was merged
+  afterwards, once the owner approved allowing `rust-windowing/winit` in `deny.toml` (see
+  CHANGES.md).
 - **#657** (JSON numbers and data conversion options): 14 conflicts with our file-open code for a
   small gain. Left for later.
 - **#1253:** Chinese interface strings.

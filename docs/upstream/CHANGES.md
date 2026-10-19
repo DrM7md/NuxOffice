@@ -137,5 +137,6 @@ Also: three tests that lost `#[test]` while resolving conflicts were restored (#
 | #1373, #1550 | Our tab menu and Review tab already switch Protect/Unprotect; our Insert tab's Recommended Charts goes through `run_or_alert` |
 | #630 | Its test casts the click count to `u32` |
 
-Not merged: #761 (needs `rust-windowing/winit` allowed in `deny.toml`, waiting for approval),
-#657 (large conflict, small gain), #1253 (Chinese strings).
+| #761 | Merged after the owner approved allowing `https://github.com/rust-windowing/winit` in `deny.toml`: `winit` is pinned to `39c4009` (winit's own 0.30 backport, PR #4694) in the single `[patch.crates-io]` table beside #922's egui pin; `main.rs` keeps #1730's remembered window |
+
+Not merged: #657 (large conflict, small gain), #1253 (Chinese strings).
