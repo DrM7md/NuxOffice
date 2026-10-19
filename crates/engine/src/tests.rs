@@ -1674,6 +1674,28 @@ fn slicer_filters_table() {
 }
 
 #[test]
+fn accounting_format_takes_the_symbol_it_is_given() {
+    // The command documents `symbol`; it used to be dropped, so only `$` was ever reachable
+    // from the control channel (asking for lempiras, #1893, changed nothing).
+    let text = |s: &Session, a: &str| {
+        let d = s.doc().unwrap();
+        crate::display::cell_text(&d.wb, d.wb.active().unwrap(), CellRef::parse(a).unwrap())
+    };
+    let mut s = s();
+    s.execute("cell.set", json!({"cell": "A1", "input": "1234.5"})).unwrap();
+    s.execute("home.accounting", json!({"range": "A1", "symbol": "L"})).unwrap();
+    assert_eq!(text(&s, "A1"), " L 1,234.50 ");
+    // Without a symbol it stays the default `$` format, character for character.
+    s.execute("home.accounting", json!({"range": "A1"})).unwrap();
+    assert_eq!(text(&s, "A1"), " $ 1,234.50 ");
+    // A quote or a backslash would end the format's quoted text, and a control character would
+    // reach it as-is, so those symbols are refused.
+    for bad in ["\"", "\\", "\n", "L\t"] {
+        assert!(s.execute("home.accounting", json!({"range": "A1", "symbol": bad})).is_err(), "{bad:?}");
+    }
+}
+
+#[test]
 fn table_header_formatted_as_accounting_keeps_its_text_as_the_column_name() {
     // Found by the command-sequence fuzzer: the accounting format pads text (` 172.4 `), and that
     // padded text became the column name, which the XLSX writer then put in the header cell.

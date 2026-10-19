@@ -133,9 +133,7 @@ pub fn specs() -> Vec<CommandSpec> {
             has_doc,
             number_format
         ),
-        cmd!("home.accounting", "Accounting Number Format", ["Home", "Number"], None, "{range?, symbol?: \"$\"}", has_doc, |s, p| set_fmt(
-            s, p, ACCOUNTING
-        )),
+        cmd!("home.accounting", "Accounting Number Format", ["Home", "Number"], None, "{range?, symbol?: \"$\"}", has_doc, accounting),
         cmd!("home.percent", "Percent Style", ["Home", "Number"], Some("Ctrl+Shift+%"), "{range?}", has_doc, |s, p| set_fmt(s, p, "0%")),
         cmd!("home.comma", "Comma Style", ["Home", "Number"], None, "{range?}", has_doc, |s, p| set_fmt(s, p, COMMA)),
         cmd!("home.increaseDecimal", "Increase Decimal", ["Home", "Number"], None, "{range?}", has_doc, |s, p| decimals(s, p, 1)),
@@ -217,6 +215,23 @@ pub fn specs() -> Vec<CommandSpec> {
 
 const ACCOUNTING: &str = "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)";
 const COMMA: &str = "_(* #,##0.00_);_(* \\(#,##0.00\\);_(* \"-\"??_);_(@_)";
+
+/// Accounting Number Format with the currency symbol to use (Excel's own button takes the system
+/// currency; `symbol` is how the control channel picks another one, e.g. `"L"` for lempiras).
+fn accounting(s: &mut Session, p: &Json) -> Result<Json> {
+    let symbol = str_param(p, "symbol").unwrap_or("$");
+    // The symbol goes into a quoted literal: a quote or a backslash would end it, and a control
+    // character would reach the format's text as-is.
+    if symbol.contains(['"', '\\']) || symbol.chars().any(char::is_control) {
+        return Err(bad("home.accounting", "the symbol can't contain a quote, a backslash or a control character"));
+    }
+    set_fmt(s, p, &accounting_format(symbol))
+}
+
+fn accounting_format(symbol: &str) -> String {
+    let symbol = format!("\"{symbol}\"");
+    format!("_({symbol}* #,##0.00_);_({symbol}* \\(#,##0.00\\);_({symbol}* \"-\"??_);_(@_)")
+}
 
 fn with(p: &Json, key: &str, v: Json) -> Json {
     let mut m = p.as_object().cloned().unwrap_or_default();
@@ -1216,6 +1231,11 @@ mod tests {
         assert_eq!(v(&mut s, "B1"), Json::Null);
         assert_eq!(v(&mut s, "B2"), Json::Null);
         assert_eq!(v(&mut s, "D1"), json!(4.0));
+    }
+
+    #[test]
+    fn the_default_symbol_reproduces_the_accounting_format() {
+        assert_eq!(accounting_format("$"), ACCOUNTING);
     }
 
     #[test]
