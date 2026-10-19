@@ -247,7 +247,14 @@ impl RangeRef {
             if let (Some(x), Some(y)) = (letters_to_col(&strip(a)), letters_to_col(&strip(b))) {
                 return Some(RangeRef::cols(x.min(y), x.max(y)));
             }
-            let (pa, pb) = (strip(a).parse::<u32>().ok()?, strip(b).parse::<u32>().ok()?);
+            let row_num = |t: &str| {
+                let t = t.strip_prefix('$').unwrap_or(t);
+                if t.is_empty() || !t.bytes().all(|c| c.is_ascii_digit()) {
+                    return None;
+                }
+                t.parse::<u32>().ok()
+            };
+            let (pa, pb) = (row_num(a)?, row_num(b)?);
             if pa == 0 || pb == 0 || pa > MAX_ROWS || pb > MAX_ROWS {
                 return None;
             }
@@ -266,6 +273,16 @@ impl fmt::Display for RangeRef {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn range_parse_rejects_signed_rows() {
+        assert!(RangeRef::parse("+1:+3").is_none());
+        assert!(RangeRef::parse("-1:3").is_none());
+        assert!(RangeRef::parse("$$1:3").is_none());
+        assert!(RangeRef::parse(":3").is_none());
+        let r = RangeRef::parse("$1:$3").unwrap();
+        assert_eq!((r.start.row, r.end.row), (0, 2));
+    }
 
     #[test]
     fn letters_roundtrip() {
