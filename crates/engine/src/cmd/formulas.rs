@@ -239,7 +239,7 @@ fn valid_name(n: &str) -> bool {
 /// number, or `C` or `RC` and a column number, the number being the whole run of digits and
 /// within the sheet, so `R0C0` and `R1048577C1` are names. Only a `.` may follow a row number
 /// (`R1.x` is a name). `R`, `C` and `RC` alone are refused too.
-fn is_r1c1(n: &str) -> bool {
+pub(crate) fn is_r1c1(n: &str) -> bool {
     fn number(s: &str, max: u32) -> Option<&str> {
         let d = s.bytes().take_while(u8::is_ascii_digit).count();
         s.get(..d)?.parse::<u32>().ok().filter(|v| (1..=max).contains(v))?;
