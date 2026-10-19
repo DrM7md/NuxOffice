@@ -150,6 +150,8 @@ pub struct GridState {
     pub hscroll: Option<Rect>,
     /// Ctrl+wheel zoom in progress (see [`WheelZoom`]).
     pub wheel_zoom: Option<WheelZoom>,
+    /// A one-finger touch drag in progress: it pans the sheet instead of selecting.
+    pub touch_pan: bool,
 }
 
 /// Ctrl+wheel zoom for one (doc uid, sheet). egui eases a notch in over several frames and
@@ -676,6 +678,19 @@ pub fn show(app: &mut SheetApp, ui: &mut egui::Ui) {
             view.scroll -= d / z;
         }
     }
+    // A one-finger touch drag pans the sheet, the content following the finger; it doesn't select.
+    // (Two fingers pinch-zoom through `zoom_delta` above.)
+    if resp.drag_started() && ui.input(|i| i.any_touches()) {
+        app.grid.touch_pan = true;
+    }
+    if app.grid.touch_pan && resp.dragged() && ui.input(|i| i.multi_touch().is_none()) {
+        let z = if paper { make_geo(app, view.scroll).z } else { sh.zoom as f32 / 100.0 * DISPLAY_SCALE };
+        let mut d = resp.drag_delta();
+        if sh.right_to_left {
+            d.x = -d.x;
+        }
+        view.scroll -= d / z;
+    }
     // The zoom glides to its step like egui eases a wheel notch (90% of the way in 0.1 s), or goes
     // there at once without animations (as for the selection outline below: View › Animations
     // off, egui's off in the headless harness, or a screenshot on its way).
@@ -805,8 +820,15 @@ pub fn show(app: &mut SheetApp, ui: &mut egui::Ui) {
     }
     // Interaction.
     let previous_popups = (app.grid.filter_menu, app.grid.list_picker, app.grid.header_menu);
-    crate::paper_view::interact(app, ui, &resp, &geo, sh, &wb);
-    interact(app, ui, &resp, &geo, sh, &wb);
+    if app.grid.touch_pan {
+        // Skip the frames of a touch pan, its release included.
+        if !resp.dragged() {
+            app.grid.touch_pan = false;
+        }
+    } else {
+        crate::paper_view::interact(app, ui, &resp, &geo, sh, &wb);
+        interact(app, ui, &resp, &geo, sh, &wb);
+    }
     crate::text_box::show(app, ui, &geo, sh);
     if app.editor.as_ref().is_some_and(|e| !e.from_formula_bar) {
         in_cell_editor(app, ui, &geo, sh, &wb);
