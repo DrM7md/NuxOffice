@@ -4536,3 +4536,29 @@ fn box_whisker_quartile_methods_survive_xlsx() {
     s.execute("chart.set", json!({"quartiles": "exclusive"})).unwrap();
     assert!(s.doc().unwrap().wb.active().unwrap().charts[0].series.iter().all(|s| s.quartiles == QuartileMethod::Exclusive));
 }
+
+#[test]
+fn csv_as_text_keeps_identifier_columns_as_written() {
+    let csv = "gtin,zip,flag,day\n8435392892278,01234,TRUE,2026-03-04\n";
+    let open = |s: &mut Session, extra: serde_json::Value| {
+        let mut p = json!({"name": "feed.csv", "base64": crate::io::base64_encode(csv.as_bytes())});
+        if let (Some(p), Some(extra)) = (p.as_object_mut(), extra.as_object()) {
+            p.extend(extra.clone());
+        }
+        s.execute("file.open", p).unwrap();
+    };
+    let value = |s: &mut Session, cell: &str| s.execute("cell.get", json!({"cell": cell})).unwrap()["value"].clone();
+    // By default fields are typed like typed input: the leading zero is lost and the GTIN is a number.
+    let mut s = s();
+    open(&mut s, json!({}));
+    assert!(value(&mut s, "A2").is_number());
+    assert_eq!(value(&mut s, "B2").as_f64(), Some(1234.0));
+    // With csvAsText every field stays the text the file holds, and saves back unchanged.
+    let mut s = self::s();
+    open(&mut s, json!({"csvAsText": true}));
+    for (cell, text) in [("A2", "8435392892278"), ("B2", "01234"), ("C2", "TRUE"), ("D2", "2026-03-04")] {
+        assert_eq!(value(&mut s, cell), json!(text), "{cell}");
+    }
+    let saved = s.execute("file.saveBytes", json!({"format": "csv"})).unwrap();
+    assert_eq!(crate::io::base64_decode(saved["base64"].as_str().unwrap()).unwrap(), csv.replace('\n', "\r\n").as_bytes());
+}
