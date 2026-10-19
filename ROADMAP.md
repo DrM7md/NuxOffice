@@ -132,6 +132,10 @@ Ranked; estimates in Opus 5.5 agent-hours. Detail and the full beta-gate list in
 
 ## Progress log
 
+2026-10-16: Linux desktop builds enable Adwaita vector window controls without
+bundling a title font. See README → Linux window controls for platform selection;
+full GTK theme parity is not claimed.
+
 | Date | What landed |
 |---|---|
 | 2026-10-18 | Refreshed save safety and AutoSave error feedback onto 0.8.0/main; preserve the upstream parser-limit documentation. No scope or readiness change. |
