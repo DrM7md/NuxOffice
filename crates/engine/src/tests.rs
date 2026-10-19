@@ -4375,3 +4375,34 @@ fn recording_keeps_its_steps_when_the_journal_is_trimmed() {
     let script = s.doc().unwrap().wb.names.iter().find(|n| n.name == "_sc_scripts").map(|n| n.formula.clone()).unwrap();
     assert!(script.contains("step0") && script.contains("step19") && !script.contains("selection.set"), "{script}");
 }
+
+/// #1348: the selection a workbook opens with, and the one a sheet gets on its first visit, take
+/// a merged active cell whole, as a click on it does.
+#[test]
+fn opening_and_switching_sheets_select_a_merged_active_cell_whole() {
+    let mut wb = gridcraft_model::Workbook::new();
+    let merged = gridcraft_core::RangeRef::parse("A1:AG1").unwrap();
+    let sh = wb.sheet_mut(0).unwrap();
+    sh.set_value(CellRef::new(0, 0), Value::text("Timesheet"));
+    sh.merges.push(merged);
+    let mut second = gridcraft_model::Sheet::new("Sheet2");
+    second.merges.push(gridcraft_core::RangeRef::parse("A1:C2").unwrap());
+    wb.sheets.push(std::sync::Arc::new(second));
+    let bytes = gridcraft_xlsx::write_xlsx(&wb).unwrap();
+
+    let mut s = Session::new();
+    s.execute("file.open", json!({"name": "timesheet.xlsx", "base64": crate::io::base64_encode(&bytes)})).unwrap();
+    let sel = &s.doc().unwrap().selection;
+    assert_eq!((sel.a1(), sel.active.a1()), ("A1:AG1".to_string(), "A1".to_string()), "on open");
+
+    s.execute("sheet.activate", json!({"sheet": "Sheet2"})).unwrap();
+    let sel = &s.doc().unwrap().selection;
+    assert_eq!((sel.a1(), sel.active.a1()), ("A1:C2".to_string(), "A1".to_string()), "first visit of a sheet");
+
+    // An unmerged active cell stays a single cell.
+    s.execute("sheet.activate", json!({"sheet": "Sheet1"})).unwrap();
+    s.execute("selection.set", json!({"cell": "B3"})).unwrap();
+    s.execute("sheet.activate", json!({"sheet": "Sheet2"})).unwrap();
+    s.execute("sheet.activate", json!({"sheet": "Sheet1"})).unwrap();
+    assert_eq!(s.doc().unwrap().selection.a1(), "B3", "a remembered selection comes back as it was");
+}
