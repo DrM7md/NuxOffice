@@ -1744,8 +1744,9 @@ pub(crate) fn paint_selection(
     if let Some(ed) = &app.editor
         && ed.is_formula()
     {
+        let origin = app.session.active().and_then(|d| d.wb.sheet(ed.sheet)).map_or(sh.name.as_str(), |o| o.name.as_str());
         for (_, _, r, sheet, idx) in crate::editor::formula_refs(&ed.text) {
-            if sheet.as_deref().is_some_and(|s| !s.eq_ignore_ascii_case(&sh.name)) {
+            if !crate::editor::ref_is_on_sheet(sheet.as_deref(), origin, &sh.name) {
                 continue;
             }
             if !range_in_pane(r, rows, cols) {
