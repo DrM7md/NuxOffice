@@ -1360,13 +1360,15 @@ fn add_cf(s: &mut Session, p: &Json) -> Result<Json> {
             Some(Json::Object(o)) => {
                 let t = o.get("type").and_then(Json::as_str).unwrap_or("num");
                 let val = o.get("value").and_then(Json::as_f64).unwrap_or(0.0);
+                // A string value is the stop's own formula; the stop keeps its kind (#1848).
+                let formula = o.get("value").and_then(Json::as_str).map(|s| s.trim().trim_start_matches('=').to_string()).filter(|s| !s.is_empty());
                 match t {
                     "min" => CfValueKind::Min,
                     "max" => CfValueKind::Max,
-                    "percent" => CfValueKind::Percent(val),
-                    "percentile" => CfValueKind::Percentile(val),
+                    "percent" => formula.map_or(CfValueKind::Percent(val), CfValueKind::FormulaPercent),
+                    "percentile" => formula.map_or(CfValueKind::Percentile(val), CfValueKind::FormulaPercentile),
                     "formula" => CfValueKind::Formula(o.get("value").and_then(Json::as_str).unwrap_or("").into()),
-                    _ => CfValueKind::Number(val),
+                    _ => formula.map_or(CfValueKind::Number(val), CfValueKind::FormulaNumber),
                 }
             }
             _ => default,

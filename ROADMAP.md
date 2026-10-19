@@ -143,6 +143,7 @@ full GTK theme parity is not claimed.
 | 2026-10-15 | XLSX: saving no longer adds `<pageSetup>` to sheets that had none (written without `paperSize` it is Letter, so sheets printed on the application's default paper, A4 in most locales, became Letter); paper sizes GridCraft has no name for keep their number, and `pageLayout.size` / `pageLayout.pageSetup` keep paper names given in another spelling (`11x17`, `A-4`) as Tabloid and A4 and refuse unknown ones |
 | 2026-10-13 | VLOOKUP/HLOOKUP over referenced tables evaluate only the search vector and selected result cells, preventing false circular references in cross-sheet calculation tables |
 | 2026-10-12 | Rows auto-fit oversized fonts: opening a file and whole-row/column formatting grow non-custom rows to their tallest font (#833) |
+| 2026-10-18 | Conditional formatting: a colour-scale stop whose value is a formula keeps its kind (percent, percentile or number) through save and open, and a scale stored with its thresholds out of order draws in ascending order with the colours kept in stop order (#1848) |
 | 2026-10-12 | Number formats: parsing a format code is linear in its length (long runs of `[`, `,` or `/` no longer take quadratic time), and an unclosed `[` is a literal when splitting sections as well as when tokenizing (#810) |
 | 2026-10-12 | Number formats: a fraction denominator with 65,536 zeros no longer crashes; format codes are capped at 255 characters like Excel (longer codes display as General, `TEXT` gives `#VALUE!`) (#807) |
 | 2026-10-12 | Security: cell hyperlinks open only http, https and mailto, after a confirmation; other schemes (file:, smb:, UNC, custom handlers) are refused (#777, part 1) |
@@ -207,6 +208,7 @@ full GTK theme parity is not claimed.
 | 2026-10-15 | minor | Progress log: XLSX `#SPILL!`/`#CALC!` values (ft-3ir.10.25) |
 | 2026-10-15 | minor | Progress log: sheets without page setup keep the default paper on save |
 | 2026-10-13 | minor | Progress log: VLOOKUP/HLOOKUP false circular references fixed |
+| 2026-10-18 | minor | Colour-scale stops keep their kind when their value is a formula, and thresholds stored out of order draw as Excel does (#1848); progress log row |
 | 2026-10-12 | minor | Rows auto-fit oversized fonts on open and whole-row/column formatting (#833); progress log row |
 | 2026-10-12 | minor | Progress log: multi-area row/column delete (#758) |
 | 2026-10-12 | trivial | Progress log: XLSX chart sheets kept on save (#727) |

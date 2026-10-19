@@ -333,6 +333,7 @@ The inventory carried over from the 2026-10-07 ROADMAP.md, updated for what land
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-14 | minor | MCP remote calls never replay uncertain operations; complete bounded replies and request IDs are validated, with failed streams discarded (#1006, #1045) |
+| 2026-10-18 | minor | Conditional formatting: a colour-scale stop keeps its kind when its value is a formula, and thresholds stored out of order draw in ascending order with the colours in stop order (#1848); no score change |
 | 2026-10-12 | minor | Essentials AutoFit evidence: rows auto-fit oversized fonts on open and row formatting (#833) |
 | 2026-10-12 | minor | Sheet tabs: reveal the selected tab on navigation and resize while preserving manual scrolling (#681); no score change |
 | 2026-10-12 | minor | PivotTables: values on rows (Σ Values in Rows at any position, all three layouts; `pivot.moveField` and the field pane move it; `dataOnRows` round-trips) (no score change) |
