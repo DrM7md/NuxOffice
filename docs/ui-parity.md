@@ -117,7 +117,7 @@ otherwise. Number-format and border keys match the physical key (Ctrl+Shift+4, w
 | Ctrl+Shift+* (Ctrl+Shift+8), Ctrl+Shift+Space | Cmd+Shift+Space | current region, select all | **added** |
 | Ctrl+Shift+Home / End, Shift+Home | same | extend to A1 / last used cell / row start | **added** |
 | Ctrl+P | Cmd+P | print | **added** |
-| Ctrl+Shift+> / < | Cmd+Shift+> / < | font size | **added** |
+| Ctrl+Shift+> / < | Cmd+Shift+> / < | font size: one point at a time from 1 to 8, then the Font Size list up to 72 | **added** |
 | Ctrl+Alt+V | Cmd+Control+V, Cmd+Option+V | Paste Special | **added** |
 | Ctrl+Alt+= / Ctrl+Alt+- | — | zoom in / out (10% steps) | **added** |
 | Alt+=, Alt+Down, Alt+Page Down / Up | Option+Down, Option+Page Down / Up | AutoSum, drop-down list, one screen right / left | **added** |
@@ -177,6 +177,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-14 | minor | Cell text keeps Excel's top and bottom insets: top aligned text no longer touches the top border, bottom aligned text no longer floats above the bottom one, wrapped text follows the same rule |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
+| 2026-10-14 | minor | Increase/Decrease Font Size step one point at a time from 1 to 8 (Decrease jumped from 8 to 1, Increase from 1 to 8), then the Font Size list including 22 and 26, stopping at 72 (it went on to 96 and 409); Excel stops Decrease at 8, see decisions.md |
 | 2026-10-12 | minor | Ctrl+wheel zoom steps along a ladder of percentages about 20% apart that never skips 100%, gliding to each step with animations on, so a notch out undoes a notch in (it drifted: 100 → 122 → 101); Excel steps 15 points, see decisions.md |
 | 2026-10-12 | minor | Page Layout view: left/right/top/bottom margins are dragged on the rulers (#792) |
 | 2026-10-12 | minor | Alt+Down opens the active filter header's existing popup, with validation priority and mirrored anchoring on right-to-left sheets (part of #441) |
