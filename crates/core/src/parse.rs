@@ -152,8 +152,16 @@ fn parse_plain(t: &str) -> Option<(f64, Option<&'static str>)> {
 fn parse_fraction(t: &str) -> Option<f64> {
     let (whole, frac) = t.split_once(' ')?;
     let neg = whole.starts_with('-');
-    let w: f64 = whole.trim_start_matches('-').parse().ok()?;
+    let unsigned = whole.strip_prefix(['-', '+']).unwrap_or(whole);
+    if !unsigned.starts_with(|c: char| c.is_ascii_digit() || c == '.') {
+        return None;
+    }
+    let w: f64 = unsigned.parse().ok()?;
     let (a, b) = frac.trim().split_once('/')?;
+    let digits = |s: &str| !s.is_empty() && s.bytes().all(|c| c.is_ascii_digit());
+    if !digits(a) || !digits(b) {
+        return None;
+    }
     let a: f64 = a.parse().ok()?;
     let b: f64 = b.parse().ok()?;
     if b == 0.0 || !w.is_finite() {
@@ -326,6 +334,15 @@ mod tests {
 
     fn p(s: &str) -> Parsed {
         parse_input(s, DateSystem::D1900)
+    }
+
+    #[test]
+    fn fraction_rejects_signed_parts() {
+        for s in ["1 -1/2", "1 1/-2", "--1 1/2", "1 +1/2", "1 1e0/2"] {
+            assert_eq!(parse_fraction(s), None, "{s}");
+        }
+        assert_eq!(parse_fraction("1 1/2"), Some(1.5));
+        assert_eq!(parse_fraction("-1 1/2"), Some(-1.5));
     }
 
     #[test]
