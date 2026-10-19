@@ -148,6 +148,7 @@ full GTK theme parity is not claimed.
 | 2026-10-13 | Arabic Ctrl+Left/Ctrl+Backspace safety backport, with cell and formula-bar regressions. Full bidi editing remains open |
 | 2026-10-18 | PDF preserves Context/LTR/RTL reading direction through wrapping and drawing; RTL sheet cells, borders, headings, objects and sparklines mirror consistently |
 | 2026-10-18 | Arabic PDF export shapes licensed glyph outlines and preserves searchable logical text; missing or unsupported glyphs return an error before overwriting output |
+| 2026-10-14 | SUMIF, SUMIFS, COUNTIFS, AVERAGEIF(S), MAXIFS and MINIFS read only the cells their criteria select, as Excel does, so a formula in an unselected cell that refers back to them is no longer a false circular reference |
 | 2026-10-12 | Rows auto-fit oversized fonts: opening a file and whole-row/column formatting grow non-custom rows to their tallest font (#833) |
 | 2026-10-18 | Conditional formatting: a colour-scale stop whose value is a formula keeps its kind (percent, percentile or number) through save and open, and a scale stored with its thresholds out of order draws in ascending order with the colours kept in stop order (#1848) |
 | 2026-10-12 | Number formats: parsing a format code is linear in its length (long runs of `[`, `,` or `/` no longer take quadratic time), and an unclosed `[` is a literal when splitting sections as well as when tokenizing (#810) |
@@ -221,6 +222,7 @@ full GTK theme parity is not claimed.
 | 2026-10-13 | minor | Arabic word-navigation safety backport and cell/formula-bar regressions; progress log row |
 | 2026-10-18 | minor | PDF preserves Context/LTR/RTL reading direction through wrapping and drawing; RTL sheet cells, borders, headings, objects and sparklines mirror consistently |
 | 2026-10-18 | minor | Arabic PDF export shapes licensed glyph outlines and preserves searchable logical text; missing or unsupported glyphs return an error before overwriting output |
+| 2026-10-14 | minor | Progress log: SUMIF/SUMIFS family false circular references fixed |
 | 2026-10-12 | minor | Rows auto-fit oversized fonts on open and whole-row/column formatting (#833); progress log row |
 | 2026-10-12 | minor | Progress log: multi-area row/column delete (#758) |
 | 2026-10-12 | trivial | Progress log: XLSX chart sheets kept on save (#727) |
