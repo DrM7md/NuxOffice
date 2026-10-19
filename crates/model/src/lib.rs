@@ -25,8 +25,7 @@ pub use sheet::{DEFAULT_COL_WIDTH, DEFAULT_ROW_HEIGHT, LineIndex, Sheet, SheetVi
 pub use store::CellStore;
 pub use style::{
     Alignment, BorderLine, BorderStyle, Borders, Color, Fill, Font, HAlign, NumFmt, PatternType, ReadingOrder, Style, StyleId, StyleTable, Theme,
-    ThemeFonts,
-    Underline, VAlign, VertAlign,
+    ThemeFonts, Underline, VAlign, VertAlign,
 };
 pub use workbook::{CalcMode, CalcSettings, DefinedName, DocProps, Workbook};
 
