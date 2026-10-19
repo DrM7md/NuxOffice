@@ -48,4 +48,7 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 # Upstream shared libraries, pinned to a commit in Cargo.lock.
-allow-git = ["https://github.com/storytold/craft-libs"]
+# Mouhand-Kaddo/egui: egui 0.36.2 plus the word-navigation fix of egui #8698, pinned to a7ffc95 by
+# upstream PR #922 (verified against egui's 0.36.2 tag: two files, +70 -3). Drop it when an egui
+# release includes the fix.
+allow-git = ["https://github.com/storytold/craft-libs", "https://github.com/Mouhand-Kaddo/egui"]

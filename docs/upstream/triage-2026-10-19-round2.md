@@ -84,7 +84,7 @@ commits, authors kept, recorded in [CHANGES.md](CHANGES.md).
 
 | PR | What it does | Size |
 |---|---|---|
-| [#922](https://github.com/storytold/gridcraft/pull/922) | Ctrl+Backspace and word moves in Arabic no longer crash or delete the wrong text. **Held:** it replaces every egui crate with a personal git fork (`Mouhand-Kaddo/egui`, a pinned two-file backport of egui #8698), which our dependency policy refuses; needs the owner's decision | +103 −20 |
+| [#922](https://github.com/storytold/gridcraft/pull/922) | Ctrl+Backspace and word moves in Arabic no longer crash or delete the wrong text. It pins the egui text crates to a personal git fork (`Mouhand-Kaddo/egui` at `a7ffc95`, a two-file backport of egui #8698, checked against egui 0.36.2); **approved and merged**, the source is allowed in `deny.toml` | +103 −20 |
 | [#1918](https://github.com/storytold/gridcraft/pull/1918) | Number formats honour the `B2` calendar prefix: **Hijri dates** | +161 −13 |
 | [#1912](https://github.com/storytold/gridcraft/pull/1912) | Printing CJK text uses a CID font instead of question marks | +107 −22 |
 

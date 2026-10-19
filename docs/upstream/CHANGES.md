@@ -80,4 +80,4 @@ Each is a merge commit that keeps its author's commits.
 | R2 (security, robustness) | #1461, #1262, #1917, #1916 | #1916: `#[allow(clippy::let_unit_value)]` where `Link` is `()` (Windows, macOS) |
 | R3 (memory) | #1643, #1263, #1629 | |
 | R4 (Excel behaviour) | #1890, #1905, #1921, #1370, #1618, #1672, #1612, #1333, #1306, #1748, #1100, #1131, #1866, #1392, #1870, #1549, #1730, #1910 | #1370's standard-row test allows for NuxOffice's taller default row |
-| R5 (scripts) | #1918, #1912 | #922 merged, then reverted before pushing: it moves every egui crate to a git fork (`Mouhand-Kaddo/egui`), which `cargo deny` refuses; held for the owner's decision |
+| R5 (scripts) | #1918, #1912 | #922 re-applied on the owner's approval: it pins the egui text crates to `Mouhand-Kaddo/egui` at `a7ffc95` (egui 0.36.2 plus egui #8698; two files, +70 −3, checked), now allowed in `deny.toml` |
