@@ -10,6 +10,7 @@ mod fixtures;
 mod ink_roundtrip;
 mod literal_category_roundtrip;
 mod malformed;
+mod note_box;
 mod ods_tests;
 mod page_setup;
 mod passthrough_tests;

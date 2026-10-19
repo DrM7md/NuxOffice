@@ -300,11 +300,21 @@ fn sample() -> Workbook {
             resolved: false,
             visible: false,
             dates: vec![],
+            note_box: None,
         },
     );
     s.comments.insert(
         at("C3"),
-        Comment { author: "Bob".into(), text: "second".into(), replies: vec![], threaded: false, resolved: false, visible: true, dates: vec![] },
+        Comment {
+            author: "Bob".into(),
+            text: "second".into(),
+            replies: vec![],
+            threaded: false,
+            resolved: false,
+            visible: true,
+            dates: vec![],
+            note_box: None,
+        },
     );
     s.comments.insert(
         at("D4"),
@@ -316,11 +326,21 @@ fn sample() -> Workbook {
             resolved: true,
             visible: false,
             dates: vec!["2026-10-11T09:30:00.00".into(), String::new(), "2026-10-11T10:15:00.00".into()],
+            note_box: None,
         },
     );
     s.comments.insert(
         at("E5"),
-        Comment { author: "Cy".into(), text: "open thread".into(), replies: vec![], threaded: true, resolved: false, visible: false, dates: vec![] },
+        Comment {
+            author: "Cy".into(),
+            text: "open thread".into(),
+            replies: vec![],
+            threaded: true,
+            resolved: false,
+            visible: false,
+            dates: vec![],
+            note_box: None,
+        },
     );
     s.autofilter = Some(AutoFilter {
         range: rr("K1:N20"),
@@ -522,7 +542,16 @@ fn sample() -> Workbook {
     s3.visibility = Visibility::VeryHidden;
     s3.comments.insert(
         at("A1"),
-        Comment { author: "Bob".into(), text: "other sheet".into(), replies: vec![], threaded: true, resolved: false, visible: false, dates: vec![] },
+        Comment {
+            author: "Bob".into(),
+            text: "other sheet".into(),
+            replies: vec![],
+            threaded: true,
+            resolved: false,
+            visible: false,
+            dates: vec![],
+            note_box: None,
+        },
     );
     wb.sheets.push(Arc::new(s3));
     wb.names.push(DefinedName { name: "Rate".into(), scope: None, formula: "0.07".into(), comment: "c".into(), hidden: false });
@@ -801,6 +830,7 @@ fn cell_text_carriage_returns_survive_xlsx_roundtrip() {
             resolved: false,
             visible: false,
             dates: vec![],
+            note_box: None,
         },
     );
 
@@ -1080,6 +1110,7 @@ fn bad_comment_dates_are_left_out() {
         resolved: false,
         visible: false,
         dates: vec!["\"/><evil".into()],
+        note_box: None,
     };
     s.comments.insert(at("A1"), c);
     let (back, _) = read_xlsx(&write_xlsx(&wb).unwrap()).unwrap();
