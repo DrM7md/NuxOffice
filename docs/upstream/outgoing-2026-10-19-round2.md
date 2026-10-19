@@ -1,6 +1,6 @@
 # Contributions prepared for GridCraft, round 2 — 2026-10-19
 
-Follows [outgoing-2026-10-19.md](outgoing-2026-10-19.md). **Status:** approved on 2026-10-19; the six branches are pushed to `DrM7md/gridcraft`. The links that open each pull request are in [pr-links-round2.md](pr-links-round2.md).
+Follows [outgoing-2026-10-19.md](outgoing-2026-10-19.md). **Status:** sent on 2026-10-19 as [#1988](https://github.com/storytold/gridcraft/pull/1988) (A), [#1989](https://github.com/storytold/gridcraft/pull/1989) (B), [#1990](https://github.com/storytold/gridcraft/pull/1990) (C), [#1991](https://github.com/storytold/gridcraft/pull/1991) (D), [#1992](https://github.com/storytold/gridcraft/pull/1992) (E) and [#1993](https://github.com/storytold/gridcraft/pull/1993) (F). The four review notes were posted on #630, #946, #1862 and #1167.
 
 ## Round 1, where it stands
 
