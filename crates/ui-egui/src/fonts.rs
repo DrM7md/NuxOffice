@@ -423,7 +423,7 @@ mod tests {
         assert!(file_faces(&[]).is_empty());
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(unix)]
     #[test]
     fn unix_font_dirs_include_the_flatpak_host_and_xdg_folders() {
         use std::path::Path;

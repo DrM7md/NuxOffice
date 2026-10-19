@@ -780,7 +780,7 @@ fn font_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
             let bg = if t.dark { Color32::from_gray(30) } else { Color32::WHITE };
             ui.painter().rect(r, CornerRadius::ZERO, bg, Stroke::new(1.0, Color32::from_gray(160)), StrokeKind::Inside);
             let size = (st.font.size * 96.0 / 72.0).clamp(8.0, 30.0);
-            let font = egui::FontId::new(size, theme::cell_family(&st.font.name, st.font.bold, st.font.italic));
+            let font = egui::FontId::new(size, theme::cell_family(ui.ctx(), &st.font.name, st.font.bold, st.font.italic));
             let color = if matches!(st.font.color, Color::Auto) { Color32::BLACK } else { resolve(&st.font.color, &theme).unwrap_or(Color32::BLACK) };
             let g = ui.painter().layout_no_wrap(st.font.name.clone(), font, color);
             let pos = r.center() - g.size() / 2.0;

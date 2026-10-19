@@ -188,7 +188,7 @@ fn table_filter_autofit_works_through_command_and_header_double_click() {
             let text_width = if double_click {
                 let font = egui::FontId::new(
                     style.font.size * 96.0 / 72.0 * geo.z,
-                    gridcraft_ui_egui::theme::cell_family(&style.font.name, style.font.bold, style.font.italic),
+                    gridcraft_ui_egui::theme::cell_family(&h.ctx, &style.font.name, style.font.bold, style.font.italic),
                 );
                 h.ctx.fonts_mut(|f| f.layout_no_wrap("Quarterly Revenue".to_string(), font, egui::Color32::PLACEHOLDER).size().x)
             } else {

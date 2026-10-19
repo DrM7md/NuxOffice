@@ -1017,6 +1017,8 @@ mod tests {
 
     #[test]
     fn unparseable_font_files_are_rejected_not_fatal() {
+        // font_definitions() rewrites the shared bound-family registry the font-binding tests check.
+        let _g = crate::fonts::TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // #226: epaint panics in `set_fonts` on a face it can't parse ("An offset was out of
         // bounds"). Garbage, a truncated real font and a bad collection index must all be refused.
         let real = FontDefinitions::default().font_data.values().next().map(|fd| fd.font.to_vec()).unwrap_or_default();

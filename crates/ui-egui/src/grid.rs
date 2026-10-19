@@ -3215,7 +3215,7 @@ fn autofit_columns_measured(app: &mut SheetApp, ctx: &egui::Context, wb: &Workbo
                 if text.is_empty() {
                     continue;
                 }
-                let font = FontId::new(st.font.size * 96.0 / 72.0, theme::cell_family(&st.font.name, st.font.bold, st.font.italic));
+                let font = FontId::new(st.font.size * 96.0 / 72.0, theme::cell_family(ctx, &st.font.name, st.font.bold, st.font.italic));
                 for line in text.lines() {
                     let w = ctx.fonts_mut(|f| f.layout_no_wrap(line.to_string(), font.clone(), Color32::PLACEHOLDER).size().x);
                     max = max.max(w + 7.0 + st.align.indent as f32 * 9.0 + sh.filter_button_space(cell));
