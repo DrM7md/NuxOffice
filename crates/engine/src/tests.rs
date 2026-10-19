@@ -335,6 +335,21 @@ fn small_edits_keep_the_full_undo_depth() {
     assert_eq!(v(&session, "A1"), Value::Empty);
 }
 
+fn redo_selects_the_redone_cell() {
+    // #1855: type into A1..A3, click A1, undo, redo: the selection follows the edit to A3.
+    let mut s = s();
+    for (cell, text) in [("A1", "first"), ("A2", "second"), ("A3", "third")] {
+        s.execute("selection.set", json!({"cell": cell})).unwrap();
+        s.execute("cell.set", json!({"cell": cell, "input": text})).unwrap();
+    }
+    s.execute("selection.set", json!({"cell": "A1"})).unwrap();
+    s.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(s.doc().unwrap().selection.a1(), "A3");
+    s.execute("edit.redo", json!({})).unwrap();
+    assert_eq!(v(&s, "A3"), Value::from("third"));
+    assert_eq!(s.doc().unwrap().selection.a1(), "A3");
+}
+
 #[test]
 fn shape_text_edit_undo_redo_and_noop() {
     let mut s = s();

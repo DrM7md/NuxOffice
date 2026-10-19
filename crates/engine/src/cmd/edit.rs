@@ -623,7 +623,8 @@ fn undo(s: &mut Session, p: &Json) -> Result<Json> {
     for _ in 0..steps {
         let Some(e) = d.undo.pop() else { break };
         let cur_wb = d.wb.clone();
-        let cur_selection = d.selection.clone();
+        // Redo goes back to the undone edit's cells, not wherever the user clicked before undoing (#1855).
+        let cur_selection = e.selection.clone();
         label = e.label.clone();
         d.wb = e.wb;
         d.selection = e.selection;

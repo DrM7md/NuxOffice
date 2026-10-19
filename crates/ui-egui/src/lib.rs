@@ -974,7 +974,19 @@ impl SheetApp {
             self.toast = Some((msg, now_ms()));
         }
         let copied_before = self.session.clipboard.as_ref().is_some_and(|clip| !clip.cut);
-        let r = if fill_selection {
+        // Committing nothing into an empty cell changes nothing: no undo step (#1855, Backspace has
+        // already cleared the cell as its own step).
+        let unchanged = !fill_selection
+            && !array
+            && text.is_empty()
+            && self
+                .session
+                .active()
+                .and_then(|d| d.wb.sheet(ed.sheet))
+                .is_some_and(|sh| sh.cell(ed.cell).is_none_or(|c| c.formula.is_none() && c.value == gridcraft_engine::core::Value::Empty));
+        let r = if unchanged {
+            Ok(json!({}))
+        } else if fill_selection {
             self.session.run("range.fill", json!({"input": text}))
         } else {
             self.session.run("cell.set", json!({"cell": ed.cell.a1(), "input": text, "array": array}))
