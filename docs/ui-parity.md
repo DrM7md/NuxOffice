@@ -141,6 +141,10 @@ Seek, Scenario Manager, Data Analysis, Forecast Sheet and others exist. Missing 
 Solver, Power Query editor, Insert Object, Equation editor, Protect/Allow Edit Ranges,
 Workbook Links, Accessibility checker.
 
+Scenario Manager now opens from the ribbon and Alt, A, W, S. It lists the active sheet's scenarios,
+shows changing cells and comments, and supports Show, Add/Edit (including the values step), Delete,
+and Summary. Merge and the PivotTable report variant of Summary remain unimplemented.
+
 ## Accessibility
 
 AccessKit is enabled, but the grid, ribbon and dialogs are not exposed as an accessible tree with
@@ -164,6 +168,8 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
+| 2026-10-16 | minor | Scenario Manager review fixes: values-step title, right-hand actions, German labels and exact keytip routing (#1445) |
+| 2026-10-15 | major | Scenario Manager UI opens from Data and its key tip, with Add/Edit/Show/Delete/Summary and a separate values step (#1445) |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
 | 2026-10-12 | minor | Ctrl+wheel zoom steps along a ladder of percentages about 20% apart that never skips 100%, gliding to each step with animations on, so a notch out undoes a notch in (it drifted: 100 → 122 → 101); Excel steps 15 points, see decisions.md |
