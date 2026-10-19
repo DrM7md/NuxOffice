@@ -208,8 +208,13 @@ impl Stats {
             Value::Array(_) => self.add(&v.scalar()),
         }
     }
+    /// Excel counts booleans and errors as strings in the cache field flags.
+    fn strings(&self) -> bool {
+        self.text || self.boolean || self.error
+    }
+    /// Kinds for `containsMixedTypes`: strings (text, booleans, errors) and numbers.
     fn kinds(&self) -> usize {
-        [self.text, self.number, self.boolean, self.error].iter().filter(|b| **b).count()
+        usize::from(self.strings()) + usize::from(self.number)
     }
 }
 
@@ -709,11 +714,10 @@ fn cache_xml(c: &Cache, records_rid: Option<&str>, sys: DateSystem) -> String {
                 }
                 let _ = g;
             } else {
-                let semi = st.text || st.blank || st.boolean || st.error;
-                if !semi {
+                if !st.strings() && !st.blank {
                     s.push_str(" containsSemiMixedTypes=\"0\"");
                 }
-                if !st.text {
+                if !st.strings() {
                     s.push_str(" containsString=\"0\"");
                 }
                 if st.blank {

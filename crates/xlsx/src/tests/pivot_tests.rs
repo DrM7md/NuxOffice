@@ -402,6 +402,67 @@ fn large_cache_is_written_without_records() {
     assert_eq!(back.sheet(0).unwrap().pivots.len(), 1);
 }
 
+/// #1447 item 1: Excel counts booleans and errors as strings in `<sharedItems>`; writing
+/// `containsString="0"` for them makes a file Excel can't open.
+#[test]
+fn boolean_and_error_cache_flags_match_excel() {
+    let mut wb = Workbook::new();
+    let s = wb.sheet_mut(0).unwrap();
+    let na = || Value::Error(gridcraft_core::CellError::NA);
+    let cols: [(&str, [Value; 3]); 7] = [
+        ("K", [Value::text("a"), Value::text("b"), Value::text("a")]),
+        ("BoolOnly", [Value::Bool(true), Value::Bool(false), Value::Bool(true)]),
+        ("NumBool", [Value::number(1.0), Value::Bool(true), Value::number(2.5)]),
+        ("ErrOnly", [na(), na(), na()]),
+        ("NumErr", [Value::number(1.0), na(), Value::number(3.0)]),
+        ("TextBool", [Value::text("x"), Value::Bool(true), Value::text("y")]),
+        ("BoolBlank", [Value::Bool(true), Value::Empty, Value::Bool(false)]),
+    ];
+    for (c, (h, vals)) in cols.iter().enumerate() {
+        s.cells.set(CellRef::new(0, c as u32), Cell::value(Value::text(*h)));
+        for (r, v) in vals.iter().enumerate() {
+            if !matches!(v, Value::Empty) {
+                s.cells.set(CellRef::new(r as u32 + 1, c as u32), Cell::value(v.clone()));
+            }
+        }
+    }
+    s.pivots.push(PivotTable {
+        id: 1,
+        source: "Sheet1!$A$1:$G$4".into(),
+        anchor: at("J1"),
+        rows: vec![field("K")],
+        values: vec![PivotValue { source_col: "NumBool".into(), name: "Sum of NumBool".into(), ..PivotValue::default() }],
+        last_range: Some(rr("J1:K4")),
+        ..PivotTable::default()
+    });
+    let bytes = write_xlsx(&wb).unwrap();
+    let parts = unzip(&bytes);
+    let c = String::from_utf8(parts.get("xl/pivotCache/pivotCacheDefinition1.xml").unwrap().clone()).unwrap();
+    let start = |name: &str| -> String {
+        let i = c.find(&format!("<cacheField name=\"{name}\"")).unwrap();
+        let j = i + c[i..].find("<sharedItems").unwrap();
+        let k = j + c[j..].find('>').unwrap();
+        c[j..=k].trim_end_matches('>').trim_end_matches('/').to_string()
+    };
+    let flags = |name: &str| -> String {
+        let t = start(name);
+        // Drop the trailing count attribute, which depends on itemization.
+        match t.find(" count=") {
+            Some(i) => t[..i].to_string(),
+            None => t,
+        }
+    };
+    assert_eq!(flags("BoolOnly"), "<sharedItems");
+    assert_eq!(flags("NumBool"), "<sharedItems containsMixedTypes=\"1\" containsNumber=\"1\" minValue=\"1\" maxValue=\"2.5\"");
+    assert_eq!(flags("ErrOnly"), "<sharedItems");
+    assert_eq!(flags("NumErr"), "<sharedItems containsMixedTypes=\"1\" containsNumber=\"1\" containsInteger=\"1\" minValue=\"1\" maxValue=\"3\"");
+    assert_eq!(flags("TextBool"), "<sharedItems");
+    assert_eq!(flags("BoolBlank"), "<sharedItems containsBlank=\"1\"");
+    let (back, report) = read_xlsx(&bytes).unwrap();
+    assert_eq!(back.sheet(0).unwrap().pivots.len(), 1);
+    assert!(!report.warnings.iter().any(|w| w.to_lowercase().contains("pivot")), "{:?}", report.warnings);
+}
+
 const PT_RELS: &str = r#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable" Target="../pivotTables/pivotTable1.xml"/></Relationships>"#;
 const PT_CACHE_RELS: &str = r#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition1.xml"/></Relationships>"#;
 
