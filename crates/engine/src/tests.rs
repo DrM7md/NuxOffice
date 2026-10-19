@@ -1621,6 +1621,26 @@ fn table_rename_keeps_a_defined_name_with_the_same_name() {
 }
 
 #[test]
+fn table_names_are_limited_to_255_characters() {
+    let mut s = s();
+    s.execute("range.setValues", json!({"range": "A1", "values": [["Qty"], [7]]})).unwrap();
+    s.execute("insert.table", json!({"range": "A1:A2", "header": true, "name": "Original"})).unwrap();
+
+    let name_255 = "ع".repeat(255);
+    s.execute("table.rename", json!({"table": "Original", "name": name_255})).unwrap();
+    assert!(s.doc().unwrap().wb.table(&"ع".repeat(255)).is_some());
+
+    let name_256 = "ع".repeat(256);
+    let error = s.execute("table.rename", json!({"table": &"ع".repeat(255), "name": name_256})).unwrap_err();
+    assert!(error.to_string().contains("not valid"), "{error}");
+    assert!(s.doc().unwrap().wb.table(&"ع".repeat(255)).is_some());
+
+    let name_200 = "ع".repeat(200);
+    s.execute("table.rename", json!({"table": &"ع".repeat(255), "name": name_200})).unwrap();
+    assert!(s.doc().unwrap().wb.table(&"ع".repeat(200)).is_some());
+}
+
+#[test]
 fn slicer_filters_table() {
     let mut s = s();
     s.execute("range.setValues", json!({"range": "A1", "values": [["Region", "Qty"], ["East", 2], ["West", 5], ["East", 3], ["North", 1]]})).unwrap();
