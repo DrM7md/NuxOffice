@@ -335,3 +335,14 @@ fn us_symbol_shortcuts_keep_their_keys() {
     // A character egui has no key for (`č` on the US `;` key) leaves the position.
     assert_eq!(lookup(Key::Semicolon, Some(Key::Semicolon), CTRL_SHIFT, false), Some(Shortcut::Time));
 }
+
+#[test]
+fn ctrl_alt_letter_that_typed_text_is_not_select_all() {
+    let mut h = harness(book("B2"));
+    let ctrl_alt = Modifiers { alt: true, ..CTRL };
+    h.input_mut().events.push(Event::Key { key: Key::A, physical_key: Some(Key::A), pressed: true, repeat: false, modifiers: ctrl_alt });
+    h.input_mut().events.push(Event::Text("\u{e4}".into()));
+    h.run_steps(2);
+    assert_eq!(h.state().session.active().unwrap().selection.current().a1(), "B2");
+    assert_eq!(h.state().editor.as_ref().unwrap().text, "\u{e4}");
+}
