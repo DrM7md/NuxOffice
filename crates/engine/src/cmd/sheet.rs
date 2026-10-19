@@ -451,6 +451,18 @@ fn insert_lines(s: &mut Session, p: &Json, axis: Axis) -> Result<Json> {
             return Err(EngineError::Other("To prevent possible loss of data, Excel cannot shift nonblank cells off of the worksheet.".into()));
         }
     }
+    if let Some(sh) = s.doc()?.wb.sheet(sheet) {
+        for pt in &sh.pivots {
+            let pt_range = pt.last_range.unwrap_or_else(|| RangeRef::cell(pt.anchor));
+            let cuts = match axis {
+                Axis::Rows => at > pt_range.start.row && at <= pt_range.end.row,
+                Axis::Cols => at > pt_range.start.col && at <= pt_range.end.col,
+            };
+            if cuts {
+                return Err(EngineError::Other("Cannot change part of a PivotTable report.".into()));
+            }
+        }
+    }
     let out = edit(s, |cx| {
         let name = cx.wb.sheet(sheet).map(|s| s.name.clone()).unwrap_or_default();
         cx.protection_checked = true;
@@ -521,7 +533,35 @@ fn delete_lines(s: &mut Session, p: &Json, axis: Axis) -> Result<Json> {
     let areas = delete_areas(s, p, axis)?;
     check_lines_protection(s, p, axis, false)?;
     let sheet = target_sheet(s, p)?;
+    let pivots_to_delete = {
+        let d = s.doc()?;
+        let sh = d.wb.sheet(sheet).ok_or_else(|| bad("sheet", "no such sheet"))?;
+        let mut to_delete = Vec::new();
+        for (pi, pt) in sh.pivots.iter().enumerate() {
+            let pt_range = pt.last_range.unwrap_or_else(|| RangeRef::cell(pt.anchor));
+            for &(at, count) in &areas {
+                let deleted = match axis {
+                    Axis::Rows => RangeRef::rows(at, at.saturating_add(count.saturating_sub(1))),
+                    Axis::Cols => RangeRef::cols(at, at.saturating_add(count.saturating_sub(1))),
+                };
+                if deleted.intersects(&pt_range) {
+                    if deleted.contains_range(&pt_range) {
+                        to_delete.push(pi);
+                    } else {
+                        return Err(EngineError::Other("Cannot change part of a PivotTable report.".into()));
+                    }
+                }
+            }
+        }
+        to_delete.dedup();
+        to_delete
+    };
     let out = edit(s, |cx| {
+        let mut to_delete = pivots_to_delete;
+        to_delete.sort_unstable_by(|a, b| b.cmp(a));
+        for pi in to_delete {
+            super::pivot::delete_pivot_in_sheet(cx, sheet, pi)?;
+        }
         let name = cx.wb.sheet(sheet).map(|s| s.name.clone()).unwrap_or_default();
         cx.protection_checked = true;
         // Last area first, so the earlier ones keep their positions.
@@ -570,6 +610,16 @@ fn move_columns(s: &mut Session, p: &Json) -> Result<Json> {
     }
     check_lines_protection(s, &json!({"cols": RangeRef::cols(before, before).a1()}), Axis::Cols, true)?;
     check_lines_protection(s, &json!({"cols": RangeRef::cols(from, end - 1).a1()}), Axis::Cols, false)?;
+    if let Some(sh) = s.doc()?.wb.sheet(sheet) {
+        let from_cols = RangeRef::cols(from, end - 1);
+        for pt in &sh.pivots {
+            let pt_range = pt.last_range.unwrap_or_else(|| RangeRef::cell(pt.anchor));
+            let cuts_dest = before > pt_range.start.col && before <= pt_range.end.col;
+            if from_cols.intersects(&pt_range) || cuts_dest {
+                return Err(EngineError::Other("Cannot change part of a PivotTable report.".into()));
+            }
+        }
+    }
 
     let moved_from = if before <= from { from + count } else { from };
     if moved_from.checked_add(count).is_none_or(|end| end > MAX_COLS) {
@@ -659,6 +709,7 @@ fn insert_cells(s: &mut Session, p: &Json) -> Result<Json> {
     let sheet = target_sheet(s, p)?;
     if let Some(sh) = s.doc()?.wb.sheet(sheet) {
         check_table_shift(sh, &e)?;
+        check_pivot_shift(sh, &e)?;
     }
     let right = shift == "right";
     let out = edit(s, |cx| {
@@ -696,6 +747,7 @@ fn delete_cells(s: &mut Session, p: &Json) -> Result<Json> {
     let sheet = target_sheet(s, p)?;
     if let Some(sh) = s.doc()?.wb.sheet(sheet) {
         check_table_shift(sh, &e)?;
+        check_pivot_shift(sh, &e)?;
     }
     let left = shift == "left";
     let out = edit(s, |cx| {
@@ -1295,4 +1347,23 @@ fn ungroup_sheets(s: &mut Session, _p: &Json) -> Result<Json> {
         d.grouped.clear();
     }
     Ok(json!({"grouped": []}))
+}
+
+/// Like Excel, Insert/Delete Cells cannot shift cells in a way that moves any part of a PivotTable report.
+pub(crate) fn check_pivot_shift(sh: &Sheet, e: &Edit) -> Result<()> {
+    let (axis, r) = match *e {
+        Edit::InsertCells { axis, range } | Edit::DeleteCells { axis, range } => (axis, range),
+        _ => return Ok(()),
+    };
+    for pt in &sh.pivots {
+        let pt_range = pt.last_range.unwrap_or_else(|| RangeRef::cell(pt.anchor));
+        let moves = match axis {
+            Axis::Rows => pt_range.end.row >= r.start.row && pt_range.start.col <= r.end.col && pt_range.end.col >= r.start.col,
+            Axis::Cols => pt_range.end.col >= r.start.col && pt_range.start.row <= r.end.row && pt_range.end.row >= r.start.row,
+        };
+        if moves {
+            return Err(EngineError::Other("Cannot change part of a PivotTable report.".into()));
+        }
+    }
+    Ok(())
 }
