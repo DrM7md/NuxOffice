@@ -19,6 +19,8 @@ support comes from `crates/engine/src/io.rs` (`FileKind`), `crates/xlsx/src` and
 `crates/xlsx/src/tests/` (round-trip, fixtures, malformed input, CSV, ODS, XLSB, XLS, PivotTables).
 
 Arabic PDF output uses harfrust shaping, Unicode bidi and licensed Noto Arabic glyph outlines with ToUnicode and logical ActualText. Cells, headers and chart labels support marks, digits, rotation and style. Bundled builds use the optional `CRAFT_FONTS_DIR` input; unbundled native builds look for Noto Sans Arabic. Unsupported text fails export before writing the destination. Cell Context/LTR/RTL direction is carried through measurement, wrapping and drawing. RTL sheet geometry mirrors while text stays readable. Latin-only RTL text uses bidi ordering without requiring an Arabic font.
+Legacy scalar `INDEX(range, MATCH(...))` formulas remain ordinary formulas on save, including when
+shared formulas are expanded during import (`array_export.rs`, #1505).
 
 ## Workbook formats
 
@@ -129,6 +131,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-15 | minor | XLSX: `#SPILL!`/`#CALC!` saved and read as `_error` rich values like Excel (they reopened as `#VALUE!`); typed `#SPILL!`/`#CALC!` stay text; rich-value metadata Excel accepts (`coerce`, lower-case URIs) |
 | 2026-10-15 | minor | XLSX text preserves CR and CRLF across save/reopen; shared strings use `_x000D_` and other XML text uses `&#13;` (#1488) |
 | 2026-10-15 | minor | XLSX: a sheet without `<pageSetup>` is saved without one. Saving always wrote `<pageSetup orientation="portrait"/>`, which is Letter without `paperSize` (the ECMA-376 default), while a sheet without it is printed on the application's default paper (seen in LibreOffice), so sheets moved from that paper (A4 in most locales) to Letter. `paperSize` numbers GridCraft has no name for are kept instead of dropped, and paper names given in another spelling (`11x17`, `A-4`) are saved as Tabloid and A4 instead of Letter |
+| 2026-10-15 | minor | XLSX save keeps legacy `INDEX`/`MATCH` formulas scalar instead of marking them as dynamic arrays (#1505) |
 | 2026-10-12 | trivial | XLSX chart sheets are kept on save (#727) |
 | 2026-10-12 | trivial | CSV and TSV export is capped at 512 MiB and refuses a larger used range with an error (#528) |
 | 2026-10-12 | minor | `.xls` import reads the calculation settings (CalcMode, CalcIter, CalcCount, CalcDelta, CalcPrecision), so circular models calculate instead of showing `#CIRC!` (#724) |
