@@ -103,3 +103,39 @@ Each is a merge commit that keeps its author's commits.
 | #696 Arabic/Hebrew right to left in cells | Its two commits cherry-picked; the tab label is drawn beside the padlock and the formula bar keeps the read-only grey |
 
 Also: three tests that lost `#[test]` while resolving conflicts were restored (#1903, #1230, #955), and every lib test that builds font definitions holds `fonts::TEST_LOCK`.
+
+### Round 3 — 2026-10-19 ([triage-2026-10-19-round3.md](triage-2026-10-19-round3.md))
+
+79 pull requests: #379, #601, #629, #630, #632, #759, #847, #913, #946, #956 (with #953), #960,
+#970, #1095, #1110, #1122, #1135, #1156, #1167, #1215, #1221, #1225, #1248, #1272, #1281, #1284,
+#1285, #1292, #1299, #1325, #1326, #1359, #1366, #1372, #1373, #1378, #1379, #1393, #1474, #1477,
+#1500, #1502, #1507, #1510, #1514, #1548, #1550, #1574, #1580, #1592, #1594, #1600, #1614, #1617,
+#1619, #1625, #1632, #1653, #1657, #1693, #1695, #1725, #1727, #1733, #1862, #1867, #1930, #1931,
+#1933, #1934, #1935, #1937, #1938, #1939, #1940, #1941, #1943, #1945, #1946, #1947.
+
+| Pull request | How it was combined |
+|---|---|
+| #1145 with #379 | The table-lookup path returns the cell's value, so a blank stays blank (#379) |
+| #1167 with #706 | `TextEncoding` gains Windows-1256 and Windows-1251, so a CSV read in either code page is saved back in it; the CSV-as-text test expects the file's own LF line ends |
+| #1933 | Upstream's measured Arabic widths (0.48 em, ligatures, invisible marks) replace ours; our Hebrew, accented Latin, Greek and Cyrillic estimate (0.55 em) is kept. Our AutoFit test compares with uppercase Latin |
+| #1284, #1285, #1122, #1379 | One sort/data target: `Sheet!` prefixes (#1284, #1285), the AutoFilter's range and header (#1122), our single-column expansion and `header:false` (#1379) |
+| #1299 | The (Blanks) group joins the prepared filters from round 1 |
+| #946 | Its filter-order extension and #1447's `hideValuesRow` share one `<extLst>` |
+| #847 | Default-password and RC4 `.xls` decryption keep the `csvAsText` option |
+| #1292 | PDF link annotations added to round 2's Arabic-aware `Page`; its test reads `finish()`'s `Result` |
+| #956 | Merge prompt wired through `run_or_alert`; an older cut test passes `discard: true` |
+| #1862 with #1447 | A value field renamed in its cell clashes only with the exact source name |
+| #759 | `name_expr`, the recalc name cache and the dependency scan parse names with `parse_name` |
+| #1592 | The `calendar` (#1918) and `paren` section fields kept together; the old CELL format helper removed |
+| #1366 | Precision-as-displayed rounding kept with #1510's one-value spill anchors and the no-change edit shortcut |
+| #1614, #1221 | Test initializers gain `note_box`, the table formats and the new column style fields; #1221's custom properties share the sheet slots with #1600's `legacyDrawingHF` |
+| #1727 | Pivot shift checks use our `check_lines_protection` signature |
+| #1733 | Data bars: `AutoMin`/`AutoMax` beside #1848's formula stops |
+| #960 | The editor's text takes the painted text's leading (#1370), except while its cell is partly under frozen panes; the one-line height is kept |
+| #1095 | NuxOffice's cursors moved into `update_cursor` (split cursor past hidden lines, heading arrows, touch pan) |
+| #1931 | Our Format Cells uses the language-aware font list; the localized-name test loads its fonts into a context |
+| #1373, #1550 | Our tab menu and Review tab already switch Protect/Unprotect; our Insert tab's Recommended Charts goes through `run_or_alert` |
+| #630 | Its test casts the click count to `u32` |
+
+Not merged: #761 (needs `rust-windowing/winit` allowed in `deny.toml`, waiting for approval),
+#657 (large conflict, small gain), #1253 (Chinese strings).
