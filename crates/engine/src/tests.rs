@@ -335,6 +335,7 @@ fn small_edits_keep_the_full_undo_depth() {
     assert_eq!(v(&session, "A1"), Value::Empty);
 }
 
+#[test]
 fn redo_selects_the_redone_cell() {
     // #1855: type into A1..A3, click A1, undo, redo: the selection follows the edit to A3.
     let mut s = s();

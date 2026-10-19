@@ -182,6 +182,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-17 | minor | Calculated table-column creation and consistent updates, exception preservation, Options switch and XLSX master-formula reuse (#934) |
 | 2026-10-12 | minor | Inserted rows, columns and cells take the formats of the cells above or to the left, like Excel's default Format Same As Above |
 | 2026-10-13 | minor | Copied-range marquee stays visible over the selection with moving gaps inside its green border; changing copied source cells ends copy mode without pasting stale content, while edits elsewhere retain it (#939) |
+| 2026-10-19 | minor | Ctrl+Enter (`range.fill`) gives each cell what typing the input there gives: a General cell gets the automatic number format (`5%`, `$5`, `3/4/2026`, `=TODAY()`) even when it already held a value, and a cell with its own format, a formatted row or column, or Text keeps it. Cells that held a value used to keep General (`5%` showed 0.05), and empty cells took the active cell's format |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Insert formatting cap counts only styles differing from inherited row/column formats; skipped formatting is observable in the command result |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
