@@ -24,7 +24,9 @@ right-to-left sheets and full complex-script support. Part of
 - **en-US only formulas and formats.** Function names, `,` argument separator, `.` decimal
   separator, en-US number and date formats (`crates/numfmt` says "en-US only"). Users ask for
   localized function names and `;` separators (#45). German with localized numbers and formulas
-  is in PR #163 (open).
+  is in PR #163 (open). The `B1` (Gregorian) and `B2` (Hijri) calendar prefixes that Arabic
+  Excel writes at the start of a format section are hidden; under `B2` the year, month number,
+  day and month names (Arabic) count in the tabular Hijri calendar.
 - **Script support.** System-font fallback for CJK, Thai and Hebrew landed in #38 (closes #32;
   #142 is still open pending confirmation). Native CJK fallback also probes Flatpak's read-only
   `/run/host/fonts`, `/run/host/local-fonts` and `/run/host/user-fonts` layouts, so installed
@@ -89,6 +91,7 @@ language (none so far) and of localized function names.
 | 2026-10-16 | minor | Add 22 German Scenario Manager labels and validation messages (420 unique catalog entries); scenario names and values remain document text (#1445) |
 | 2026-10-14 | minor | CJK fallback probes the read-only Flatpak host font mounts with the existing distribution layouts and TTC locale indices; no new sandbox permissions or bundled fonts |
 | 2026-10-13 | minor | Pinned egui 0.36.2 word-navigation safety backport; full-app Arabic cell/formula-bar regressions. Corrected stale no-shaping claim; bidi, font coverage and PDF still incomplete |
+| 2026-10-19 | minor | Number formats honour the `B1`/`B2` calendar prefixes: never shown; `B2` renders year, month, day and Arabic month names in the tabular Hijri calendar (1 Jan 2001 = 6 Shawwal 1421) |
 | 2026-10-12 | minor | Format Cells looks up its tabs, labels, options and note through `Language::tr` (Fill tab keyed `Format Cells\|Fill`); dialog titles and OK/Cancel too. Labels already in a table (Number, Currency, Fill…) show translated; the rest fall back to English until the tables add them |
 | 2026-10-12 | minor | Brazilian Portuguese catalog (`i18n/pt.rs`) grows from 377 to 923 entries: every key the other catalogs translate, including the dialog strings #669 starts looking up (~42%) |
 | 2026-10-11 | minor | German ribbon catalog (`i18n/de.rs`, 266 labels, ~12%); `de` locale tags (de-DE, de-AT, de-CH…) resolve to German. PR #163 (localized German formulas/numbers) still open |
