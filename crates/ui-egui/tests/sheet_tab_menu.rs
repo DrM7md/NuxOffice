@@ -196,3 +196,31 @@ fn access_key_labels_are_translated() {
     h.run_steps(3);
     assert!(h.query_by_label("Linha inteira").is_some(), "Entire &row is shown translated");
 }
+
+#[test]
+fn more_colors_closes_the_menu_and_colours_the_tab() {
+    let mut h = harness();
+    let n = names(&h);
+    menu(&mut h, &n[1], "Tab Color");
+    h.get_by_label("More Colors…").click();
+    h.run_steps(3);
+    assert!(gridcraft_ui_egui::color_picker::is_open(&h.ctx));
+    assert!(gridcraft_ui_egui::sheet_tab_menu::is_open(&h.ctx).is_none(), "the menu gave way to the Colors window");
+    h.key_press(egui::Key::Enter);
+    h.run_steps(3);
+    assert!(h.state().session.active().unwrap().wb.sheets[1].tab_color.is_some(), "the colour reached the sheet");
+}
+
+#[test]
+fn every_option_of_the_right_to_left_delete_dialog_has_its_own_key() {
+    let mut h = harness();
+    h.state_mut().session.execute("view.rightToLeft", json!({"on": true})).unwrap();
+    h.state_mut().open_dialog("deleteCells", json!({}));
+    h.run_steps(3);
+    h.input_mut().events.push(Event::Text("i".into()));
+    h.run_steps(2);
+    assert_eq!(h.state().dialog.as_ref().and_then(|d| d.values.get("shift")).and_then(|v| v.as_str()), Some("left"));
+    h.input_mut().events.push(Event::Text("r".into()));
+    h.run_steps(2);
+    assert_eq!(h.state().dialog.as_ref().and_then(|d| d.values.get("shift")).and_then(|v| v.as_str()), Some("row"));
+}

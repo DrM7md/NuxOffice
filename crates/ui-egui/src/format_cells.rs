@@ -246,6 +246,30 @@ const CUSTOM_CODES: [&str; 24] = [
 ];
 const SYMBOLS: [(&str, &str); 5] = [("None", ""), ("$", "$"), ("€", "€"), ("£", "£"), ("¥", "¥")];
 
+/// `code` without its bracketed parts (`[Red]`, `[$-409]`, `[h]`); quoted text stays.
+fn unbracketed(code: &str) -> String {
+    let mut out = String::new();
+    let (mut q, mut b) = (false, false);
+    for c in code.chars() {
+        match c {
+            '"' if !b => {
+                q = !q;
+                out.push(c);
+            }
+            '[' if !q => b = true,
+            ']' if !q && b => b = false,
+            _ if !b => out.push(c),
+            _ => {}
+        }
+    }
+    out
+}
+
+/// A bracketed currency tag with a symbol: `[$€-407]`, `[$USD]`. `[$-409]` is a locale alone.
+fn currency_tag(code: &str) -> bool {
+    code.match_indices("[$").any(|(i, _)| code[i + 2..].chars().next().is_some_and(|c| c != '-' && c != ']'))
+}
+
 fn category_of(code: &str) -> &'static str {
     let lower = code.to_ascii_lowercase();
     // The code without quoted text and bracketed parts: `[Red]` holds a `d` and `[$-409]` a `$`,
@@ -278,7 +302,7 @@ fn category_of(code: &str) -> &'static str {
         "Fraction"
     } else if code.starts_with("_(") || code.contains("* ") {
         "Accounting"
-    } else if SYMBOLS.iter().skip(1).any(|(_, s)| code.contains(s)) {
+    } else if SYMBOLS.iter().skip(1).any(|(_, s)| unbracketed(code).contains(s)) || currency_tag(code) {
         "Currency"
     } else if unquoted.contains('h') || unquoted.contains('s') {
         "Time"
@@ -711,12 +735,21 @@ fn font_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
         ui.vertical(|ui| {
             ui.set_width(130.0);
             key_label(ui, "&Size:");
-            let mut size_text = format!("{}", st.font.size);
-            if ui.add_sized([124.0, 24.0], egui::TextEdit::singleline(&mut size_text)).changed()
+            // While the box has focus its text is kept as typed ("10.", or empty); the size takes
+            // each value that parses.
+            let buf_id = egui::Id::new("fc_size_text");
+            let mut size_text: String = ui.data(|d| d.get_temp(buf_id)).unwrap_or_else(|| format!("{}", st.font.size));
+            let resp = ui.add_sized([124.0, 24.0], egui::TextEdit::singleline(&mut size_text));
+            if resp.changed()
                 && let Ok(v) = size_text.trim().parse::<f32>()
                 && (1.0..=409.0).contains(&v)
             {
                 st.font.size = v;
+            }
+            if resp.has_focus() {
+                ui.data_mut(|d| d.insert_temp(buf_id, size_text));
+            } else {
+                ui.data_mut(|d| d.remove::<String>(buf_id));
             }
             let sizes = [8.0, 9.0, 10.0, 11.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 36.0, 48.0, 72.0];
             let names: Vec<String> = sizes.iter().map(|s| format!("{s}")).collect();
@@ -1087,6 +1120,40 @@ const PATTERNS: [(PatternType, &str); 19] = [
     (PatternType::LightTrellis, "Thin Diagonal Crosshatch"),
 ];
 
+/// The background colour (`None`: no fill). A solid fill is that colour; a patterned fill keeps
+/// its pattern and pattern colour (`fg`) and takes it as its background (`bg`).
+fn set_background(st: &mut Style, c: Option<Color>) {
+    match (c, st.fill.pattern) {
+        (None, _) => st.fill = Fill::default(),
+        (Some(c), PatternType::None | PatternType::Solid) => st.fill = Fill::solid(c),
+        (Some(c), _) => st.fill.bg = c,
+    }
+}
+
+/// A new pattern style. Going from solid to a pattern keeps the solid colour as the background
+/// and takes `pattern_color` (or Automatic) as the pattern's; going back to solid keeps the
+/// background.
+fn set_pattern(st: &mut Style, pattern: PatternType, pattern_color: Option<Color>) {
+    let was = st.fill.pattern;
+    let background = match was {
+        PatternType::None => None,
+        PatternType::Solid => Some(st.fill.fg),
+        _ => Some(st.fill.bg),
+    };
+    st.fill = match pattern {
+        PatternType::None => Fill::default(),
+        PatternType::Solid => background.map(Fill::solid).unwrap_or_default(),
+        _ => Fill {
+            pattern,
+            fg: match was {
+                PatternType::None | PatternType::Solid => pattern_color.unwrap_or(Color::Auto),
+                _ => pattern_color.unwrap_or(st.fill.fg),
+            },
+            bg: background.unwrap_or(Color::Auto),
+        },
+    };
+}
+
 fn fill_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
     let lang = crate::i18n::current(ui.ctx());
     let theme = app.session.active().map(|doc| doc.wb.theme.clone()).unwrap_or_default();
@@ -1097,7 +1164,7 @@ fn fill_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
             let picked = crate::widgets::color_palette(ui, &theme.colors, "No Color", "formatCellsFill")
                 .or_else(|| crate::color_picker::take_result(ui.ctx(), "formatCellsFill"));
             if let Some(c) = picked {
-                st.fill = if c == "none" { Fill::default() } else { Fill::solid(Color::from_hex(&c).unwrap_or_default()) };
+                set_background(st, if c == "none" { None } else { Color::from_hex(&c) });
             }
             ui.add_space(8.0);
             ui.horizontal(|ui| {
@@ -1108,7 +1175,7 @@ fn fill_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
                 egui::Popup::menu(&resp).show(|ui| {
                     if egui::color_picker::color_picker_color32(ui, &mut c32, egui::color_picker::Alpha::Opaque) {
                         let hex = format!("#{:02X}{:02X}{:02X}", c32.r(), c32.g(), c32.b());
-                        st.fill = Fill::solid(Color::from_hex(&hex).unwrap_or_default());
+                        set_background(st, Color::from_hex(&hex));
                     }
                 });
             });
@@ -1116,21 +1183,25 @@ fn fill_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
         ui.add_space(20.0);
         ui.vertical(|ui| {
             key_label(ui, "P&attern Color:");
-            let current = if matches!(st.fill.pattern, PatternType::None | PatternType::Solid) { None } else { resolve(&st.fill.fg, &theme) };
+            // A pattern colour chosen before a pattern style waits for the style.
+            let pending_id = egui::Id::new("fc_pattern_color");
+            let patterned = !matches!(st.fill.pattern, PatternType::None | PatternType::Solid);
+            let pending: Option<Color> = ui.data(|d| d.get_temp(pending_id));
+            let current = if patterned { resolve(&st.fill.fg, &theme) } else { pending.as_ref().and_then(|c| resolve(c, &theme)) };
             if let Some(c) = color_combo(ui, "Pattern color", current, &theme.colors, "Automatic", 230.0) {
-                if st.fill.pattern == PatternType::None {
-                    st.fill.pattern = PatternType::Solid;
+                let c = c.and_then(|hex| Color::from_hex(&hex)).unwrap_or(Color::Auto);
+                if patterned {
+                    st.fill.fg = c;
+                } else {
+                    ui.data_mut(|d| d.insert_temp(pending_id, c));
                 }
-                st.fill.fg = match c {
-                    Some(hex) => Color::from_hex(&hex).unwrap_or_default(),
-                    None => Color::Auto,
-                };
             }
             key_label(ui, "&Pattern Style:");
             let names: Vec<String> = PATTERNS.iter().map(|(_, n)| lang.tr(n).to_string()).collect();
             let cur = PATTERNS.iter().position(|(p, _)| *p == st.fill.pattern).unwrap_or(0);
             if let Some(i) = combo(ui, "fc_pattern", &names, cur, 216.0) {
-                st.fill.pattern = PATTERNS[i].0;
+                let pending: Option<Color> = ui.data_mut(|d| d.remove_temp(pending_id));
+                set_pattern(st, PATTERNS[i].0, pending);
             }
         });
     });
@@ -1139,7 +1210,8 @@ fn fill_tab(app: &SheetApp, ui: &mut Ui, st: &mut Style) {
         let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 56.0), Sense::hover());
         let fill = match st.fill.pattern {
             PatternType::None => Color32::WHITE,
-            _ => resolve(&st.fill.fg, &theme).unwrap_or(Color32::WHITE),
+            PatternType::Solid => resolve(&st.fill.fg, &theme).unwrap_or(Color32::WHITE),
+            _ => resolve(&st.fill.bg, &theme).unwrap_or(Color32::WHITE),
         };
         ui.painter().rect_filled(r, CornerRadius::ZERO, fill);
     });
@@ -1281,5 +1353,31 @@ mod tests {
         assert_eq!(category_of("[h]:mm:ss"), "Time", "an elapsed-hours code is still Time");
         assert_eq!(category_of("d-mmm-yy"), "Date");
         assert_eq!(category_of("0.00%"), "Percentage");
+    }
+
+    #[test]
+    fn a_locale_tag_is_not_a_currency_but_a_bracketed_symbol_is() {
+        assert_eq!(category_of("[$-409]mmmm d, yyyy"), "Date");
+        assert_eq!(category_of("[$-409]h:mm:ss AM/PM"), "Time");
+        assert_eq!(category_of("[$€-407]#,##0.00"), "Currency");
+        assert_eq!(category_of("$#,##0.00"), "Currency");
+    }
+
+    #[test]
+    fn background_and_pattern_colours_stay_apart() {
+        use gridcraft_engine::model::{Color, PatternType, Style};
+        let (yellow, blue) = (Color::from_hex("#FFFF00").unwrap_or_default(), Color::from_hex("#0000FF").unwrap_or_default());
+        let mut st = Style::default();
+        super::set_background(&mut st, Some(yellow));
+        assert_eq!((st.fill.pattern, st.fill.fg), (PatternType::Solid, yellow));
+        // A pattern style keeps yellow as the background and takes the chosen pattern colour.
+        super::set_pattern(&mut st, PatternType::Gray75, Some(blue));
+        assert_eq!((st.fill.pattern, st.fill.fg, st.fill.bg), (PatternType::Gray75, blue, yellow));
+        // A new background on a patterned fill keeps the pattern.
+        super::set_background(&mut st, Some(blue));
+        assert_eq!((st.fill.pattern, st.fill.fg, st.fill.bg), (PatternType::Gray75, blue, blue));
+        // Back to solid: the background colour.
+        super::set_pattern(&mut st, PatternType::Solid, None);
+        assert_eq!((st.fill.pattern, st.fill.fg), (PatternType::Solid, blue));
     }
 }

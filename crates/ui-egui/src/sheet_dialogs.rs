@@ -96,7 +96,8 @@ pub(crate) fn cells(app: &SheetApp, ui: &mut Ui, d: &mut Dialog, confirm: &mut b
     let rtl = app.session.active().and_then(|doc| doc.wb.active()).is_some_and(|s| s.right_to_left);
     let sideways = match (delete, rtl) {
         (true, false) => ("left", "Shift cells &left"),
-        (true, true) => ("left", "Shift cells &right"),
+        // "Entire &row" has R: the mirrored sideways shift takes I, as Insert's does.
+        (true, true) => ("left", "Shift cells r&ight"),
         (false, false) => ("right", "Shift cells r&ight"),
         (false, true) => ("right", "Shift cells &left"),
     };

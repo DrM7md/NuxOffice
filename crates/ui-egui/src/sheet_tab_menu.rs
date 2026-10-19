@@ -112,6 +112,13 @@ enum Row {
 /// Escape or a click outside it.
 pub fn show(ctx: &egui::Context, theme_colors: &[u32; 12], protected: bool, any_hidden: bool, grouped: bool) -> Option<(usize, Choice)> {
     let open = is_open(ctx)?;
+    // More Colors… hands over to the Colors window: the menu closes, so it neither takes the
+    // window's typing (Hex) nor its Escape. The colour still reaches the sheet (tabs::tab_menu).
+    if crate::color_picker::is_open(ctx) {
+        close(ctx);
+        ctx.data_mut(|d| d.insert_temp(id().with("sub"), false));
+        return None;
+    }
     let just = ctx.data_mut(|d| d.remove_temp::<bool>(id().with("just"))).unwrap_or(false);
     let t = Tokens::get(ctx);
     let lang = crate::i18n::current(ctx);

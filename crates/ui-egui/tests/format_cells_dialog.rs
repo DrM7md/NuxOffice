@@ -74,3 +74,33 @@ fn cancel_leaves_the_cell_alone() {
     assert!(h.state().dialog.is_none());
     assert_eq!(style(&h), before);
 }
+
+#[test]
+fn the_size_box_takes_a_fractional_size() {
+    let mut h = harness();
+    open(&mut h, "Font");
+    // The Size box sits right under its "Size:" label.
+    let label = h.get_by_label("Size:").rect();
+    let field = egui::pos2(label.left() + 30.0, label.bottom() + 12.0);
+    h.input_mut().events.extend([
+        egui::Event::PointerMoved(field),
+        egui::Event::PointerButton { pos: field, button: egui::PointerButton::Primary, pressed: true, modifiers: egui::Modifiers::NONE },
+        egui::Event::PointerButton { pos: field, button: egui::PointerButton::Primary, pressed: false, modifiers: egui::Modifiers::NONE },
+    ]);
+    h.run_steps(2);
+    h.input_mut().events.push(egui::Event::Key {
+        key: egui::Key::A,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::COMMAND,
+    });
+    h.run_steps(1);
+    // Typed one character a frame, as a person types: "10." must survive until the "5".
+    for ch in ["1", "0", ".", "5"] {
+        h.input_mut().events.push(egui::Event::Text(ch.into()));
+        h.run_steps(1);
+    }
+    click(&mut h, "OK");
+    assert!((style(&h).font.size - 10.5).abs() < 1e-6, "{}", style(&h).font.size);
+}

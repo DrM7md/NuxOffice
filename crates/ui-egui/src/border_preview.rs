@@ -9,7 +9,9 @@ use crate::theme::{self, Tokens};
 /// A labelled menu button with a two-by-two diagram to distinguish inside edges
 /// from the selection outline. Labels stay available to accessibility tools.
 pub(crate) fn preset_button(ui: &mut Ui, label: &str, preset: &str) -> Response {
-    // `label` may mark its access key with `&` ("&Bottom Border"); it is drawn underlined.
+    // `label` may mark its access key with `&` ("&Bottom Border"); it is drawn underlined, and
+    // translated by its plain text (`tr_access`).
+    let label = &tr_access(crate::i18n::current(ui.ctx()), label);
     let plain = label.replace('&', "");
     let response = ui.add(egui::Button::new("").frame(false).min_size(vec2(300.0, 30.0)));
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), &plain));

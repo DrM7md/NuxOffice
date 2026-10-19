@@ -142,3 +142,18 @@ fn a_more_colors_answer_nobody_collects_expires() {
     assert!(h.state().more.is_some());
     assert!(color_picker::take_result(&h.ctx, "test").is_none(), "an answer is handed out once");
 }
+
+#[test]
+fn enter_in_the_colors_window_is_its_ok_and_not_the_dialogs() {
+    let mut h = app_harness();
+    h.state_mut().open_dialog("formatCells", serde_json::json!({"tab": "Fill"}));
+    h.run_steps(3);
+    h.get_all_by_label("More Colors…").next().expect("More Colors…").click();
+    h.run_steps(3);
+    assert!(color_picker::is_open(&h.ctx));
+    h.key_press(egui::Key::Enter);
+    h.run_steps(3);
+    assert!(!color_picker::is_open(&h.ctx), "Enter is the Colors window's OK");
+    assert!(h.state().dialog.is_some(), "and Format Cells stays open with the colour in its draft");
+    assert_eq!(fill(&h), Default::default(), "the cell changes only with the dialog's OK");
+}

@@ -155,3 +155,10 @@ The same fixes were pushed to the upstream pull requests and applied here.
 
 New tests: `color_palette.rs`, `sheet_tab_menu.rs`, `format_cells_dialog.rs`, `heading_hover.rs`,
 `desktop_ribbon.rs` (the last adapted: NuxOffice keeps "Coming soon" notes).
+
+Second round (the bot's re-review of the pushed fixes), also applied here: the Colors window takes
+Enter as OK; High-contrast only drops a hidden highlight; the tab menu closes when More Colors
+opens; the right-to-left Delete dialog's sideways shift uses I (R is Entire row); the Borders
+presets are translated (`border_preview.rs`, upstream file); ribbon tabs carry an accessible name
+(`ribbon.rs`, upstream file); Format Cells reads currency past `[$-409]`, keeps the Size text while
+typing, and keeps background and pattern colours apart.

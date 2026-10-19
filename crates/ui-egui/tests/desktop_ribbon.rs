@@ -73,8 +73,9 @@ fn commands_not_built_yet_say_coming_soon_and_do_nothing_else() {
 #[test]
 fn the_ribbon_menu_hides_the_quick_access_toolbar_and_collapses_the_ribbon() {
     let mut h = harness();
-    // An empty spot on the ribbon's tab row, right of the tabs (Paste has a menu of its own).
-    let at = egui::pos2(1500.0, h.get_by_label("Paste").rect().top() - 15.0);
+    // An empty spot on the ribbon's tab row, just right of the last tab (Paste has a menu of its own).
+    let last_tab = h.get_all_by_label("Help").map(|n| n.rect()).min_by(|a, b| a.top().total_cmp(&b.top())).expect("the Help tab");
+    let at = egui::pos2(last_tab.right() + 40.0, last_tab.center().y);
     let right_click = |h: &mut H| {
         h.input_mut().events.extend([
             Event::PointerMoved(at),

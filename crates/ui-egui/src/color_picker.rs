@@ -188,6 +188,11 @@ pub fn palette(ui: &mut Ui, theme_colors: &[u32; 12], none_label: &str, key: &st
     let keys = if is_open(ui.ctx()) { [false; 5] } else { keys };
     let keys = [keys[0], keys[1], keys[2], keys[3], keys[4] && cur.is_some()];
     let rows: Vec<usize> = if high_contrast { vec![0, 6] } else { vec![0, 1, 2, 3, 4, 5, 6] };
+    // High-contrast only hides the tint rows: a highlight left on one of them is dropped, so Enter
+    // can't apply a colour the palette no longer shows.
+    if high_contrast && cur.is_some_and(|(r, _)| (1..=5).contains(&r)) {
+        cur = None;
+    }
     if keys[..4].iter().any(|k| *k) {
         cur = Some(match cur {
             None => (0, 0),
@@ -599,6 +604,11 @@ pub fn window(ctx: &egui::Context) {
                 });
             });
         });
+    // The window owns Enter (OK) and Escape (Cancel): both are consumed here, before the dialogs
+    // drawn after it could take them as their own OK or Cancel.
+    if result.is_none() && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter)) {
+        result = Some(Some(st.new));
+    }
     if ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) || !open {
         result = Some(None);
     }
