@@ -1,7 +1,6 @@
 # Contributions prepared for GridCraft, round 2 — 2026-10-19
 
-Follows [outgoing-2026-10-19.md](outgoing-2026-10-19.md). **Status:** prepared, not sent. Nothing
-is pushed until the owner approves.
+Follows [outgoing-2026-10-19.md](outgoing-2026-10-19.md). **Status:** approved on 2026-10-19; the six branches are pushed to `DrM7md/gridcraft`. The links that open each pull request are in [pr-links-round2.md](pr-links-round2.md).
 
 ## Round 1, where it stands
 
