@@ -2,7 +2,7 @@
 
 Follows [triage-2026-10-18.md](triage-2026-10-18.md). This round re-checks the items still waiting
 (groups D to J) and the 34 GridCraft pull requests opened since #1870. Groups R1 to R5 were approved and
-merged into `main` on 2026-10-19 (see [CHANGES.md](CHANGES.md)); R6 and R7 await a decision.
+merged into `main` on 2026-10-19 (see [CHANGES.md](CHANGES.md)); R6 was then ported by hand and merged too (see CHANGES.md); R7 is not planned.
 
 ## How this round was checked
 

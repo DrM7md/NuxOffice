@@ -81,3 +81,25 @@ Each is a merge commit that keeps its author's commits.
 | R3 (memory) | #1643, #1263, #1629 | |
 | R4 (Excel behaviour) | #1890, #1905, #1921, #1370, #1618, #1672, #1612, #1333, #1306, #1748, #1100, #1131, #1866, #1392, #1870, #1549, #1730, #1910 | #1370's standard-row test allows for NuxOffice's taller default row |
 | R5 (scripts) | #1918, #1912 | #922 re-applied on the owner's approval: it pins the egui text crates to `Mouhand-Kaddo/egui` at `a7ffc95` (egui 0.36.2 plus egui #8698; two files, +70 −3, checked), now allowed in `deny.toml` |
+
+### Round 2, R6 — 2026-10-19 (manual ports)
+
+| Pull request | How it was ported |
+|---|---|
+| #955 Arabic in PDF export | Combined with #1912 in `Page::text`: Arabic is shaped (Type3 glyphs); other text, reordered for its direction, is split into WinAnsi and CID runs, wrapped in `/ActualText` when reordered. Needs Noto Sans Arabic (installed, or `CRAFT_FONTS_DIR`); without it Arabic PDF export stops with a message |
+| #1731 PivotTables follow inserted/deleted lines | Added inside `shift_sheet_features` after #1711's print-title shifting |
+| #1344 SUMIF false circular references | Tests appended |
+| #1371 Middle/Bottom for tall wrapped text | Moved onto #1370's `cell_text_y` (no clamp to the top); the old overflow assertion now checks Top |
+| #1903 Redo selects the redone cell | Undo records the undone edit's selection through #1643's `push_history` |
+| #1920 Ctrl+Enter number formats | Kept #1175's filtered-row skip in `range_fill` |
+| #1230 Journal size cap | Kept beside #1263's undo byte budget |
+| #1630 Interface fonts read once | Tests kept side by side |
+| #1249 Hidden-line marks in headings | Kept with the heading hover tint |
+| #1222 Padlock on protected tabs | Redrawn on the NuxOffice tab strip |
+| #1385, #1744 Keyboard layouts | One shortcut arm: AltGr characters are text, other Ctrl shortcuts read the US key |
+| #1214 Format Painter | Engine and grid from #1214; the ribbon button is NuxOffice's labelled toggle |
+| #1136, #1499, #1334 Speed | Their duplicated conditional-format statistics change kept once (#1136's); #1499's recalc caches and #1334's navigation work kept, with all their tests |
+| #706 Windows-1256/1251 CSV | Only its own commit, cherry-picked (its older base commits were superseded upstream) |
+| #696 Arabic/Hebrew right to left in cells | Its two commits cherry-picked; the tab label is drawn beside the padlock and the formula bar keeps the read-only grey |
+
+Also: three tests that lost `#[test]` while resolving conflicts were restored (#1903, #1230, #955), and every lib test that builds font definitions holds `fonts::TEST_LOCK`.
