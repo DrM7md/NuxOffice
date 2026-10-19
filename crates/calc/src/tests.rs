@@ -644,6 +644,38 @@ fn lambda_argument_count() {
 }
 
 #[test]
+fn a_lambda_that_calls_itself_without_end_is_num_on_a_small_stack() {
+    // 1 MiB is the main thread's stack on Windows, where commands, recalculation and file open run.
+    let handle = std::thread::Builder::new()
+        .stack_size(1 << 20)
+        .spawn(|| {
+            let mut t = T::new();
+            t.wb.names.push(gridcraft_model::DefinedName {
+                name: "LOOP".into(),
+                scope: None,
+                formula: "LAMBDA(n,LOOP(n))".into(),
+                comment: String::new(),
+                hidden: false,
+            });
+            t.calc.rebuild(&t.wb);
+            let endless = "=LET(f,LAMBDA(g,x,g(g,x)),f(f,1))";
+            t.set("A1", endless);
+            t.set("A2", "=LOOP(1)");
+            t.set("A3", "=LET(F,LAMBDA(me,n,IF(n<=0,0,1+SUM(MAP({1},LAMBDA(v,me(me,n-1)))))),F(F,100000))");
+            t.set("A4", "=LET(F,LAMBDA(me,n,IF(n<=0,0,1+me(me,n-1))),F(F,50))");
+            let evaluated = crate::evaluate(&t.wb, 0, c("B1"), endless);
+            [t.get("A1"), t.get("A2"), t.get("A3"), evaluated, t.get("A4")]
+        })
+        .expect("spawn");
+    let [endless, endless_name, through_map, evaluated, countdown] = handle.join().expect("recursion must not overflow the stack");
+    assert_eq!(endless, Value::Error(CellError::Num));
+    assert_eq!(endless_name, Value::Error(CellError::Num));
+    assert_eq!(through_map, Value::Error(CellError::Num));
+    assert_eq!(evaluated, Value::Error(CellError::Num));
+    assert_eq!(countdown, Value::Number(50.0));
+}
+
+#[test]
 fn names_and_sheets() {
     let mut t = T::new();
     t.wb.names.push(gridcraft_model::DefinedName { name: "Rate".into(), scope: None, formula: "0.5".into(), comment: String::new(), hidden: false });
