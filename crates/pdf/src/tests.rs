@@ -307,6 +307,7 @@ fn cjk_text_is_not_replaced_by_question_marks() {
     assert_eq!(text_width(Font::Helvetica, 10.0, "签字"), 20.0);
 }
 
+#[test]
 fn arabic_is_shaped_and_preserved_or_export_reports_missing_font() {
     let text = "مَرْحَبًا 123 (ABC)";
     let mut doc = PdfDoc::new();
