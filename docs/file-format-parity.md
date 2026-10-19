@@ -115,6 +115,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-15 | minor | XLSX saves keep imported ordinary formulas scalar and write rich-value metadata compatible with Excel, preventing defined-name repair for workbooks with in-cell images (#1429) |
 | 2026-10-15 | minor | XLSX: `#SPILL!`/`#CALC!` saved and read as `_error` rich values like Excel (they reopened as `#VALUE!`); typed `#SPILL!`/`#CALC!` stay text; rich-value metadata Excel accepts (`coerce`, lower-case URIs) |
 | 2026-10-15 | minor | XLSX text preserves CR and CRLF across save/reopen; shared strings use `_x000D_` and other XML text uses `&#13;` (#1488) |
+| 2026-10-15 | minor | XLSX: a sheet without `<pageSetup>` is saved without one. Saving always wrote `<pageSetup orientation="portrait"/>`, which is Letter without `paperSize` (the ECMA-376 default), while a sheet without it is printed on the application's default paper (seen in LibreOffice), so sheets moved from that paper (A4 in most locales) to Letter. `paperSize` numbers GridCraft has no name for are kept instead of dropped, and paper names given in another spelling (`11x17`, `A-4`) are saved as Tabloid and A4 instead of Letter |
 | 2026-10-12 | trivial | XLSX chart sheets are kept on save (#727) |
 | 2026-10-12 | trivial | CSV and TSV export is capped at 512 MiB and refuses a larger used range with an error (#528) |
 | 2026-10-12 | minor | `.xls` import reads the calculation settings (CalcMode, CalcIter, CalcCount, CalcDelta, CalcPrecision), so circular models calculate instead of showing `#CIRC!` (#724) |
