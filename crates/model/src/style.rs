@@ -111,6 +111,15 @@ fn hsl_to_rgb(h: f64, s: f64, l: f64) -> [u8; 3] {
     [(hue(h + 1.0 / 3.0) * 255.0).round() as u8, (hue(h) * 255.0).round() as u8, (hue(h - 1.0 / 3.0) * 255.0).round() as u8]
 }
 
+/// A theme font collection's East Asian and complex-script typefaces and its per-script list
+/// (`<a:font script="Arab" typeface="…"/>`) in file order. The Latin typeface is `Theme::major_font`/`minor_font`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeFonts {
+    pub ea: String,
+    pub cs: String,
+    pub scripts: Vec<(String, String)>,
+}
+
 /// Workbook theme: 12 colours and the heading/body fonts.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Theme {
@@ -119,6 +128,8 @@ pub struct Theme {
     pub colors: [u32; 12],
     pub major_font: String,
     pub minor_font: String,
+    pub major_fonts: ThemeFonts,
+    pub minor_fonts: ThemeFonts,
 }
 
 impl Default for Theme {
@@ -129,6 +140,8 @@ impl Default for Theme {
             colors: [0xFFFFFF, 0x000000, 0xE8E8E8, 0x0E2841, 0x156082, 0xE97132, 0x196B24, 0x0F9ED5, 0xA02B93, 0x4EA72E, 0x467886, 0x96607D],
             major_font: crate::DEFAULT_FONT.into(),
             minor_font: crate::DEFAULT_FONT.into(),
+            major_fonts: ThemeFonts::default(),
+            minor_fonts: ThemeFonts::default(),
         }
     }
 }
