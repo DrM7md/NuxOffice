@@ -3737,7 +3737,7 @@ fn a_cut_moves_the_sources_notes_hyperlinks_and_merges() {
     s.execute("cell.set", json!({"cell": "B1", "input": "y"})).unwrap();
     s.execute("review.newNote", json!({"cell": "A1", "text": "note", "author": "Example"})).unwrap();
     s.execute("insert.link", json!({"cell": "A1", "target": "https://example.com"})).unwrap();
-    s.execute("home.mergeCells", json!({"range": "A1:B1"})).unwrap();
+    s.execute("home.mergeCells", json!({"range": "A1:B1", "discard": true})).unwrap();
 
     s.execute("edit.cut", json!({"range": "A1:B1"})).unwrap();
     s.execute("edit.paste", json!({"at": "D1"})).unwrap();
