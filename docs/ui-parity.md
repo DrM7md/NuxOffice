@@ -46,6 +46,7 @@ this logic, with one undo step.
 | Behaviour | Status |
 |---|---|
 | Click/drag/Shift/Ctrl selection, multi-area selection | rectangular drag works in one direction only in some cases (#28) |
+| Cursor while dragging cells, headers, freeze handles and objects | stable for the active drag (#936); Draw tools keep their crosshair; header arrows and a custom cell cursor remain unimplemented |
 | Selection outline glides to a new selection (Excel: "Provide feedback with animation") | done (10-11): 0.12 s, decelerating, with the fill and fill handle; View ▸ Animations (`view.animations`) turns it off. The timing is an estimate, not yet measured against Excel; the system's reduced-motion setting isn't followed yet |
 | Selection outline lies on the gridlines | done (10-12): each side covers the gridline that bounds the selection and reaches outward from it, a whole number of device pixels wide at any display scale, so no gridline shows inside it. Measured in Windows Excel on a display at 150%: the gridline's own pixel and the one outside it, on each side. The weight is unchanged, two points: three pixels at 150%, where Excel's measured two |
 | Fill handle: drag to fill series, double-click to fill down, right-drag menu | fill done (Ctrl+drag swaps copy and series); right-drag menu missing |
@@ -197,6 +198,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-15 | minor | Number-format named colors use their RGB values; indexed `[Color1]`–`[Color56]` resolve through the shared legacy palette in grid and PDF (#1452) |
 | 2026-10-13 | minor | Filter-menu sorting targets the clicked range, keeps headers and table totals fixed, and command sorting recognizes ordinary AutoFilter bounds (#1097) |
 | 2026-10-13 | minor | Save in Another Encoding?: saving or exporting a Windows-1252 text file with characters it can't hold asks which encoding to use (UTF-8 suggested) instead of writing `?` (#506) |
+| 2026-10-13 | minor | Grid drags keep their own cursor over selection borders, fill handles and outside the grid; hover resumes on release (#936) |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Insert formatting cap counts only styles differing from inherited row/column formats; skipped formatting is observable in the command result |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
