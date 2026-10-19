@@ -93,6 +93,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-18 | maintenance | Refreshed save safety and AutoSave error feedback onto 0.8.0/main; preserve the upstream parser-limit documentation. No scope or readiness change. |
+| 2026-10-16 | minor | XLSX PivotTables: a single-item report filter is read through the field's `<items>` (`pageField@item` indexes those, not the shared items), so the report keeps the item Excel filtered on (#1447, item 3) |
 | 2026-10-14 | trivial | Formula parser: text longer than Excel's 8,192 characters, and postfix chains (`1%%%…`, `f(1)(1)…`) past the 256-level nesting limit, are parse errors (the cell keeps its formula text and cached value) instead of trees deep enough to overflow the stack when a hostile file is opened, saved or dropped |
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
 | 2026-10-15 | minor | XLSX saves keep imported ordinary formulas scalar and write rich-value metadata compatible with Excel, preventing defined-name repair for workbooks with in-cell images (#1429) |
