@@ -196,6 +196,7 @@ scrollbar bugs 2–4 · pixel/feel pass against observed Excel 7–12.
 | 2026-10-16 | minor | Added global interface-scale recovery and an Auto-menu shortcut hint; existing sheet zoom, hide/unhide column shortcuts and keytips retained (#1584). |
 | 2026-10-15 | minor | Number-format named colors use their RGB values; indexed `[Color1]`–`[Color56]` resolve through the shared legacy palette in grid and PDF (#1452) |
 | 2026-10-13 | minor | Filter-menu sorting targets the clicked range, keeps headers and table totals fixed, and command sorting recognizes ordinary AutoFilter bounds (#1097) |
+| 2026-10-13 | minor | Save in Another Encoding?: saving or exporting a Windows-1252 text file with characters it can't hold asks which encoding to use (UTF-8 suggested) instead of writing `?` (#506) |
 | 2026-10-12 | minor | The File view's recent list tells when each workbook was last changed, read off the UI thread |
 | 2026-10-13 | minor | Insert formatting cap counts only styles differing from inherited row/column formats; skipped formatting is observable in the command result |
 | 2026-10-13 | minor | Horizontal scrollbar in the sheet tab bar: drag, track click pages, frozen columns excluded from the page (#840) |
