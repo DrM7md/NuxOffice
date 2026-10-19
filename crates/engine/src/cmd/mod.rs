@@ -359,6 +359,10 @@ pub(crate) fn commit<R>(d: &mut DocState, f: impl FnOnce(&mut Ctx) -> Result<R>)
     };
     let r = f(&mut ctx)?;
     let Ctx { mut wb, changed, structural, visibility_only, mut fit_rows, protection_checked, .. } = ctx;
+    if !structural && changed.is_empty() && fit_rows.is_empty() && wb == *d.wb {
+        d.selection = sel;
+        return Ok(r);
+    }
     if !protection_checked {
         check_protection(&d.wb, &wb, &d.unlocked_ranges)?;
     }
