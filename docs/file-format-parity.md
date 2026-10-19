@@ -139,6 +139,7 @@ refresh. Counted under features (Get & Transform, ~10% ready), not here.
 | 2026-10-19 | minor | HTML (Save as Web Page and clipboard) marks right-to-left sheets and right-to-left cell text with `dir` |
 | 2026-10-19 | minor | XLSX theme font collections preserve East Asian, complex-script, and ordered per-script typefaces across save and reopen |
 | 2026-10-16 | minor | XLSX: a note keeps its box's place and size (`<x:Anchor>` and the VML width and height) through open and save, moving with its cell; notes made here get the default box (#1608) |
+| 2026-10-16 | trivial | XLSX data bars keep Excel's Automatic bounds (x14 `autoMin`/`autoMax`) apart from Lowest/Highest Value on read and write, and Lowest Value is no longer drawn from 0; `home.conditionalFormat` data bars default to Automatic, as Excel's gallery (#1159) |
 | 2026-10-14 | trivial | Formula parser: text longer than Excel's 8,192 characters, and postfix chains (`1%%%…`, `f(1)(1)…`) past the 256-level nesting limit, are parse errors (the cell keeps its formula text and cached value) instead of trees deep enough to overflow the stack when a hostile file is opened, saved or dropped |
 | 2026-10-13 | minor | Safe temporary saves and visible AutoSave errors; no feature-count change |
 | 2026-10-15 | minor | XLSX saves keep imported ordinary formulas scalar and write rich-value metadata compatible with Excel, preventing defined-name repair for workbooks with in-cell images (#1429) |
