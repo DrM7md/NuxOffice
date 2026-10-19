@@ -5,6 +5,7 @@ mod chart_book_names;
 mod chart_bool_default;
 mod csv_tests;
 mod encrypted_tests;
+mod fixed_drawing_extents;
 mod fixtures;
 mod ink_roundtrip;
 mod literal_category_roundtrip;

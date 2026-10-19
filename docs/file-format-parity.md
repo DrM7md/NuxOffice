@@ -12,6 +12,12 @@ Imported ordinary formulas keep their scalar/implicit-intersection representatio
 even when an equivalent newly entered formula would be exported as a dynamic array. Rich-value
 metadata uses Excel-compatible flags and extension identifiers, so workbooks with in-cell images
 and range-backed defined names can reopen without discarding names (#1429).
+Fixed-size drawings now write `absoluteAnchor` (fixed position and size) or `oneCellAnchor`
+(move with the cell, fixed size), with explicit EMU extents. Only move-and-size drawings write
+a two-cell range. This prevents substitute column-font metrics from stretching fixed pictures
+on reopening in other applications. The regression changes worksheet column metrics after
+export and verifies dimensions/mode/absolute position. See [native reproduction and reference
+view limits](fixed-picture-extents.md).
 
 Excel's list comes from Microsoft's public "File formats that are supported in Excel"
 documentation (the Office bundle is off limits under this repo's clean-room rule). GridCraft's
