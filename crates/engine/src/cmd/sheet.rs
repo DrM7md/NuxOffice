@@ -238,6 +238,15 @@ fn shift_sheet_features(sh: &mut Sheet, axis: Axis, at: u32, count: u32, insert:
         if axis == Axis::Rows { (&mut sh.print.title_rows, &mut sh.print.row_breaks) } else { (&mut sh.print.title_cols, &mut sh.print.col_breaks) };
     *titles = titles.and_then(|t| shift_line_span(t, at, count, insert, limit));
     shift_page_breaks(breaks, at, count, insert, limit);
+    // PivotTables follow their report cells. A deleted anchor line collapses onto the line that
+    // takes its place; a report deleted entirely has no last area until the next refresh.
+    for pt in sh.pivots.iter_mut() {
+        pt.anchor = map_cell(pt.anchor).unwrap_or_else(|| match axis {
+            Axis::Rows => CellRef::new(at, pt.anchor.col),
+            Axis::Cols => CellRef::new(pt.anchor.row, at),
+        });
+        pt.last_range = pt.last_range.and_then(map_range);
+    }
 }
 
 /// Where a span of repeated title lines goes after an insert/delete (`None` = every line deleted).
@@ -313,6 +322,18 @@ fn rewrite(wb: &mut gridcraft_model::Workbook, target: &str, e: &Edit) {
         }
         for sp in sh.sparklines.iter_mut() {
             sp.source = fix(&sp.source);
+        }
+        // PivotTable sources (a range, table or defined name) are only rewritten when the edit
+        // moves them, so table and name sources keep their text.
+        for pt in sh.pivots.iter_mut() {
+            let body = pt.source.trim().trim_start_matches('=');
+            if let Ok(expr) = gridcraft_formula::parse(body) {
+                let before = gridcraft_formula::print(&expr);
+                let after = gridcraft_formula::print(&gridcraft_formula::adjust::adjust(expr, &host, target, e));
+                if after != before {
+                    pt.source = after;
+                }
+            }
         }
     }
 }
