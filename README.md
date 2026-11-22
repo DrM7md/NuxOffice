@@ -72,3 +72,11 @@ Code inherited from GridCraft is MIT OR Apache-2.0. New NuxOffice code is MPL-2.
 ## Credits
 
 NuxOffice stands on the work of the GridCraft contributors, listed in [contributors/](contributors/). GridCraft and ArtCraft are trademarks of the ArtCraft Team; NuxOffice is not affiliated with or endorsed by them. Microsoft, Excel and Office are trademarks of Microsoft Corporation.
+
+## ☕ ادعم المشروع
+
+إذا أفادك هذا المشروع، يمكنك دعم تطويره عبر PayPal:
+
+[![PayPal](https://img.shields.io/badge/PayPal-Support-00457C?logo=paypal&logoColor=white)](https://paypal.me/SamtSoftware)
+
+👉 https://paypal.me/SamtSoftware
